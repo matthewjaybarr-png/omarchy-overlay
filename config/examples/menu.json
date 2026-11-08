@@ -1,0 +1,200 @@
+{
+  "menus": [
+    {
+      "id": "main",
+      "title": "Go",
+      "items": [
+        { "label": "Apps", "icon": "F003B", "command": "apps" },
+        { "label": "Learn", "icon": "F09D1", "command": "menu learn" },
+        { "label": "Appearance", "icon": "F03D8", "command": "menu style" },
+        { "label": "Trigger", "icon": "F14DE", "command": "menu trigger" },
+        { "label": "Setup", "icon": "E615", "command": "menu setup" },
+        { "label": "Install", "icon": "F0249", "command": "menu install" },
+        { "label": "Remove", "icon": "F0B4C", "command": "menu remove" },
+        { "label": "Update", "icon": "F021", "command": "menu update" },
+        { "label": "About", "icon": "EA74", "command": "page version" },
+        { "label": "System", "icon": "F011", "command": "menu system" }
+      ]
+    },
+    {
+      "id": "learn",
+      "title": "Learn",
+      "items": [
+        { "label": "Keybindings", "icon": "F11C", "command": "keybinds" },
+        { "label": "Omarchy Overlay guide", "icon": "F02D", "command": "guide" },
+        { "label": "Omarchy Overlay log", "icon": "F03A", "command": "log" }
+      ]
+    },
+    {
+      "id": "trigger",
+      "title": "Trigger",
+      "items": [
+        { "label": "Toggle", "icon": "F050E", "command": "menu toggle" },
+        { "label": "Emoji", "icon": "F118", "command": "emoji" },
+        { "label": "Clipboard history", "icon": "F0147", "command": "clipboard" },
+        { "label": "Capture", "icon": "F030", "command": "capture" },
+        { "label": "Notifications", "icon": "F009B", "command": "notifications" },
+        { "label": "Quick settings", "icon": "F1DE", "command": "quick-settings" },
+        { "label": "Open windows", "icon": "F2D2", "command": "open-windows" },
+        { "label": "Selected window", "icon": "F2D0", "command": "window-panel" },
+        { "label": "Task View", "icon": "F009", "command": "task-view" },
+        { "label": "Scratchpad", "icon": "F108", "command": "action toggle-scratchpad" }
+      ]
+    },
+    {
+      "id": "toggle",
+      "title": "Toggle",
+      "items": [
+        { "label": "Stay awake", "icon": "EF59", "command": "keep-awake" },
+        { "label": "Tiling", "icon": "F00A", "command": "action toggle-tiling" },
+        { "label": "Top bar", "icon": "F035C", "command": "toggle-bar" },
+        { "label": "Pause Omarchy Overlay keys", "icon": "F04C", "command": "pause-keys" },
+        { "label": "Night light", "icon": "F186", "command": "settings nightlight" }
+      ]
+    },
+    {
+      "id": "style",
+      "title": "Appearance",
+      "items": [
+        { "label": "Theme", "icon": "F0E0C", "command": "page theme" },
+        { "label": "Background", "icon": "F03E", "command": "page background" },
+        { "label": "Font", "icon": "E659", "command": "page font" },
+        { "label": "Top bar", "icon": "F035C", "command": "menu bar" },
+        { "label": "Windows look", "icon": "F05B2", "command": "menu look" },
+        { "label": "Layouts by workspace", "icon": "F0DB", "command": "page workspace-layouts" },
+        { "label": "Animations", "icon": "F05D8", "command": "page animations" },
+        { "label": "Layout", "icon": "F10AC", "command": "page layout" },
+        { "label": "On-screen messages", "icon": "F0EB", "command": "page osd" },
+        { "label": "Apply theme to Windows", "icon": "F17A", "command": "page windows-theme" },
+        { "label": "Apps Omarchy Overlay cannot theme", "icon": "F071", "command": "page windows-checklist" },
+        { "label": "Windows Terminal colors", "icon": "F120", "command": "page terminal-colors" },
+        { "label": "Windows taskbar", "icon": "F0C9", "command": "page taskbar" }
+      ]
+    },
+    {
+      "id": "bar",
+      "title": "Top bar",
+      "items": [
+        { "label": "Show or hide", "icon": "F0208", "command": "toggle-bar" },
+        { "label": "Bar height", "icon": "F065", "command": "page bar-height" },
+        { "label": "Bar opacity", "icon": "F00B5", "command": "page bar-opacity" },
+        { "label": "Clock", "icon": "F017", "command": "page clock" },
+        { "label": "Bar items", "icon": "F03A", "command": "page bar-items" }
+      ]
+    },
+    {
+      "id": "look",
+      "title": "Windows look",
+      "items": [
+        { "label": "Start with tiling on", "icon": "F04B", "command": "page start-tiling" },
+        { "label": "Gaps", "icon": "E62A", "command": "page gaps" },
+        { "label": "Main pane size", "icon": "F0DB", "command": "page main-size" },
+        { "label": "Window opacity", "icon": "F00B5", "command": "page opacity" },
+        { "label": "Inactive window opacity", "icon": "F0209", "command": "page inactive-opacity" },
+        { "label": "Focus outline", "icon": "F0607", "command": "page focus-outline" },
+        { "label": "Blur and materials", "icon": "F2DB", "command": "page materials" },
+        { "label": "Scrolling columns", "icon": "F0DB", "command": "page columns" }
+      ]
+    },
+    {
+      "id": "setup",
+      "title": "Setup",
+      "items": [
+        { "label": "Monitors", "icon": "F0379", "command": "settings display" },
+        { "label": "Keybinds", "icon": "F11C", "command": "page keyboard" },
+        { "label": "Keymap", "icon": "F084", "command": "page keymap" },
+        { "label": "Tapping Super on its own", "icon": "F17A", "command": "page tap-super" },
+        { "label": "Keyboard conflicts", "icon": "F071", "command": "page conflicts" },
+        { "label": "Mouse", "icon": "F037D", "command": "settings mousetouchpad" },
+        { "label": "Keyboard", "icon": "F030C", "command": "settings keyboard" },
+        { "label": "Typing", "icon": "EFBA", "command": "settings typing" },
+        { "label": "Language", "icon": "F1AB", "command": "settings regionlanguage" },
+        { "label": "Network", "icon": "F06F3", "command": "settings network" },
+        { "label": "Wi-Fi", "icon": "F05A9", "command": "settings network-wifi" },
+        { "label": "Bluetooth", "icon": "F00AF", "command": "settings bluetooth" },
+        { "label": "Sound", "icon": "F057E", "command": "settings sound" },
+        { "label": "Power", "icon": "F06A5", "command": "settings powersleep" },
+        { "label": "Default apps", "icon": "F005", "command": "settings defaultapps" },
+        { "label": "Startup apps", "icon": "F0E7", "command": "settings startupapps" },
+        { "label": "Tiling", "icon": "F00A", "command": "menu tiling" },
+        { "label": "Saved profiles", "icon": "F0C0", "command": "page profiles" },
+        { "label": "Config folder", "icon": "F07B", "command": "config-folder" }
+      ]
+    },
+    {
+      "id": "tiling",
+      "title": "Tiling",
+      "items": [
+        { "label": "Gaps", "icon": "E62A", "command": "page gaps" },
+        { "label": "Main pane size", "icon": "F0DB", "command": "page main-size" },
+        { "label": "Layout", "icon": "F10AC", "command": "page layout" },
+        { "label": "App rules", "icon": "F03A", "command": "page app-rules" },
+        { "label": "Default for all other apps", "icon": "F013", "command": "page default-rule" },
+        { "label": "Add rule for an open window", "icon": "F067", "command": "page add-rule" },
+        { "label": "Always-float list", "icon": "F2D0", "command": "page always-float" }
+      ]
+    },
+    {
+      "id": "install",
+      "title": "Install",
+      "items": [
+        { "label": "Style", "icon": "EBCF", "command": "config-folder" },
+        { "label": "Web app", "icon": "F268", "command": "page install-webapp" },
+        { "label": "Font", "icon": "E659", "command": "settings fonts" },
+        { "label": "Custom apps", "icon": "F067", "command": "page custom-apps" }
+      ]
+    },
+    {
+      "id": "remove",
+      "title": "Remove",
+      "items": [
+        { "label": "Installed apps", "icon": "F0B4C", "command": "settings appsfeatures" },
+        { "label": "Web app", "icon": "F268", "command": "page webapps" },
+        { "label": "Hide from the app picker", "icon": "F1F8", "command": "page remove-apps" },
+        { "label": "Custom apps", "icon": "F067", "command": "page custom-apps" }
+      ]
+    },
+    {
+      "id": "update",
+      "title": "Update",
+      "items": [
+        { "label": "Windows Update", "icon": "F17A", "command": "settings windowsupdate" },
+        { "label": "Omarchy Overlay releases", "icon": "F07B", "command": "releases-folder" },
+        { "label": "Config", "icon": "E615", "command": "menu update-config" },
+        { "label": "Process", "icon": "EBA2", "command": "menu process" },
+        { "label": "Update this profile from current settings", "icon": "F0C7", "command": "update-profile" },
+        { "label": "Password", "icon": "F084", "command": "settings signinoptions" },
+        { "label": "Time", "icon": "F017", "command": "settings dateandtime" }
+      ]
+    },
+    {
+      "id": "update-config",
+      "title": "Config",
+      "items": [
+        { "label": "Reload config files", "icon": "F021", "command": "reload-config" },
+        { "label": "Open the config folder", "icon": "F07B", "command": "config-folder" },
+        { "label": "Config file problems", "icon": "F071", "command": "page config-errors" }
+      ]
+    },
+    {
+      "id": "process",
+      "title": "Process",
+      "items": [
+        { "label": "Restart Omarchy Overlay", "icon": "F021", "command": "restart" },
+        { "label": "Restore every window", "icon": "F0E2", "command": "restore-desktop" },
+        { "label": "Restore desktop and exit", "icon": "F08B", "command": "exit", "confirm": true }
+      ]
+    },
+    {
+      "id": "system",
+      "title": "System",
+      "items": [
+        { "label": "Lock", "icon": "F023", "command": "lock" },
+        { "label": "Sleep", "icon": "F04B2", "command": "sleep", "confirm": true },
+        { "label": "Sign out", "icon": "F0343", "command": "sign-out", "confirm": true },
+        { "label": "Restart", "icon": "F0709", "command": "restart-pc", "confirm": true },
+        { "label": "Shut down", "icon": "F0425", "command": "shutdown", "confirm": true }
+      ]
+    }
+  ]
+}

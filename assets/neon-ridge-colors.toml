@@ -1,0 +1,34 @@
+# Neon Ridge: night-mountain navy from the aurora wallpapers, with the
+# cyan-to-violet glow of the MB/GR icons. Moonlit lavender text, sunset
+# pink and amber, aurora green.
+mode = "dark"
+
+accent = "#38bdfa"
+selection = "#2a3a78"
+muted = "#5a659c"
+
+background = "#0a1028"
+dark_background = "#070b1e"
+darker_background = "#040716"
+lighter_background = "#1a2550"
+
+foreground = "#d7dcf5"
+dark_foreground = "#8089bd"
+light_foreground = "#b4bce4"
+bright_foreground = "#f0f2ff"
+
+red = "#f2668f"
+yellow = "#f5c98a"
+orange = "#f0946e"
+green = "#4fe0b0"
+cyan = "#43d5e8"
+blue = "#5b95fa"
+magenta = "#b580fa"
+brown = "#9a7488"
+
+bright_red = "#ff8fae"
+bright_yellow = "#fbdcae"
+bright_green = "#82f0cb"
+bright_cyan = "#7fe6f3"
+bright_blue = "#8bb5ff"
+bright_magenta = "#cfa8ff"

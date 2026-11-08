@@ -1,0 +1,16 @@
+{
+  "apps": [
+    {
+      "name": "ChatGPT",
+      "url": "https://chatgpt.com",
+      "shortcut": "ChatGPT",
+      "window_title": "ChatGPT"
+    },
+    {
+      "name": "Claude",
+      "url": "https://claude.ai",
+      "shortcut": "Claude",
+      "window_title": "Claude"
+    }
+  ]
+}

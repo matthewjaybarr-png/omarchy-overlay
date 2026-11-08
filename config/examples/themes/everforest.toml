@@ -1,0 +1,11 @@
+# Everforest for Omarchy Overlay, in the Omarchy colors.toml format.
+# Copy this file into config\themes\ (one folder up from examples) and choose
+# Menu > Update > Config > Reload config files. It then appears under Appearance > Theme.
+# Theme files color the Omarchy Overlay menu, picker and bar only.
+accent = "#7fbbb3"
+background = "#2d353b"
+foreground = "#d3c6aa"
+lighter_background = "#343f44"
+dark_foreground = "#9da9a0"
+selection = "#475258"
+mode = "dark"

@@ -1,0 +1,150 @@
+{
+  "format": "keyspace-profile",
+  "version": 1,
+  "id": "overlay-sample",
+  "settings": {
+    "bar": {
+      "height": 24,
+      "font_size": 12,
+      "font_family": "JetBrains Mono NL",
+      "spacing": 3,
+      "task_buttons": 8,
+      "module_display": {
+        "system-tray": "icon",
+        "start": "icon",
+        "launcher": "icon",
+        "workspace-nav": "icon",
+        "menu": "icon",
+        "workspaces": "text",
+        "tiling": "icon",
+        "tasks": "icon",
+        "title": "icon",
+        "clock": "text",
+        "sound": "icon",
+        "network": "icon",
+        "power": "icon",
+        "controls": "icon",
+        "app-drawer": "icon"
+      },
+      "clock_format": "day-time-12h",
+      "workspace_labels": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "left": [
+        "start",
+        "divider",
+        "workspaces",
+        "divider",
+        "app-drawer",
+        "tasks"
+      ],
+      "center": [
+        "clock"
+      ],
+      "right": [
+        "system-tray",
+        "sound",
+        "divider",
+        "network",
+        "power",
+        "divider",
+        "controls"
+      ],
+      "split_task_modules": true
+    },
+    "gap": 4,
+    "main_ratio": 0.5,
+    "modifiers": "CtrlAlt",
+    "cycle_workspace_shortcut": "Ctrl+Alt+F11",
+    "shortcut_overrides": {},
+    "applications": [],
+    "terminal": "wt.exe",
+    "excluded_processes": [
+      "Taskmgr.exe",
+      "mstsc.exe",
+      "msrdc.exe",
+      "ApplicationFrameHost.exe",
+      "vmconnect.exe"
+    ],
+    "show_top_bar": true,
+    "auto_hide_taskbar": true,
+    "theme": "neon-ridge",
+    "focus_outline": false,
+    "show_osd": true,
+    "appearance_profiles": [],
+    "appearance_wallpaper": "",
+    "bar_opacity": 100,
+    "inactive_opacity": 98,
+    "layout": "main-stack",
+    "rules": [
+      {
+        "executable": "Mastercam.exe",
+        "title_contains": "",
+        "window_class": "",
+        "mode": "ignore",
+        "allow_opacity": false,
+        "monitor": null
+      },
+      {
+        "executable": "mbeditor.exe",
+        "title_contains": "",
+        "window_class": "",
+        "mode": "tile",
+        "allow_opacity": true,
+        "monitor": null
+      },
+      {
+        "executable": "msedge.exe",
+        "title_contains": "",
+        "window_class": "",
+        "mode": "tile",
+        "allow_opacity": true,
+        "monitor": null
+      },
+      {
+        "executable": "explorer.exe",
+        "title_contains": "",
+        "window_class": "",
+        "mode": "tile",
+        "allow_opacity": true,
+        "monitor": null
+      },
+      {
+        "executable": "EXCEL.EXE",
+        "title_contains": "",
+        "window_class": "",
+        "mode": "float",
+        "allow_opacity": false,
+        "monitor": null
+      },
+      {
+        "executable": "olk.exe",
+        "title_contains": "",
+        "window_class": "",
+        "mode": "float",
+        "allow_opacity": false,
+        "monitor": null
+      },
+      {
+        "executable": "OUTLOOK.EXE",
+        "title_contains": "",
+        "window_class": "",
+        "mode": "tile",
+        "allow_opacity": false,
+        "monitor": null
+      }
+    ],
+    "default_mode": "tile",
+    "default_allow_opacity": true,
+    "active_opacity": 100,
+    "coordinate_windows": false,
+    "window_backdrop": "solid",
+    "animations": false,
+    "animation_duration_ms": 140,
+    "taskbar_mode": "auto-hide",
+    "scrolling_columns": 2
+  }
+}

@@ -1,0 +1,11 @@
+# Gruvbox for Omarchy Overlay, in the Omarchy colors.toml format.
+# Copy this file into config\themes\ (one folder up from examples) and choose
+# Menu > Update > Config > Reload config files. It then appears under Appearance > Theme.
+# Theme files color the Omarchy Overlay menu, picker and bar only.
+accent = "#7daea3"
+background = "#282828"
+foreground = "#d4be98"
+lighter_background = "#3c3836"
+dark_foreground = "#a89984"
+selection = "#504945"
+mode = "dark"
