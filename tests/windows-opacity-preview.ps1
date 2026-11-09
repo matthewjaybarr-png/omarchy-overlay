@@ -30,7 +30,7 @@ $y=$area.Top+[int](($area.Height-650)/2)
 $back=[System.Windows.Forms.Form]::new()
 $front=[System.Windows.Forms.Form]::new()
 try {
-    $back.Text='Keyspace opacity preview - backdrop'
+    $back.Text='Omarchy Overlay opacity preview - backdrop'
     $back.StartPosition='Manual'; $back.SetBounds($x,$y,1000,650)
     $back.BackColor=[System.Drawing.Color]::FromArgb(38,83,104)
     $grid=[System.Windows.Forms.Label]::new()
@@ -39,11 +39,11 @@ try {
     $grid.ForeColor=[System.Drawing.Color]::FromArgb(170,220,230)
     $grid.SetBounds(36,32,920,540); $back.Controls.Add($grid)
     $back.Show(); Pump 300
-    $front.Text='Keyspace demo - 80% opacity'
+    $front.Text='Omarchy Overlay demo - 80% opacity'
     $front.StartPosition='Manual'; $front.SetBounds(($x+120),($y+125),760,390)
     $front.BackColor=[System.Drawing.Color]::FromArgb(24,27,34)
     $label=[System.Windows.Forms.Label]::new()
-    $label.Text="80% OPACITY`r`n`r`nA regular Windows window.`r`nKeyspace fades the whole window, including text."
+    $label.Text="80% OPACITY`r`n`r`nA regular Windows window.`r`nOmarchy Overlay fades the whole window, including text."
     $label.Font=[System.Drawing.Font]::new('Segoe UI',20)
     $label.ForeColor=[System.Drawing.Color]::White
     $label.SetBounds(30,28,690,290); $front.Controls.Add($label)
@@ -57,7 +57,7 @@ try {
     $graphics=[System.Drawing.Graphics]::FromImage($bitmap)
     try {
         $graphics.CopyFromScreen($x,$y,0,0,$bitmap.Size)
-        $bitmap.Save((Join-Path $root 'keyspace-opacity.png'),[System.Drawing.Imaging.ImageFormat]::Png)
+        $bitmap.Save((Join-Path $root 'overlay-opacity.png'),[System.Drawing.Imaging.ImageFormat]::Png)
     } finally { $graphics.Dispose(); $bitmap.Dispose() }
 } finally {
     $front.Close(); $front.Dispose(); $back.Close(); $back.Dispose()

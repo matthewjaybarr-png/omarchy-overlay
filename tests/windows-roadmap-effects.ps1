@@ -10,7 +10,7 @@ $originalTaskbar = $null
 $configTouched = $false
 $configPath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'OmarchyOverlay\config.json'
 $originalConfig = if (Test-Path $configPath) { [IO.File]::ReadAllText($configPath) } else { $null }
-$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-mb-keyspace.json')
+$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-0.10.json')
 $originalUpgradeBackup=if(Test-Path $upgradeBackupPath){[IO.File]::ReadAllBytes($upgradeBackupPath)}else{$null}
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -40,12 +40,12 @@ public static class Desktop {
   public static IntPtr ByClass(string cls) { return FindWindow(cls, null); }
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main", null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Launcher() { return FindWindow("OmarchyOverlay.Launcher", null); }
   public static IntPtr Bar() { return FindWindow("OmarchyOverlay.TopBar", null); }
   public static IntPtr Appearance() { return FindWindow("OmarchyOverlay.Appearance", null); }
@@ -272,7 +272,7 @@ try {
  Check 'Terminal integration preserves a recovery record' (Test-Path "$local\terminal-appearance-restore.json")
  Capture $appearance 'appearance-profiles.png'
  Click $appearance 817
- Check 'Restore returns the original wallpaper' ([Desktop]::Wallpaper() -eq $wallpaperBefore)
+ Check 'Restore returns the original wallpaper' ([Desktop]::Wallpaper() -eq $wallpaperBefore) "now '$([Desktop]::Wallpaper())', before '$wallpaperBefore', status '$([Desktop]::ControlText($appearance,819))'"
  Check 'Restore returns the original fragment or removes only its new file' ($(if($null -eq $terminalBefore){-not (Test-Path $terminalPath)}else{[IO.File]::ReadAllText($terminalPath) -eq $terminalBefore}))
  Check 'Successful appearance restore clears its journals' (-not (Test-Path "$local\wallpaper-restore.json") -and -not (Test-Path "$local\terminal-appearance-restore.json"))
  Click $appearance 816
@@ -280,7 +280,7 @@ try {
  try {
   $externalFragment=$ownedFragment+"`r`n "
   [IO.File]::WriteAllText($terminalPath,$externalFragment,[Text.UTF8Encoding]::new($false));Click $appearance 817
-  Check 'Restore preserves a Terminal fragment changed outside Keyspace' ([IO.File]::ReadAllText($terminalPath) -eq $externalFragment)
+  Check 'Restore preserves a Terminal fragment changed outside Omarchy Overlay' ([IO.File]::ReadAllText($terminalPath) -eq $externalFragment)
   Check 'External change retains the recovery record for review' (Test-Path "$local\terminal-appearance-restore.json")
  } finally {
   [IO.File]::WriteAllText($terminalPath,$ownedFragment,[Text.UTF8Encoding]::new($false));Click $appearance 817

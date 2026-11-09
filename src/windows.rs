@@ -81,6 +81,8 @@ mod window_actions;
 mod window_motion;
 #[path = "window_theme.rs"]
 mod window_theme;
+#[path = "windows_accent.rs"]
+mod windows_accent;
 #[path = "windows_personalization.rs"]
 mod windows_personalization;
 #[path = "workspace_ui.rs"]
@@ -389,6 +391,92 @@ thread_local! { static APP: RefCell<Option<App>> = const { RefCell::new(None) };
 fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
 }
+/// Asks the running copy to restore the desktop and exit; true once it has (or none ran).
+unsafe fn close_running() -> bool {
+    let other = FindWindowW(wide(MAIN_CLASS).as_ptr(), null());
+    if other.is_null() {
+        return true;
+    }
+    let mut pid = 0;
+    GetWindowThreadProcessId(other, &mut pid);
+    let process = OpenProcess(PROCESS_SYNCHRONIZE, 0, pid);
+    PostMessageW(other, WM_HOTKEY, (BASE + 5) as usize, 0);
+    let closed = !process.is_null() && WaitForSingleObject(process, 10000) == WAIT_OBJECT_0;
+    if !process.is_null() {
+        CloseHandle(process);
+    }
+    closed
+}
+
+/// `--install [--user DOMAIN\name]` and `--uninstall [--remove-settings]` (Admin edition).
+unsafe fn install_command(arguments: &[String], directory: &Path) -> i32 {
+    let installing = arguments[0] == "--install";
+    let remove_settings = arguments.iter().any(|a| a == "--remove-settings");
+    let user = arguments
+        .iter()
+        .position(|a| a == "--user")
+        .and_then(|i| arguments.get(i + 1))
+        .cloned()
+        .unwrap_or_else(|| {
+            let get = |name| std::env::var(name).unwrap_or_default();
+            format!("{}\\{}", get("USERDOMAIN"), get("USERNAME"))
+        });
+    if !crate::launch_unelevated::process_elevated() {
+        // The task must run as the signed-in user, so pass that name to the elevated copy.
+        let relaunch = if installing {
+            format!("--install --user \"{user}\"")
+        } else if remove_settings {
+            "--uninstall --remove-settings".into()
+        } else {
+            "--uninstall".into()
+        };
+        return if crate::install::elevate(&relaunch) { 0 } else { 1 };
+    }
+    if !close_running() {
+        message("Omarchy Overlay did not exit. Close it and try again.");
+        return 1;
+    }
+    let lock = match recovery::Lock::acquire() {
+        Ok(lock) => lock,
+        Err(error) => {
+            message(&error);
+            return 1;
+        }
+    };
+    // The started copy takes this lock at startup, so release it before starting the task or
+    // waiting on a message box; held, the new copy gives up after 10 seconds.
+    if installing {
+        let installed = crate::install::install(&user);
+        drop(lock);
+        return match installed {
+            Ok(dir) => {
+                if let Err(error) = crate::install::start_task() {
+                    message(&error);
+                }
+                message(&format!(
+                    "Omarchy Overlay is installed in {} and starts when {user} signs in.\r\nRemove it from Settings > Apps or the tray menu.",
+                    dir.display()
+                ));
+                0
+            }
+            Err(error) => {
+                message(&format!("Install failed: {error}"));
+                1
+            }
+        };
+    }
+    let mut errors = recovery::recover(directory).errors;
+    errors.extend(crate::install::remove(remove_settings.then_some(directory)));
+    drop(lock);
+    message(&if errors.is_empty() {
+        "Omarchy Overlay is uninstalled and the desktop is restored.".to_string()
+    } else {
+        format!("Uninstall finished with problems:\r\n{}", errors.join("\r\n"))
+    });
+    crate::install::remove_folder_after_exit();
+    i32::from(!errors.is_empty())
+}
+
 fn data_directory() -> PathBuf {
     std::env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
@@ -494,7 +582,11 @@ unsafe fn child(
 /// label in the theme's black, so on dark they stay unthemed (as before 0.21) and
 /// keep Omarchy Overlay's text colour. On a light palette every control uses the normal theme.
 unsafe fn theme_control(control: HWND, dark: bool) {
-    let style = crate::control_theme::dark_style(&class_of(control), GetWindowLongPtrW(control, GWL_STYLE) as u32, dark);
+    let style = crate::control_theme::dark_style(
+        &class_of(control),
+        GetWindowLongPtrW(control, GWL_STYLE) as u32,
+        dark,
+    );
     let (name, list) = match style {
         Some("") => (wide(""), wide("")),
         Some(name) => (wide(name), Vec::new()),
@@ -502,8 +594,16 @@ unsafe fn theme_control(control: HWND, dark: bool) {
     };
     windows_sys::Win32::UI::Controls::SetWindowTheme(
         control,
-        if name.is_empty() { null() } else { name.as_ptr() },
-        if list.is_empty() { null() } else { list.as_ptr() },
+        if name.is_empty() {
+            null()
+        } else {
+            name.as_ptr()
+        },
+        if list.is_empty() {
+            null()
+        } else {
+            list.as_ptr()
+        },
     );
 }
 unsafe fn class_of(hwnd: HWND) -> String {
@@ -521,7 +621,11 @@ unsafe fn theme_children(hwnd: HWND, dark: bool) {
     if hwnd.is_null() {
         return;
     }
-    let name = wide(if dark { "DarkMode_Explorer" } else { "Explorer" });
+    let name = wide(if dark {
+        "DarkMode_Explorer"
+    } else {
+        "Explorer"
+    });
     windows_sys::Win32::UI::Controls::SetWindowTheme(hwnd, name.as_ptr(), null());
     EnumChildWindows(hwnd, Some(each), isize::from(dark));
 }
@@ -529,6 +633,17 @@ unsafe fn shell(path: &Path, arguments: &str) -> bool {
     shell_in(path, arguments, None)
 }
 unsafe fn shell_in(path: &Path, arguments: &str, directory: Option<&Path>) -> bool {
+    if crate::launch_unelevated::process_elevated() {
+        // Admin mode never starts apps elevated; with no helper the launch fails.
+        let started = crate::launch_unelevated::shell_unelevated(path, arguments, directory);
+        if !started {
+            log(&format!("Could not start {} without elevation.", path.display()));
+        }
+        return started;
+    }
+    shell_direct(path, arguments, directory)
+}
+unsafe fn shell_direct(path: &Path, arguments: &str, directory: Option<&Path>) -> bool {
     let directory = directory.map(|p| wide(&p.to_string_lossy()));
     let arguments_wide = wide(arguments);
     let result = ShellExecuteW(
@@ -568,17 +683,26 @@ unsafe fn app_icon() -> HICON {
 
 unsafe fn about(owner: HWND) {
     let settings = match profile::settings() {
-        Some(folder) => format!("Settings folder (shared by every version):\r\n{}", folder.display()),
+        Some(folder) => format!(
+            "Settings folder (shared by every version):\r\n{}",
+            folder.display()
+        ),
         None => "Settings: not using a OVERLAY SETTINGS folder.".to_string(),
     };
-    let program = std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_default();
+    let program = std::env::current_exe()
+        .map(|p| p.display().to_string())
+        .unwrap_or_default();
     let tail = if ON_STICK.load(std::sync::atomic::Ordering::Relaxed) {
         "Runs from its folder on the stick; nothing is installed.\r\nUse \"Exit before removing the stick\" before pulling the drive."
     } else {
         "Runs from its folder; nothing is installed."
     };
-    let text = wide(&format!(concat!("Omarchy Overlay ", env!("CARGO_PKG_VERSION"),
-        "\r\nPersonal portable Windows desktop prototype.\r\n\r\nProgram: {}\r\n{}\r\n\r\n{}"), program, settings, tail));
+    let text =
+        wide(&format!(
+            concat!("Omarchy Overlay ", env!("CARGO_PKG_VERSION"),
+        "\r\nPersonal portable Windows desktop prototype.\r\n\r\nProgram: {}\r\n{}\r\n\r\n{}"),
+            program, settings, tail
+        ));
     let caption = wide("About Omarchy Overlay");
     let parameters = MSGBOXPARAMSW {
         cbSize: size_of::<MSGBOXPARAMSW>() as u32,
@@ -612,6 +736,13 @@ pub fn run() {
                 }
             }
             arguments.drain(..arguments.len().min(2));
+        }
+        if let Some((path, args, folder)) = crate::launch_unelevated::parse_helper_args(&arguments) {
+            // Started by an elevated instance through Explorer: open the item and exit.
+            std::process::exit(if shell_direct(&path, &args, folder.as_deref()) { 0 } else { 1 });
+        }
+        if matches!(arguments.first().map(String::as_str), Some("--install" | "--uninstall")) {
+            std::process::exit(install_command(&arguments, &directory));
         }
         if let [flag, path] = arguments.as_slice() {
             if flag == "--check-profile" {
@@ -712,10 +843,12 @@ pub fn run() {
         };
         let stick = executable.ancestors().last().is_some_and(|root| {
             // DRIVE_REMOVABLE
-            windows_sys::Win32::Storage::FileSystem::GetDriveTypeW(wide(&root.to_string_lossy()).as_ptr()) == 2
+            windows_sys::Win32::Storage::FileSystem::GetDriveTypeW(
+                wide(&root.to_string_lossy()).as_ptr(),
+            ) == 2
         });
         ON_STICK.store(stick, std::sync::atomic::Ordering::Relaxed);
-        let mut active_profile = match profile::find(&executable, &directory, explicit, stick) {
+        let mut active_profile = match profile::find(&executable, &directory, explicit) {
             profile::Found::Use(active) => active,
             profile::Found::Missing { folder, source } => {
                 let (text, buttons) = match &source {
@@ -726,7 +859,12 @@ pub fn run() {
                         "Omarchy Overlay keeps your settings in one folder that every version uses:\r\n{}\r\n\r\nThat folder does not exist and no earlier profile was found.\r\n\r\nOK: create the folder with default settings.\r\nCancel: exit without changing anything.",
                         folder.display()), MB_OKCANCEL),
                 };
-                let answer = MessageBoxW(null_mut(), wide(&text).as_ptr(), wide("Omarchy Overlay settings folder is missing").as_ptr(), buttons | MB_ICONWARNING | MB_SETFOREGROUND);
+                let answer = MessageBoxW(
+                    null_mut(),
+                    wide(&text).as_ptr(),
+                    wide("Omarchy Overlay settings folder is missing").as_ptr(),
+                    buttons | MB_ICONWARNING | MB_SETFOREGROUND,
+                );
                 let copy = match answer {
                     IDYES => source.as_deref(),
                     IDNO | IDOK => None,
@@ -737,8 +875,15 @@ pub fn run() {
                 };
                 match profile::create_settings(&folder, copy) {
                     Ok(path) => {
-                        log(&format!("Created settings folder {} from {}", folder.display(), copy.map_or("defaults".into(), |p| p.display().to_string())));
-                        profile::Active { path, id: Some(String::new()) }
+                        log(&format!(
+                            "Created settings folder {} from {}",
+                            folder.display(),
+                            copy.map_or("defaults".into(), |p| p.display().to_string())
+                        ));
+                        profile::Active {
+                            path,
+                            id: Some(String::new()),
+                        }
                     }
                     Err(error) => {
                         message(&format!("Could not create the settings folder:\r\n{error}"));
@@ -763,7 +908,6 @@ pub fn run() {
                 return;
             }
         };
-        let mastercam_fixed = config.force_mastercam_ignore();
         if let Err(error) = profile::backup_before_upgrade(&active_profile, &config) {
             message(&format!(
                 "Could not preserve the previous profile for rollback: {error}"
@@ -1242,6 +1386,13 @@ pub fn run() {
             let state = cell.borrow();
             let app = state.as_ref().unwrap();
             app.apply_own_appearance();
+            // The saved theme's Windows accent and background return with every start, since exit restores them.
+            appearance_effects::apply_theme_effects(
+                app.directory.clone(),
+                app.config.theme.clone(),
+                theme::current().dark,
+                theme::windows_accent(&app.config.theme, theme::current()),
+            );
             bar::start(
                 main,
                 &app.directory,
@@ -1273,11 +1424,6 @@ pub fn run() {
         }
         APP.with(|cell| {
             if let Some(app) = cell.borrow_mut().as_mut() {
-                if mastercam_fixed {
-                    app.save_config();
-                    log("Mastercam rule changed back to Ignore: Omarchy Overlay always leaves Mastercam alone.");
-                    app.show_feedback("Mastercam rule set back to Ignore (always)");
-                }
                 if app.config.start_tiling {
                     app.toggle();
                     log("Started with tiling on (asInvoker, no startup registration).");
@@ -1887,11 +2033,12 @@ impl App {
         }
         DeleteObject(old);
         self.apply_own_appearance();
-        if self.directory.join("windows-colors-restore.json").exists() {
-            if let Err(e) = windows_personalization::apply(&self.directory, theme::current().dark) {
-                log(&e)
-            }
-        }
+        appearance_effects::apply_theme_effects(
+            self.directory.clone(),
+            name.to_string(),
+            theme::current().dark,
+            theme::windows_accent(name, theme::current()),
+        );
         bar::appearance(self.config.bar_opacity);
         if self
             .directory
@@ -1925,17 +2072,28 @@ impl App {
         self.opacity
             .enforce_rules(|hwnd| can_change_opacity(&self.config, hwnd));
         let config = &self.config;
-        self.frames.poll(&frame_windows, |h| {
+        self.frames.poll(&frame_windows, foreground, |h| {
             let p = window_policy(config, h);
             let excluded = config
                 .excluded_processes
                 .iter()
                 .any(|e| e.eq_ignore_ascii_case(&process_name(h)));
             (p.mode != Mode::Ignore
-                && (p.coordinate_theme || p.material_explicit && p.backdrop != 0)
+                && (config.window_borders
+                    || p.coordinate_theme
+                    || p.material_explicit && p.backdrop != 0)
                 && !excluded
                 && !elevated(h))
-            .then_some((p.coordinate_theme, p.backdrop))
+            .then_some((
+                p.coordinate_theme,
+                // Borders alone must not apply the global material (pre-border behaviour).
+                if p.coordinate_theme || p.material_explicit {
+                    p.backdrop
+                } else {
+                    0
+                },
+                config.window_borders,
+            ))
         });
         let config = &self.config;
         self.opacity.poll(&windows, foreground, |h| {
@@ -2332,6 +2490,7 @@ impl App {
             let Some((_, _, area)) = group.first() else {
                 continue;
             };
+            let area = &layout::outer(*area, self.config.gap, self.config.outer_gap);
             let mode = self.layout_for_monitor(monitor as HMONITOR);
             if mode == "scrolling" {
                 self.tile_scrolling(monitor, &group, *area);
@@ -2705,7 +2864,9 @@ impl App {
             .map(|entry| {
                 if let Some(action) = &entry.action {
                     return match action {
-                        command_menu::Action::Command(_) => "Omarchy Overlay action — Enter to run".into(),
+                        command_menu::Action::Command(_) => {
+                            "Omarchy Overlay action — Enter to run".into()
+                        }
                         command_menu::Action::Window(task) => {
                             format!("Open window — {}", task.identity.label)
                         }
@@ -2794,6 +2955,11 @@ impl App {
         }
     }
     unsafe fn tray_menu(&mut self) {
+        let exe = std::env::current_exe().unwrap_or_default();
+        let install_items = crate::install::tray_install_items(
+            crate::install::admin_marker(&exe),
+            crate::install::is_installed(&exe),
+        );
         let menu = CreatePopupMenu();
         for (id, label) in [
             (
@@ -2816,11 +2982,16 @@ impl App {
             (6, "Open the 0.15 settings window"),
             (5, "About Omarchy Overlay"),
             (0, ""),
+            (8, "Install (admin)…"),
+            (9, "Uninstall…"),
             (7, "Exit before removing the stick"),
             (4, "Restore desktop and exit"),
         ] {
             if id == 7 && !ON_STICK.load(std::sync::atomic::Ordering::Relaxed) {
                 // Only offered when Omarchy Overlay runs from a removable drive.
+                continue;
+            }
+            if (id == 8 && !install_items.0) || (id == 9 && !install_items.1) {
                 continue;
             }
             if id == 0 {
@@ -2849,6 +3020,13 @@ impl App {
             4 => PostQuitMessage(0),
             5 => about(self.main),
             7 => exit_for_stick(),
+            8 | 9 => {
+                // The new process elevates itself and closes this copy before it changes anything.
+                let flag = if selected == 8 { "--install" } else { "--uninstall" };
+                if let Err(error) = std::process::Command::new(&exe).arg(flag).spawn() {
+                    message(&error.to_string());
+                }
+            }
             6 => {
                 crate::desktops::follow(self.main);
                 // K6: opens on the primary monitor like the other settings windows.

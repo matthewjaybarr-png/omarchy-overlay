@@ -2,7 +2,8 @@
 use super::*;
 const PROPERTY: &str = "OmarchyOverlay.WindowThemeOwner.v1";
 const FILE: &str = "window-theme-restore.json";
-const ATTRS: [u32; 5] = [20, 34, 35, 36, 38];
+// 33 corner preference (1 = square), 34 border color: Hyprland's square, bordered windows.
+const ATTRS: [u32; 6] = [20, 33, 34, 35, 36, 38];
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Original {
@@ -11,6 +12,12 @@ struct Original {
     marker: usize,
     before: Vec<(u32, u32)>,
     acceptable: Vec<Vec<(u32, u32)>>,
+}
+// DWM sets the border, caption and text colors but cannot read them back; unset they are DWMWA_COLOR_DEFAULT.
+const WRITE_ONLY: [u32; 3] = [34, 35, 36];
+const COLOR_DEFAULT: u32 = 0xFFFF_FFFF;
+fn before_value(attribute: u32, read: Option<u32>) -> Option<u32> {
+    read.or(WRITE_ONLY.contains(&attribute).then_some(COLOR_DEFAULT))
 }
 unsafe fn read(h: HWND, attribute: u32) -> Option<u32> {
     let mut value = 0;
@@ -38,6 +45,14 @@ impl Original {
         }
         let mut ok = true;
         for &(attribute, before) in &self.before {
+            if WRITE_ONLY.contains(&attribute) {
+                // Unreadable, so an external change cannot be told apart; the recorded value wins,
+                // but only where we changed it, so an app's own colors are never reset.
+                if crate::frame_colors::write_only_touched(&self.acceptable, attribute, before) {
+                    ok &= write(h, attribute, before);
+                }
+                continue;
+            }
             let current = read(h, attribute);
             if current.is_none() {
                 // A transient DWM failure must not discard the only undo record.
@@ -91,7 +106,12 @@ impl Engine {
             write_json_atomic(&self.path, &self.originals.values().collect::<Vec<_>>())
         }
     }
-    unsafe fn apply(&mut self, h: HWND, colors: bool, material: u32) -> Result<(), String> {
+    unsafe fn apply(
+        &mut self,
+        h: HWND,
+        (colors, material, borders): (bool, u32, bool),
+        focused: bool,
+    ) -> Result<(), String> {
         if self.blocked {
             return Err("Window-frame recovery is pending; frame changes were skipped.".into());
         }
@@ -103,7 +123,7 @@ impl Engine {
             self.originals.remove(&key);
             let before = ATTRS
                 .iter()
-                .filter_map(|&a| read(h, a).map(|v| (a, v)))
+                .filter_map(|&a| before_value(a, read(h, a)).map(|v| (a, v)))
                 .collect::<Vec<_>>();
             if before.is_empty() {
                 return Ok(());
@@ -140,6 +160,9 @@ impl Engine {
                     a,
                     match a {
                         20 if colors => u32::from(p.dark),
+                        33 if borders => 1,
+                        34 if borders && focused => p.accent,
+                        34 if borders => p.border,
                         34 if colors => p.accent,
                         35 if colors => p.background,
                         36 if colors => p.text,
@@ -149,7 +172,8 @@ impl Engine {
                 )
             })
             .collect::<Vec<_>>();
-        let changed = original.acceptable.last() != Some(&desired);
+        let previous = original.acceptable.last().cloned();
+        let changed = previous.as_ref() != Some(&desired);
         if changed {
             let original = self.originals.get_mut(&key).unwrap();
             original.acceptable = original
@@ -167,7 +191,13 @@ impl Engine {
             }
         }
         for &(a, v) in &desired {
-            if read(h, a) != Some(v) && !write(h, a, v) {
+            let stale = if WRITE_ONLY.contains(&a) {
+                let before = self.originals[&key].before.iter().find(|o| o.0 == a).map_or(v, |o| o.1);
+                crate::frame_colors::write_only_stale(previous.as_deref(), a, before, v)
+            } else {
+                read(h, a) != Some(v)
+            };
+            if stale && !write(h, a, v) {
                 log("An app declined a supported window-frame attribute; its client rendering was left native.");
             }
         }
@@ -176,7 +206,8 @@ impl Engine {
     pub(super) unsafe fn poll(
         &mut self,
         windows: &[HWND],
-        policy: impl Fn(HWND) -> Option<(bool, u32)>,
+        focused: HWND,
+        policy: impl Fn(HWND) -> Option<(bool, u32, bool)>,
     ) {
         let old_count = self.originals.len();
         self.originals.retain(|_, o| o.matches());
@@ -197,8 +228,8 @@ impl Engine {
             }
         }
         for &h in windows {
-            if let Some((colors, material)) = policy(h) {
-                if let Err(e) = self.apply(h, colors, material) {
+            if let Some(frame) = policy(h) {
+                if let Err(e) = self.apply(h, frame, h == focused) {
                     log(&e)
                 }
             }
@@ -269,4 +300,16 @@ pub(super) unsafe fn own(h: HWND, material: &str) {
         RemovePropW(h, wide(BACKDROP_PROPERTY).as_ptr());
     }
     InvalidateRect(h, null(), 1);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unreadable_frame_colors_start_from_the_dwm_default() {
+        assert_eq!(before_value(34, None), Some(COLOR_DEFAULT));
+        assert_eq!(before_value(36, None), Some(COLOR_DEFAULT));
+        assert_eq!(before_value(33, None), None);
+        assert_eq!(before_value(34, Some(7)), Some(7));
+    }
 }

@@ -246,7 +246,6 @@ unsafe fn identity(hwnd: HWND, title: &str) -> Identity {
         "outlook.exe" | "olk.exe" => Some("Outlook"),
         "winword.exe" => Some("Word"),
         "powerpnt.exe" => Some("PowerPoint"),
-        "mastercam.exe" => Some("Mastercam"),
         "notepad.exe" => Some("Notepad"),
         "powershell.exe" | "pwsh.exe" => Some("PowerShell"),
         "windowsterminal.exe" => Some("Terminal"),

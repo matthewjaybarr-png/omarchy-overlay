@@ -438,10 +438,10 @@ unsafe fn layout(hwnd: HWND) {
     SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE);
 }
 
-/// Rounded corners and an accent border from Windows 11; the theme can change while open.
+/// Square corners and an accent border from Windows 11; the theme can change while open.
 unsafe fn style(hwnd: HWND) {
     let palette = theme::current();
-    let round = DWMWCP_ROUND;
+    let round = DWMWCP_DONOTROUND;
     let framed = DwmSetWindowAttribute(
         hwnd,
         DWMWA_WINDOW_CORNER_PREFERENCE as u32,
@@ -654,10 +654,8 @@ unsafe fn paint(hwnd: HWND, target: HDC) {
                 bottom: y + unit(ROW),
             };
             if selected {
-                let region = CreateRoundRectRgn(r.left, r.top, r.right, r.bottom, unit(8), unit(8));
-                SetDCBrushColor(hdc, p.surface);
-                FillRgn(hdc, region, GetStockObject(DC_BRUSH) as HBRUSH);
-                DeleteObject(region as HGDIOBJ);
+                SetDCBrushColor(hdc, crate::material::selection(p.border, p.surface, p.accent));
+                FillRect(hdc, &r, GetStockObject(DC_BRUSH) as HBRUSH);
             }
             let color = if selected { p.accent } else { p.text };
             let mut x = unit(18);
@@ -806,15 +804,18 @@ unsafe fn paint(hwnd: HWND, target: HDC) {
                 DT_LEFT | DT_END_ELLIPSIS,
             );
         }
+        // Walker's 2 px accent border: DWM draws the outer pixel when it frames the window.
+        SetDCBrushColor(hdc, p.accent);
+        let inner = RECT { left: 1, top: 1, right: client.right - 1, bottom: client.bottom - 1 };
+        FrameRect(hdc, &inner, GetStockObject(DC_BRUSH) as HBRUSH);
         if !framed {
-            SetDCBrushColor(hdc, p.accent);
             FrameRect(hdc, &client, GetStockObject(DC_BRUSH) as HBRUSH);
         }
     });
     if see_through && !bits.is_null() {
         GdiFlush();
         let p = theme::current();
-        let alpha = crate::material::tint_alpha(p.background, &[p.text, p.muted, p.accent]);
+        let alpha = crate::material::menu_alpha(p.background, &[p.text, p.muted, p.accent]);
         let count = (client.right * client.bottom) as usize;
         let pixels = std::slice::from_raw_parts_mut(bits as *mut u32, count);
         crate::material::apply(pixels, p.background, alpha);

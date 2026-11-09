@@ -24,12 +24,12 @@ public static class RecoverTest {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main",null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr hwnd);
  public static IntPtr Help() { return FindWindow("OmarchyOverlay.Help",null); }
  public static IntPtr Launcher() { return FindWindow("OmarchyOverlay.Launcher",null); }
@@ -106,7 +106,7 @@ function Check([string]$name,[bool]$ok,$detail=''){$results.Add(@{name=$name;pas
 function Bounds($hwnd){$r=[RecoverTest+RECT]::new();[void][RecoverTest]::GetWindowRect($hwnd,[ref]$r);return "$($r.l),$($r.t),$($r.r),$($r.b)"}
 function Click($hwnd,[int]$id){[void][RecoverTest]::PostMessage($hwnd,0x111,[IntPtr]$id,[IntPtr]::Zero);Pump}
 # 0.17 turns tiling on at start by default (K7); these tests expect a paused start unless they set start_tiling themselves.
-function Seed-Paused([string]$folder){$path=Join-Path $folder 'keyspace-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
+function Seed-Paused([string]$folder){$path=Join-Path $folder 'overlay-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
 function Start-App([string]$folder){
     Seed-Paused $folder
     $process=Start-Process (Join-Path $folder 'OmarchyOverlay.exe') -PassThru
@@ -117,7 +117,7 @@ function Start-App([string]$folder){
     Pump 700;return $process
 }
 function Stop-App($process){[void][RecoverTest]::PostMessage($controllerWindow,0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
-function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'keyspace-profile.json')|ConvertFrom-Json}
+function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 
 function State {
  $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops'
@@ -149,21 +149,21 @@ try {
  Check 'No existing controller to disturb' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
  $folder=Join-Path $root ('custom-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory "$folder\tools" -Force|Out-Null
  Copy-Item "$root\OmarchyOverlay.exe" "$folder\OmarchyOverlay.exe"
- $profilePath=Join-Path $folder 'keyspace-profile.json'
- [IO.File]::WriteAllText($profilePath,'{"format":"keyspace-profile","version":1,"id":"custom-test","settings":{"cycle_workspace_shortcut":"Ctrl+Alt+F11"}}')
+ $profilePath=Join-Path $folder 'overlay-profile.json'
+ [IO.File]::WriteAllText($profilePath,'{"format":"overlay-profile","version":1,"id":"custom-test","settings":{"cycle_workspace_shortcut":"Ctrl+Alt+F11"}}')
  $fixture='using System;using System.IO;public class CustomFixture{public static void Main(string[] args){File.WriteAllText(args[0],Environment.CurrentDirectory);}}'
  Add-Type -TypeDefinition $fixture -OutputAssembly "$folder\tools\fixture.exe" -OutputType WindowsApplication
  $app=Start-App $folder
- Check '0.10 profile receives a separate rollback backup' (Test-Path "$folder\keyspace-profile.pre-0.11.json")
+ Check '0.10 profile receives a separate rollback backup' (Test-Path "$folder\overlay-profile.pre-0.11.json")
  Click $controllerWindow 5;$help=[RecoverTest]::Help()
  Check 'Shortcut editor opens with all actions' ([RecoverTest]::SendMessage([RecoverTest]::GetDlgItem($help,501),0x18b,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32() -ge 39)
  [void][RecoverTest]::SendMessage([RecoverTest]::GetDlgItem($help,501),0x186,[IntPtr]1,[IntPtr]::Zero)
  Click $help (501+(1 -shl 16))
  Input-Text $help 502 'Ctrl+Alt+F10';Click $help 503
  Check 'Individual launcher shortcut saves' ((Read-Profile $folder).settings.shortcut_overrides.launcher -eq 'Ctrl+Alt+F10')
- # 0.16: the Launcher action opens the Keyspace menu.
+ # 0.16: the Launcher action opens the Omarchy Overlay menu.
  [RecoverTest]::Shortcut(0x79);Pump 700
- Check 'Actual custom global key opens the Keyspace menu' ([RecoverTest]::IsWindowVisible([RecoverTest]::Overlay()))
+ Check 'Actual custom global key opens the Omarchy Overlay menu' ([RecoverTest]::IsWindowVisible([RecoverTest]::Overlay()))
  [RecoverTest]::CloseMenu();Pump 300
  Input-Text $help 502 'Ctrl+Alt+T';Click $help 503
  Check 'Internal collision keeps previous binding' ([RecoverTest]::ControlText($help,507) -match 'Already assigned' -and (Read-Profile $folder).settings.shortcut_overrides.launcher -eq 'Ctrl+Alt+F10')
@@ -176,7 +176,7 @@ try {
  Input-Text $help 502 'Ctrl+Alt+F10';Click $help 503
  Capture $help 'mb-shortcuts-editor.png'
  [void][RecoverTest]::PostMessage($help,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
- # 0.17 (3.3): custom apps are the "Custom apps" page of the Keyspace menu. The menu is drawn
+ # 0.17 (3.3): custom apps are the "Custom apps" page of the Omarchy Overlay menu. The menu is drawn
  # by hand; its window name is "<page> | <highlighted row> | <detail>" (see overlay.rs).
  Click $controllerWindow 2;Click ([RecoverTest]::Launcher()) 16;Pump 400
  Check 'Visible Manage apps button opens the Custom apps page' ([RecoverTest]::IsWindowVisible((Menu)) -and (Menu-Name) -like 'Custom apps*') (Menu-Name)

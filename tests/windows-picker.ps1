@@ -10,7 +10,7 @@ $originalTaskbar = $null
 $configTouched = $false
 $configPath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'OmarchyOverlay\config.json'
 $originalConfig = if (Test-Path $configPath) { [IO.File]::ReadAllText($configPath) } else { $null }
-$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-mb-keyspace.json')
+$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-0.10.json')
 $originalUpgradeBackup=if(Test-Path $upgradeBackupPath){[IO.File]::ReadAllBytes($upgradeBackupPath)}else{$null}
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -25,12 +25,12 @@ public static class Desktop {
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string name, string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main", null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Launcher() { return FindWindow("OmarchyOverlay.Launcher", null); }
   public static IntPtr Bar() { return FindWindow("OmarchyOverlay.TopBar", null); }
   public static IntPtr Appearance() { return FindWindow("OmarchyOverlay.Appearance", null); }
@@ -192,27 +192,27 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  $list=[Desktop]::GetDlgItem($picker,11)
  Check 'Larger app picker opens' ([Desktop]::IsWindowVisible($picker))
  # Add a shortcut after startup and discover it through Refresh.
- $shortcut=Join-Path ([Environment]::GetFolderPath('Programs')) ('Keyspace Picker Zebra '+[Guid]::NewGuid().ToString('N')+'.lnk')
+ $shortcut=Join-Path ([Environment]::GetFolderPath('Programs')) ('Kestrel Picker Zebra '+[Guid]::NewGuid().ToString('N')+'.lnk')
  $link=(New-Object -ComObject WScript.Shell).CreateShortcut($shortcut);$link.TargetPath=Join-Path $env:SystemRoot 'System32\cmd.exe';$link.Arguments='/d /c echo launched>"'+$marker+'"';$link.Save()
  Click $picker 14;Input-Text $picker 10 'kpz';Wait-Desktop 400
- Check 'Fuzzy abbreviation finds newly refreshed shortcut' ([PickerTest]::Item($list,0).Contains('Keyspace Picker Zebra'))
+ Check 'Fuzzy abbreviation finds newly refreshed shortcut' ([PickerTest]::Item($list,0).Contains('Kestrel Picker Zebra'))
  Click $picker 13
  Check 'Pin is visible beside an app' ([PickerTest]::Item($list,0).StartsWith([string][char]0x2605))
  Check 'Favorite preference saves locally' (Test-Path $historyPath)
  Input-Text $picker 10 '';Wait-Desktop 250
- Check 'Favorite rises to first entry with empty search' ([PickerTest]::Item($list,0).Contains('Keyspace Picker Zebra'))
- [PickerTest]::Top($picker);Wait-Desktop 250;Capture $picker 'keyspace-app-picker.png'
+ Check 'Favorite rises to first entry with empty search' ([PickerTest]::Item($list,0).Contains('Kestrel Picker Zebra'))
+ [PickerTest]::Top($picker);Wait-Desktop 250;Capture $picker 'overlay-app-picker.png'
  Click $picker 12
  $launchDeadline=[DateTime]::UtcNow.AddSeconds(10)
  do{Wait-Desktop 100}while(-not (Test-Path $marker) -and [DateTime]::UtcNow -lt $launchDeadline)
  Check 'Visible Open app button launches the selected shortcut' (Test-Path $marker)
  Click $main 2;Input-Text $picker 10 '';Wait-Desktop 300
- Check 'Recently launched app stays prominent' ([PickerTest]::Item($list,0).Contains('Keyspace Picker Zebra'))
+ Check 'Recently launched app stays prominent' ([PickerTest]::Item($list,0).Contains('Kestrel Picker Zebra'))
  # Remove the disposable app before capturing a representative app-picker view.
  Remove-Item $shortcut;$shortcut=$null;Click $main 2;Click $picker 14
  Input-Text $picker 10 'Calculator';Wait-Desktop 200;Click $picker 13
  Input-Text $picker 10 '';Wait-Desktop 200;[PickerTest]::Top($picker);Wait-Desktop 200
- Capture $picker 'keyspace-app-picker.png'
+ Capture $picker 'overlay-app-picker.png'
  # Verify a packaged application absent from shortcut-only discovery.
  Check 'No existing Calculator window to disturb' ([PickerTest]::CalculatorWindow() -eq [IntPtr]::Zero)
  Input-Text $picker 10 'Calculator';Wait-Desktop 300
@@ -227,13 +227,13 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Click $main 14;$settings=[PickerTest]::BarSettings()
  Input-Text $settings 201 'sound';Input-Text $settings 202 '';Input-Text $settings 203 '';Click $settings 211
  [void][Desktop]::SendMessage($settings,0x10,[IntPtr]::Zero,[IntPtr]::Zero);Wait-Desktop 1800
- $bar=[Desktop]::Bar();$r=Bounds $bar;Capture $bar 'keyspace-volume.png'
+ $bar=[Desktop]::Bar();$r=Bounds $bar;Capture $bar 'overlay-volume.png'
  # Wheel uses screen coordinates; middle-click uses client coordinates.
  [void][Desktop]::PostMessage($bar,0x20a,[IntPtr](120 -shl 16),[IntPtr](($r[0]+35)+(($r[1]+15) -shl 16)));Wait-Desktop 800
  Check 'Wheel over sound changes actual Windows master volume' ([Math]::Abs([PickerTest]::Volume()-0.44) -lt 0.015)
  [void][Desktop]::PostMessage($bar,0x208,[IntPtr]::Zero,[IntPtr](35+(15 -shl 16)));Wait-Desktop 1400
  Check 'Middle-click over sound mutes Windows audio' ([PickerTest]::Muted())
- Capture $bar 'keyspace-mute.png'
+ Capture $bar 'overlay-mute.png'
  [void][Desktop]::PostMessage($main,0x312,[IntPtr]105,[IntPtr]::Zero)
  $exitDeadline=[DateTime]::UtcNow.AddSeconds(8)
  do{Wait-Desktop 100}while(-not $app.HasExited -and [DateTime]::UtcNow -lt $exitDeadline)
@@ -242,7 +242,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  $deadline=[DateTime]::UtcNow.AddSeconds(30)
  do{Wait-Desktop 200;$main=[Desktop]::MainWindow()}while(-not [Desktop]::Ready($main)-and [DateTime]::UtcNow -lt $deadline);[Desktop]::CloseMenu()
  Click $main 2;$picker=[Desktop]::Launcher();$list=[Desktop]::GetDlgItem($picker,11)
- Check 'Favorite app persists after restarting Keyspace' ([PickerTest]::Item($list,0).Contains('Calculator') -and [PickerTest]::Item($list,0).StartsWith([string][char]0x2605))
+ Check 'Favorite app persists after restarting Omarchy Overlay' ([PickerTest]::Item($list,0).Contains('Calculator') -and [PickerTest]::Item($list,0).StartsWith([string][char]0x2605))
 } catch {$results.Add(@{name='Picker/audio harness';passed=$false;detail=$_.Exception.ToString()})}
 finally {
  if($null -ne $app -and -not $app.HasExited){[void][Desktop]::PostMessage([Desktop]::MainWindow(),0x312,[IntPtr]105,[IntPtr]::Zero);Wait-Desktop 1400}

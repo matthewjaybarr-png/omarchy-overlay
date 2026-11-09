@@ -10,7 +10,7 @@ $originalTaskbar = $null
 $configTouched = $false
 $configPath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'OmarchyOverlay\config.json'
 $originalConfig = if (Test-Path $configPath) { [IO.File]::ReadAllText($configPath) } else { $null }
-$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-mb-keyspace.json')
+$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-0.10.json')
 $originalUpgradeBackup=if(Test-Path $upgradeBackupPath){[IO.File]::ReadAllBytes($upgradeBackupPath)}else{$null}
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -27,12 +27,12 @@ public static class Desktop {
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string name, string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main", null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Launcher() { return FindWindow("OmarchyOverlay.Launcher", null); }
   public static IntPtr Bar() { return FindWindow("OmarchyOverlay.TopBar", null); }
   public static IntPtr Appearance() { return FindWindow("OmarchyOverlay.Appearance", null); }
@@ -156,7 +156,7 @@ try {
     $principal = [Security.Principal.WindowsPrincipal]::new($identity)
     Check 'Runs without an administrator token' (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) $identity.Name
     $existing = [Desktop]::MainWindow()
-    Check 'No existing Keyspace instance to disturb' ($existing -eq [IntPtr]::Zero)
+    Check 'No existing Omarchy Overlay instance to disturb' ($existing -eq [IntPtr]::Zero)
     # Run against defaults; restore the user's original preferences in finally.
     [IO.Directory]::CreateDirectory((Split-Path $configPath)) | Out-Null
     $fixtureExcluded=@('Taskmgr.exe','mstsc.exe','msrdc.exe','ApplicationFrameHost.exe','vmconnect.exe')+@(Get-Process | Where-Object {$_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId -and $_.ProcessName -ne 'powershell'} | ForEach-Object {$_.ProcessName+'.exe'} | Select-Object -Unique)
@@ -166,7 +166,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     $originalArea = [Desktop]::WorkArea()
     $originalTaskbar = [Desktop]::TaskbarState()
     $startMenu = [Environment]::GetFolderPath('Programs')
-    $shortcut = Join-Path $startMenu ("Keyspace Test Launcher " + [Guid]::NewGuid().ToString() + '.lnk')
+    $shortcut = Join-Path $startMenu ("Omarchy Overlay Test Launcher " + [Guid]::NewGuid().ToString() + '.lnk')
     $link = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut)
     $link.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
     $link.Arguments = '/d /c echo launched>"' + $marker + '"'
@@ -174,12 +174,12 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     if (Test-Path $marker) { Remove-Item $marker }
     for ($i=0; $i -lt 3; $i++) {
         $form = [System.Windows.Forms.Form]::new()
-        $form.Text = "Keyspace test window $($i+1)"
+        $form.Text = "Omarchy Overlay test window $($i+1)"
         $form.StartPosition = 'Manual'
         $form.SetBounds((120 + $i*100), (120 + $i*70), 560, 380)
         $form.BackColor = [System.Drawing.Color]::FromArgb(24 + $i*12, 32 + $i*10, 46 + $i*10)
         $label = [System.Windows.Forms.Label]::new()
-        $label.Text = "WINDOW $($i+1)`r`n`r`nDisposable Keyspace test fixture"
+        $label.Text = "WINDOW $($i+1)`r`n`r`nDisposable Omarchy Overlay test fixture"
         $label.ForeColor = [System.Drawing.Color]::White
         $label.Font = [System.Drawing.Font]::new('Segoe UI', 20)
         $label.SetBounds(24,24,500,160)
@@ -195,13 +195,13 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
         Wait-Desktop 250
         $main = [Desktop]::MainWindow()
     } while ((-not [Desktop]::Ready($main)) -and -not $app.HasExited -and [DateTime]::UtcNow -lt $deadline)
-    Check 'Portable executable opens the Keyspace menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay())) "Process exited: $($app.HasExited)"
+    Check 'Portable executable opens the Omarchy Overlay menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay())) "Process exited: $($app.HasExited)"
     Check 'The 0.15 dashboard stays hidden at startup' (-not [Desktop]::IsWindowVisible($main))
     [Desktop]::CloseMenu()
-    # Keyspace may still be finishing startup, so allow a few seconds for the posted Escape.
+    # Omarchy Overlay may still be finishing startup, so allow a few seconds for the posted Escape.
     $closeDeadline = [DateTime]::UtcNow.AddSeconds(5)
     do { Wait-Desktop 200 } while ([Desktop]::IsWindowVisible([Desktop]::Overlay()) -and [DateTime]::UtcNow -lt $closeDeadline)
-    Check 'Escape closes the Keyspace menu' (-not [Desktop]::IsWindowVisible([Desktop]::Overlay()))
+    Check 'Escape closes the Omarchy Overlay menu' (-not [Desktop]::IsWindowVisible([Desktop]::Overlay()))
     Wait-Desktop 1200
     $bar = [Desktop]::Bar()
     Check 'Top bar opens without elevation' ($bar -ne [IntPtr]::Zero -and [Desktop]::IsWindowVisible($bar))
@@ -212,7 +212,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     [void][Desktop]::PostMessage($bar, 0x0202, [IntPtr]::Zero, [IntPtr](20 + (10 -shl 16)))
     Wait-Desktop 400
     $launcher = [Desktop]::Launcher()
-    Check 'Clicking MENU opens the Keyspace menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
+    Check 'Clicking MENU opens the Omarchy Overlay menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
     [Desktop]::CloseMenu()
     Wait-Desktop 300
     # The tray's "Open the 0.15 settings window" shows the same dashboard.
@@ -244,7 +244,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     [void][Desktop]::SendMessage($main,0x0115,[IntPtr]6,[IntPtr]::Zero)
     Wait-Desktop 200
     foreach ($entry in @(
-        # 0.17: layouts, bar items and custom apps are pages of the Keyspace menu (Keyspace.Overlay).
+        # 0.17: layouts, bar items and custom apps are pages of the Omarchy Overlay menu (OverlayApp.Overlay).
         @(29,'OmarchyOverlay.Overlay'), @(30,'OmarchyOverlay.Overlay'),
         @(31,'OmarchyOverlay.AppearanceProfiles'), @(32,'OmarchyOverlay.AppearanceOptions'),
         @(33,'OmarchyOverlay.AppRules'), @(34,'OmarchyOverlay.Overlay'), @(35,'OmarchyOverlay.Profiles')
@@ -263,7 +263,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     $launcher=[Desktop]::Launcher();$searchDeadline=[DateTime]::UtcNow.AddSeconds(5)
     while(-not [Desktop]::IsWindowVisible($launcher) -and [DateTime]::UtcNow -lt $searchDeadline){Wait-Desktop 100;$launcher=[Desktop]::Launcher()}
     Check 'Dashboard opens command search' ([Desktop]::IsWindowVisible($launcher))
-    # 0.17: the search's custom-apps button opens the Custom apps page of the Keyspace menu.
+    # 0.17: the search's custom-apps button opens the Custom apps page of the Omarchy Overlay menu.
     Click $launcher 16
     Wait-Desktop 800
     $editor = [Desktop]::FindWindow('OmarchyOverlay.Overlay', [System.Management.Automation.Language.NullString]::Value)
@@ -323,7 +323,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Wait-Desktop 1000
     Check 'Growing the main pane updates the stack' (((Bounds $forms[0].Handle) -join ',') -ne ($beforeResize -join ','))
     $newForm = [System.Windows.Forms.Form]::new()
-    $newForm.Text = 'Keyspace temporary new-window fixture'
+    $newForm.Text = 'Omarchy Overlay temporary new-window fixture'
     $newForm.StartPosition = 'Manual'
     $newForm.SetBounds(250,250,500,350)
     $newForm.Show()
@@ -337,7 +337,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Wait-Desktop 450
     [Desktop]::Shortcut(0x20)
     Wait-Desktop 500
-    Check 'Ctrl+Alt+Space opens the Keyspace menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
+    Check 'Ctrl+Alt+Space opens the Omarchy Overlay menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
     [Desktop]::CloseMenu()
     Wait-Desktop 300
     # The 0.15 search window is still reachable from the dashboard.
@@ -352,7 +352,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Wait-Desktop 200
     $matches = [Desktop]::SendMessage($list, 0x018b, [IntPtr]::Zero, [IntPtr]::Zero).ToInt32()
     Check 'Launcher filters installed app entries' ($matches -ge 1 -and $matches -le 3) $matches
-    [void][Desktop]::SendText($edit, 0x000c, [IntPtr]::Zero, 'NoSuchKeyspaceApp_87341')
+    [void][Desktop]::SendText($edit, 0x000c, [IntPtr]::Zero, 'NoSuchApp_87341')
     Wait-Desktop 150
     $matches = [Desktop]::SendMessage($list, 0x018b, [IntPtr]::Zero, [IntPtr]::Zero).ToInt32()
     Check 'Launcher handles an empty search' ($matches -eq 1) $matches
@@ -373,7 +373,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     # The 0.15 search window shares the app list, so the picker rescans the Start menu first.
     $opened = [Diagnostics.Stopwatch]::StartNew()
     do { Wait-Desktop 50 } while (-not [Desktop]::IsWindowVisible($picker) -and $opened.ElapsedMilliseconds -lt 5000)
-    Check 'Bar launcher opens the Keyspace app picker' ([Desktop]::IsWindowVisible($picker)) ("opened after $($opened.ElapsedMilliseconds) ms")
+    Check 'Bar launcher opens the Omarchy Overlay app picker' ([Desktop]::IsWindowVisible($picker)) ("opened after $($opened.ElapsedMilliseconds) ms")
     foreach ($c in ([IO.Path]::GetFileNameWithoutExtension($shortcut)).Substring(0, 31).ToCharArray()) {
         [void][Desktop]::PostMessage($picker, 0x0102, [IntPtr][int]$c, [IntPtr]::Zero)
     }
@@ -450,7 +450,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Click $settings 50
     $exe=([Diagnostics.Process]::GetCurrentProcess()).ProcessName+'.exe'
     Input-Text $settings 44 $exe
-    Input-Text $settings 45 'Keyspace test window 1'
+    Input-Text $settings 45 'Omarchy Overlay test window 1'
     Choose $settings 47 1
     Choose $settings 48 1
     Click $settings 51
@@ -458,7 +458,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Check 'Floating app rule restores the original window placement' (((Bounds $forms[0].Handle) -join ',') -eq ($originals[0] -join ','))
     Check 'Native-opacity rule restores an already faded window' (-not [Desktop]::Layered($forms[0].Handle))
     $profile=Get-Content -Raw $configPath | ConvertFrom-Json
-    Check 'App rule is saved with its title filter' (@($profile.rules).Count -eq 1 -and $profile.rules[0].title_contains -eq 'Keyspace test window 1')
+    Check 'App rule is saved with its title filter' (@($profile.rules).Count -eq 1 -and $profile.rules[0].title_contains -eq 'Omarchy Overlay test window 1')
     Select-Rule $settings
     Choose $settings 47 0
     Choose $settings 49 1
@@ -496,9 +496,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Click $settings 64
     Click $settings 54
     $profile=Get-Content -Raw $configPath | ConvertFrom-Json
-    Check 'Work starters include Edge Explorer Excel and Outlook variants' (@($profile.rules).Count -eq 7)
-    $cad=@($profile.rules | Where-Object executable -eq 'Mastercam.exe')[0]
-    Check 'CAD starter keeps placement and opacity untouched' ($cad.mode -eq 'ignore' -and -not $cad.allow_opacity)
+    Check 'Work starters include Edge Explorer Excel and Outlook variants' (@($profile.rules).Count -eq 5) (@($profile.rules).executable -join ',')
     while(@((Get-Content -Raw $configPath | ConvertFrom-Json).rules).Count -gt 0) {Select-Rule $settings; Click $settings 52}
     [void][Desktop]::SendMessage($settings,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
     [void][Desktop]::SendMessage($launcher, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)
@@ -535,7 +533,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Wait-Desktop 1800
     $main = [Desktop]::MainWindow()
     Check 'Starts when the Windows taskbar was already auto-hidden' ($main -ne [IntPtr]::Zero)
-    Check 'Bar opacity setting survives restarting Keyspace' ([Desktop]::Alpha([Desktop]::Bar()) -eq 204) ([Desktop]::Alpha([Desktop]::Bar()))
+    Check 'Bar opacity setting survives restarting Omarchy Overlay' ([Desktop]::Alpha([Desktop]::Bar()) -eq 204) ([Desktop]::Alpha([Desktop]::Bar()))
     [void][Desktop]::PostMessage($main, 0x0111, [IntPtr]7, [IntPtr]::Zero)
     Wait-Desktop 800
     Check 'Can show an originally auto-hidden taskbar' ([Desktop]::TaskbarState() -eq 0)

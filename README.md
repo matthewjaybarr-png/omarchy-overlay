@@ -6,9 +6,11 @@ A keyboard-first tiling window manager for Windows 11, inspired by the
 > **Not affiliated with Omarchy or its authors.** It's an independent project
 > that brings an Omarchy-style workflow to Windows.
 
-**Status: early.** This is version 0.1.0. An installer that runs with
-administrator rights is planned but not built yet. For now the program runs
-from its own folder, with no installation.
+**Status: early.** This is version 0.1.0. It comes in two editions built from the
+same exe: **Standard** runs from its own folder with no installation and no
+administrator rights; **Admin** installs itself and runs elevated.
+Pick Standard on a PC where you are not an administrator, or to try it out. Pick
+Admin on your own PC when its keys must also work in apps running as administrator.
 
 ## What it does
 
@@ -18,7 +20,8 @@ from its own folder, with no installation.
   actions, defined in `config\binds.conf`.
 - **Top bar:** Windows virtual desktops as workspaces, the active app, a clock,
   a tray and modules.
-- **Themes:** palettes such as Neon Ridge, Paper and Gruvbox, plus Mica and
+- **Themes:** every Omarchy theme (Neon Ridge, Tokyo Night, Catppuccin,
+  Gruvbox, Nord and more) built in, plus Mica and
   Acrylic materials and window opacity. It can apply the theme to Windows'
   own settings and puts the originals back on exit.
 - **Recovery:** if the program exits or crashes, it restores the taskbar,
@@ -36,12 +39,30 @@ from its own folder, with no installation.
 
 Its logs and state are kept in `%LOCALAPPDATA%\OmarchyOverlay`.
 
+### Admin edition
+
+The Admin release has an `edition-admin` file beside the exe, which adds
+**Install (admin)…** to the tray menu. Installing asks for administrator rights once, then:
+
+- copies the exe, `fonts` and `RECOVER.cmd` to `%ProgramFiles%\OmarchyOverlay`;
+- adds a logon task, **Omarchy Overlay**, that starts it elevated for the user who
+  installed it, so its keys also work in apps running as administrator;
+- adds a Start menu shortcut that runs that task, and an entry in **Settings > Apps**.
+
+Apps you start from it still open without administrator rights.
+**Uninstall…** in the tray (or Settings > Apps) restores the desktop and removes all
+of it. Settings in `%LOCALAPPDATA%\OmarchyOverlay` are kept unless you run
+`OmarchyOverlay.exe --uninstall --remove-settings`. From a prompt:
+`OmarchyOverlay.exe --install` or `OmarchyOverlay.exe --uninstall`.
+
 ### Keys
 
 - **Setup > Keymap** chooses **Super keys and Ctrl+Alt keys** (default),
   **Super keys only (Omarchy laptop)** or **Ctrl+Alt keys only**.
-- Super keys come from `config\binds.conf`. Omarchy Overlay refuses plain Alt keys
-  (many programs use them), Super + L and Ctrl + Alt + Delete.
+- Super keys come from `config\binds.conf`. Omarchy Overlay refuses Super + L,
+  Ctrl + Alt + Delete and Ctrl-only keys. Plain Alt keys work, with a warning in
+  the log, because they take the shortcut from the focused program.
+- No app is special: every app, including CAD tools, follows its app rule.
 - **Super + Alt + W** opens the Selected window panel for the window you were
   in: float or tile, opacity, maximize, main window, next monitor, scratchpad,
   the full app rule, always float and close. **Super + Backspace** toggles that
@@ -49,10 +70,27 @@ Its logs and state are kept in `%LOCALAPPDATA%\OmarchyOverlay`.
 - **Super + Ctrl + D** stays with Windows (New desktop), because new Omarchy Overlay
   workspaces are Windows desktops.
 - After an Omarchy Overlay Super key, releasing Super does not open Start.
-- Windows running as administrator do not pass keys to Omarchy Overlay; click an
-  ordinary window first.
+- In the Standard edition, windows running as administrator do not pass keys to
+  Omarchy Overlay; click an ordinary window first. The Admin edition has no such limit.
 - **Setup > Keyboard conflicts** lists keys another program already holds, with
   free alternatives.
+
+### Look
+
+Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
+
+- A Waybar-style top bar: the menu and workspaces on the left, the clock in the
+  middle, tray and status on the right, in JetBrainsMono Nerd Font.
+- Square window corners with a 2 px border in the theme's active color on the
+  focused window and its inactive color on the rest, with gaps between tiles.
+- Walker-style launcher and menus: centred, square, 2 px accent border, an 84%
+  opaque background and the selected row filled with the theme's border color.
+- The theme sets the Windows accent color and its first background, at start
+  and whenever you choose one. **Super+Ctrl+Space** moves to the next background in the theme's
+  `backgrounds` folder.
+
+Every Windows setting this changes is recorded first and restored on exit, from
+the recovery menu, and after a crash.
 
 ### Apply theme to Windows
 
@@ -60,8 +98,8 @@ Choose **Appearance > Apply theme to Windows**. Each line shows the current
 value; **Enter** changes it.
 
 - Windows dark/light mode, Transparency effects, Accent color on Start and taskbar.
-- **Accent color** shows the theme's accent (Neon Ridge: `#2A3A78`) and opens
-  Windows' Colors page so you can enter it under **Custom colors**.
+- **Accent color** shows the theme's accent (Neon Ridge: `#2A3A78`). The theme
+  sets it as the Windows accent too; the original returns on exit.
 - **Other apps' window frames follow the theme** gives other programs a dark
   frame with the theme's border and caption colors. **Mica or Acrylic** adds a
   material; if Windows transparency is off, Omarchy Overlay says blur will look solid.
@@ -103,7 +141,7 @@ problems, and **Update > Config > Config file problems** lists each file and lin
 | `config\menu.json` | The menu: lists, labels, icons, order and commands |
 | `config\webapps.json` | Web apps for the `webapp` command |
 | `config\always-float.json` | Built-in always-float entries switched off, and your own windows |
-| `config\themes\*.toml` | Extra color themes; each file adds a theme |
+| `config\themes\` | Extra or replacement themes, as `<name>.toml` files or Omarchy theme folders |
 
 ### binds.conf
 
@@ -166,19 +204,29 @@ text in the app window's title.
 `disabled` takes `run`, `open-with`, `properties`, `file-operations` and
 `confirm-prompts`. Each window needs a program, a window class or title text.
 
-### themes\*.toml
+### themes
 
-The Omarchy `colors.toml` format; the file name is the theme name.
+The built-in themes are the Omarchy themes, embedded from their `colors.toml`
+files. Add or replace a theme in either form:
+
+- `config\themes\<name>.toml`: an Omarchy `colors.toml` file; the file name
+  is the theme name.
+- `config\themes\<name>\colors.toml`: an Omarchy theme folder, copied as it
+  is from `~/.config/omarchy/themes/<name>` on an Omarchy machine. A
+  `backgrounds` folder beside it is kept with the theme.
+
+A theme with the same name as a built-in one replaces it. Keys Omarchy adds
+later are ignored, so newer Omarchy themes still load.
 
 ```toml
 accent = "#7daea3"
 background = "#282828"
 foreground = "#d4be98"
-lighter_background = "#3c3836"
-dark_foreground = "#a89984"
-selection = "#504945"
 mode = "dark"
 ```
+
+`scripts/import_omarchy_themes.py` refreshes the embedded themes from an
+Omarchy install; `--out DIR` also writes theme folders to copy to a PC.
 
 ### Commands
 
@@ -258,6 +306,21 @@ desktop. They open disposable windows and turn tiling on, so run them on a test
 machine or VM, never on a desktop you're using. `scripts/test_windows.py` runs
 them in a libvirt Windows guest through `scripts/vm.py`. Set `OVERLAY_VM`,
 `OVERLAY_VM_USER` and `OVERLAY_VM_GUEST` to match your VM.
+
+### Releases
+
+After the release build, `python3 scripts/package.py` writes two zips to `dist\`
+from the same exe:
+
+- `OmarchyOverlay-<version>-standard.zip`: the exe, `RECOVER.cmd`, `fonts\` and
+  `config\examples\`. Unzip and run; no administrator rights.
+- `OmarchyOverlay-<version>-admin.zip`: the same, plus `INSTALL.cmd` and the
+  `edition-admin` marker. Run `INSTALL.cmd` to install (see Admin edition).
+
+`python3 scripts/package.py --selftest` checks both file lists and that the two exes match.
+Two VM suites test the zips and are not in the default list: `standard` runs the
+Standard release with a limited token, and `install` installs the Admin release,
+checks it, and uninstalls it (it runs elevated, so the VM user must be an administrator).
 
 ## License
 

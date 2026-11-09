@@ -28,12 +28,12 @@ public static class RecoverTest {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main",null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr hwnd);
   public static IntPtr Apps() { return FindWindow("OmarchyOverlay.Applications",null); }
  public static IntPtr Help() { return FindWindow("OmarchyOverlay.Help",null); }
@@ -111,7 +111,7 @@ function Check([string]$name,[bool]$ok,$detail=''){$results.Add(@{name=$name;pas
 function Bounds($hwnd){$r=[RecoverTest+RECT]::new();[void][RecoverTest]::GetWindowRect($hwnd,[ref]$r);return "$($r.l),$($r.t),$($r.r),$($r.b)"}
 function Click($hwnd,[int]$id){[void][RecoverTest]::PostMessage($hwnd,0x111,[IntPtr]$id,[IntPtr]::Zero);Pump}
 # 0.17 turns tiling on at start by default (K7); these tests expect a paused start unless they set start_tiling themselves.
-function Seed-Paused([string]$folder){$path=Join-Path $folder 'keyspace-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
+function Seed-Paused([string]$folder){$path=Join-Path $folder 'overlay-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
 function Start-App([string]$folder){
     Seed-Paused $folder
     $process=Start-Process (Join-Path $folder 'OmarchyOverlay.exe') -PassThru
@@ -122,7 +122,7 @@ function Start-App([string]$folder){
     Pump 700;return $process
 }
 function Stop-App($process){[void][RecoverTest]::PostMessage($controllerWindow,0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
-function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'keyspace-profile.json')|ConvertFrom-Json}
+function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 
 function State {
  $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops'
@@ -176,11 +176,11 @@ try {
  $folder=Join-Path $root 'scrolling-fixture';New-Item -ItemType Directory -Force $folder|Out-Null
  Copy-Item (Join-Path $root 'OmarchyOverlay.exe') (Join-Path $folder 'OmarchyOverlay.exe') -Force
  $exe=([Diagnostics.Process]::GetCurrentProcess()).ProcessName+'.exe'
- $profile=@{format='keyspace-profile';version=1;id=('scrolling-'+[Guid]::NewGuid().ToString('N'));settings=@{
+ $profile=@{format='overlay-profile';version=1;id=('scrolling-'+[Guid]::NewGuid().ToString('N'));settings=@{
   layout='scrolling';scrolling_columns=2;gap=8;main_ratio=0.5;default_mode='ignore';animations=$false;inactive_opacity=100;
   rules=@(@{executable=$exe;title_contains='MB scrolling fixture';mode='tile'});bar=@{left=@('window-scroll','app-drawer');center=@('clock');right=@('sound','controls');task_buttons=0;split_task_modules=$true}
  }}
- [IO.File]::WriteAllText((Join-Path $folder 'keyspace-profile.json'),($profile|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))
+ [IO.File]::WriteAllText((Join-Path $folder 'overlay-profile.json'),($profile|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))
  for($i=0;$i -lt 5;$i++){$form=[Windows.Forms.Form]::new();$form.Text="MB scrolling fixture $i";$form.StartPosition='Manual';$form.SetBounds(90+90*$i,120+55*$i,510,340);$form.Show();$forms+=,$form}
  Pump
  $originals=@($forms|ForEach-Object{Bounds $_.Handle})

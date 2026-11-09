@@ -213,10 +213,21 @@ unsafe fn restore_effects(directory: &Path) -> Result<(), String> {
     for entry in entries {
         write(h.0, &entry.name, entry.before)?;
     }
-    notify();
     fs::remove_file(path).map_err(|e| e.to_string())
 }
+pub(super) fn pending(directory: &Path) -> bool {
+    directory.join(FILE).exists() || directory.join(EFFECTS_FILE).exists()
+}
 pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
+    let pending = pending(directory);
+    let result = restore_quiet(directory);
+    if pending {
+        notify();
+    }
+    result
+}
+/// Restores without the settings broadcast, so a caller restoring several values sends one.
+pub(super) unsafe fn restore_quiet(directory: &Path) -> Result<(), String> {
     let effects = restore_effects(directory);
     let colors = restore_colors(directory);
     match (colors, effects) {
@@ -241,6 +252,5 @@ unsafe fn restore_colors(directory: &Path) -> Result<(), String> {
     for entry in entries {
         write(h.0, &entry.name, entry.before)?;
     }
-    notify();
     fs::remove_file(path).map_err(|e| e.to_string())
 }

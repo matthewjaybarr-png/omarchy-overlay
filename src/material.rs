@@ -79,6 +79,22 @@ pub fn tint_alpha(background: u32, texts: &[u32]) -> u8 {
         .unwrap_or(255)
 }
 
+/// The menu tint's alpha: Walker's 84% (214) at most see-through, more if text needs it.
+pub fn menu_alpha(background: u32, texts: &[u32]) -> u8 {
+    tint_alpha(background, texts).max(214)
+}
+
+/// Walker's selected-row fill: the theme border, or the surface when accent text on
+/// the border would fall under 3:1.
+pub fn selection(border: u32, surface: u32, accent: u32) -> u32 {
+    let l = |c| luminance(channels(c));
+    if contrast(l(border), l(accent)) >= 3.0 {
+        border
+    } else {
+        surface
+    }
+}
+
 /// Turns a GDI-painted 32-bit bitmap (BGRA in memory, alpha left at 0 by GDI) into a
 /// premultiplied one: background pixels become the tint at `alpha`, all others opaque.
 pub fn apply(pixels: &mut [u32], background: u32, alpha: u8) {
@@ -103,7 +119,7 @@ mod tests {
     const fn rgb(v: u32) -> u32 {
         ((v & 255) << 16) | (v & 0xff00) | ((v >> 16) & 255)
     }
-    /// (background, text, muted, accent) for the built-in themes, as in theme.rs.
+    /// (background, text, muted, accent) sample palettes (the 0.1 built-in themes).
     const THEMES: [(&str, u32, u32, u32, u32); 6] = [
         ("neon-ridge", 0x0a1028, 0xd7dcf5, 0x8089bd, 0x38bdfa),
         ("tokyo-night", 0x1a1b26, 0xc0caf5, 0x9aa5ce, 0x7aa2f7),
@@ -112,6 +128,19 @@ mod tests {
         ("paper", 0xf5f2ea, 0x252a32, 0x58606b, 0x276749),
         ("alpenglow-night", 0x181529, 0xe7dcff, 0xab9fc4, 0xc995f4),
     ];
+
+    #[test]
+    fn selected_row_uses_the_border_unless_accent_text_would_vanish() {
+        // Tokyo Night: border #33ccff is too close to the accent #7aa2f7.
+        assert_eq!(selection(rgb(0x33ccff), rgb(0x24283b), rgb(0x7aa2f7)), rgb(0x24283b));
+        // A dark border keeps accent text readable.
+        assert_eq!(selection(rgb(0x414868), rgb(0x24283b), rgb(0xc0caf5)), rgb(0x414868));
+    }
+    /// Walker's 84% background: never more see-through, more opaque only for contrast.
+    #[test]
+    fn menu_tint_is_at_least_84_percent() {
+        assert!(menu_alpha(rgb(0x1a1b26), &[rgb(0xc0caf5)]) >= 214);
+    }
 
     #[test]
     fn every_builtin_theme_keeps_4_5_to_1_over_white_black_and_neon_ridge() {

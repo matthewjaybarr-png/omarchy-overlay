@@ -14,12 +14,12 @@ public static class RecoverTest {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main",null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   [DllImport("user32.dll",EntryPoint="SendMessageW",CharSet=CharSet.Unicode)] static extern IntPtr ReadText(IntPtr h,uint m,IntPtr size,System.Text.StringBuilder text);
   public static string ControlText(IntPtr h,int id){var b=new System.Text.StringBuilder(128);ReadText(GetDlgItem(h,id),13,(IntPtr)b.Capacity,b);return b.ToString();}
   public static IntPtr Settings() { return FindWindow("OmarchyOverlay.Settings",null); }
@@ -55,6 +55,8 @@ public static class RecoverTest {
     return GetForegroundWindow()==hwnd;
   }
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr hwnd,uint attribute,out uint value,uint size);
+  public static long Dwm(IntPtr hwnd,uint attribute) { uint v; return DwmGetWindowAttribute(hwnd,attribute,out v,4)>=0?(long)v:-1; }
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd,out uint pid);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hwnd);
   [DllImport("user32.dll")] static extern IntPtr GetWindowLongPtr(IntPtr hwnd,int index);
@@ -76,7 +78,7 @@ function Check([string]$name,[bool]$ok,$detail=''){$results.Add(@{name=$name;pas
 function Bounds($hwnd){$r=[RecoverTest+RECT]::new();[void][RecoverTest]::GetWindowRect($hwnd,[ref]$r);return "$($r.l),$($r.t),$($r.r),$($r.b)"}
 function Click($hwnd,[int]$id){[void][RecoverTest]::PostMessage($hwnd,0x111,[IntPtr]$id,[IntPtr]::Zero);Pump}
 # 0.17 turns tiling on at start by default (K7); these tests expect a paused start unless they set start_tiling themselves.
-function Seed-Paused([string]$folder){$path=Join-Path $folder 'keyspace-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
+function Seed-Paused([string]$folder){$path=Join-Path $folder 'overlay-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
 function Start-App([string]$folder){
     Seed-Paused $folder
     $process=Start-Process (Join-Path $folder 'OmarchyOverlay.exe') -PassThru
@@ -86,7 +88,7 @@ function Start-App([string]$folder){
     Pump 700;return $process
 }
 function Stop-App($process){[void][RecoverTest]::PostMessage([RecoverTest]::MainWindow(),0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
-function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'keyspace-profile.json')|ConvertFrom-Json}
+function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 function Wait-Gap([string]$gap){$until=[DateTime]::UtcNow.AddSeconds(5);do{Pump 100;$value=[RecoverTest]::ControlText([RecoverTest]::Settings(),61)}while($value -ne $gap -and [DateTime]::UtcNow -lt $until);return $value -eq $gap}
 function Choose-File([string]$path,[bool]$save){
     $dialog=[RecoverTest]::FileDialog($save)
@@ -107,9 +109,12 @@ try{
     foreach($folder in @($a,$b)){Copy-Item (Join-Path $root 'OmarchyOverlay.exe') (Join-Path $folder 'OmarchyOverlay.exe') -Force}
     $id='vm-profile-'+[Guid]::NewGuid().ToString('N')
     $excluded=@(Get-Process|Where-Object {$_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId -and $_.ProcessName -ne 'powershell'}|ForEach-Object {$_.ProcessName+'.exe'}|Select-Object -Unique)
-    $profile=@{format='keyspace-profile';version=1;id=$id;settings=@{excluded_processes=$excluded;gap=17;theme='nord';auto_hide_taskbar=$true;show_top_bar=$true;inactive_opacity=100;rules=@()}}
-    [IO.File]::WriteAllText((Join-Path $a 'keyspace-profile.json'),($profile|ConvertTo-Json -Depth 10),[Text.UTF8Encoding]::new($false))
+    $profile=@{format='overlay-profile';version=1;id=$id;settings=@{excluded_processes=$excluded;gap=17;theme='nord';auto_hide_taskbar=$true;show_top_bar=$true;inactive_opacity=100;rules=@()}}
+    [IO.File]::WriteAllText((Join-Path $a 'overlay-profile.json'),($profile|ConvertTo-Json -Depth 10),[Text.UTF8Encoding]::new($false))
     $localConfig=if(Test-Path (Join-Path $local 'config.json')){[IO.File]::ReadAllText((Join-Path $local 'config.json'))}else{''}
+    # Theme effects change the Windows accent and wallpaper; recovery must put both back.
+    $dwmKey='HKCU:\Software\Microsoft\Windows\DWM';$deskKey='HKCU:\Control Panel\Desktop'
+    $accentBefore=(Get-ItemProperty $dwmKey -ErrorAction SilentlyContinue).AccentColor;$wallBefore=(Get-ItemProperty $deskKey).WallPaper
     $app=Start-App $a
     Click ([RecoverTest]::MainWindow()) 3
     $settings=[RecoverTest]::Settings();Click $settings 68
@@ -120,23 +125,23 @@ try{
     $exported=Join-Path $root ('exported-'+$id+'.json')
     [void][RecoverTest]::SetForegroundWindow([RecoverTest]::Profiles())
     Click ([RecoverTest]::Profiles()) 81;Choose-File $exported $true
-    Check 'Native Save dialog exports a validated portable profile' ((Get-Content -Raw $exported|ConvertFrom-Json).format -eq 'keyspace-profile')
+    Check 'Native Save dialog exports a validated portable profile' ((Get-Content -Raw $exported|ConvertFrom-Json).format -eq 'overlay-profile')
     $import=Get-Content -Raw $exported|ConvertFrom-Json;$import.settings.gap=25
     [IO.File]::WriteAllText($exported,($import|ConvertTo-Json -Depth 10),[Text.UTF8Encoding]::new($false))
     Click ([RecoverTest]::Profiles()) 82;Choose-File $exported $false
     Check 'Native Open dialog imports preferences into the active profile' ((Read-Profile $a).settings.gap -eq 25)
     Check 'Imported preferences finish refreshing Settings before external edits' (Wait-Gap '25')
     Check 'Import preserves a local last-preferences backup' (Test-Path (Join-Path $local 'profile-backup.json'))
-    $raw=[IO.File]::ReadAllText((Join-Path $a 'keyspace-profile.json'))
+    $raw=[IO.File]::ReadAllText((Join-Path $a 'overlay-profile.json'))
     Check 'Portable data contains no window handles or recovery records' ($raw -notmatch '"hwnd"|"pid"|"marker"|placement-restore|opacity-restore')
     # Reload an externally edited, valid shared profile through the real UI.
     $edited=Read-Profile $a;$edited.settings.gap=19
-    [IO.File]::WriteAllText((Join-Path $a 'keyspace-profile.json'),($edited|ConvertTo-Json -Depth 10),[Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText((Join-Path $a 'overlay-profile.json'),($edited|ConvertTo-Json -Depth 10),[Text.UTF8Encoding]::new($false))
     Click ([RecoverTest]::Profiles()) 83
     Check 'Reload applies externally edited preferences in Settings' (Wait-Gap '19')
     Check 'Reload creates a recoverable last-preferences backup' (Test-Path (Join-Path $local 'profile-backup.json'))
     Stop-App $app;$app=$null
-    Copy-Item (Join-Path $a 'keyspace-profile.json') (Join-Path $b 'keyspace-profile.json') -Force
+    Copy-Item (Join-Path $a 'overlay-profile.json') (Join-Path $b 'overlay-profile.json') -Force
     $app=Start-App $b
     Click ([RecoverTest]::MainWindow()) 3
     $settings=[RecoverTest]::Settings()
@@ -146,7 +151,7 @@ try{
     Stop-App $app;$app=$null
     Check 'Normal exit leaves no placement journal' (-not (Test-Path (Join-Path $local 'placement-restore.json')))
     for($i=0;$i -lt 2;$i++){
-        $form=[Windows.Forms.Form]::new();$form.Text="Keyspace recovery fixture $i";$form.StartPosition='Manual';$form.SetBounds((160+140*$i),(180+90*$i),600,400);$form.Show();$forms+=$form
+        $form=[Windows.Forms.Form]::new();$form.Text="Omarchy Overlay recovery fixture $i";$form.StartPosition='Manual';$form.SetBounds((160+140*$i),(180+90*$i),600,400);$form.Show();$forms+=$form
     }
     Pump 300;$originals=@($forms|ForEach-Object{Bounds $_.Handle})
     $app=Start-App $a
@@ -158,28 +163,39 @@ try{
     Check 'Disposable fixture has foreground focus before opacity shortcut' ([RecoverTest]::GetForegroundWindow() -eq $forms[0].Handle) $focused
     [RecoverTest]::Shortcut(0xbc);Pump 500
     Check 'Crash fixture has a native opacity change before the test' ([RecoverTest]::Alpha($forms[0].Handle) -eq 242)
+    # Borders are on by default: square corners (33 = 1) and a theme border color (34).
+    Check 'Crash fixture has square corners before the test' ([RecoverTest]::Dwm($forms[0].Handle,33) -eq 1) ([RecoverTest]::Dwm($forms[0].Handle,33))
+    Check 'Theme accent is applied before the crash' ((Test-Path (Join-Path $local 'windows-accent-restore.json')) -and (Get-ItemProperty $dwmKey).AccentColor -ne $accentBefore) ((Get-ItemProperty $dwmKey).AccentColor)
+    # DWM cannot read the border color back, so the journal must record its default for recovery.
+    $frames=if(Test-Path (Join-Path $local 'window-theme-restore.json')){[IO.File]::ReadAllText((Join-Path $local 'window-theme-restore.json'))}else{''}
+    Check 'Window-frame journal records the default border color' ($frames -match '\[\s*34,\s*4294967295\s*\]') $frames
     Check 'Original placement is journaled locally before a crash' (Test-Path (Join-Path $local 'placement-restore.json'))
     Check 'Original opacity is journaled locally before a crash' (Test-Path (Join-Path $local 'opacity-restore.json'))
     Check 'The profile folder contains no machine recovery files' (@(Get-ChildItem $a -Filter '*restore*').Count -eq 0)
-    $beforeCrash=[IO.File]::ReadAllText((Join-Path $a 'keyspace-profile.json'))
+    $beforeCrash=[IO.File]::ReadAllText((Join-Path $a 'overlay-profile.json'))
     # The guard writes its report after the journals are gone, so an older report must not be read instead.
     $reportPath=Join-Path $local 'recovery-report.json';Remove-Item $reportPath -ErrorAction SilentlyContinue
     # Only this controller PID is terminated; the guard and all other apps remain running.
     Stop-Process -Id $app.Id -Force
     $deadline=[DateTime]::UtcNow.AddSeconds(12)
-    do{Pump 150}while(((Test-Path (Join-Path $local 'placement-restore.json')) -or (Test-Path (Join-Path $local 'opacity-restore.json')) -or (Test-Path (Join-Path $local 'taskbar-restore.json')) -or -not (Test-Path $reportPath)) -and [DateTime]::UtcNow -lt $deadline)
+    do{Pump 150}while(((Test-Path (Join-Path $local 'placement-restore.json')) -or (Test-Path (Join-Path $local 'opacity-restore.json')) -or (Test-Path (Join-Path $local 'window-theme-restore.json')) -or (Test-Path (Join-Path $local 'taskbar-restore.json')) -or (Test-Path (Join-Path $local 'windows-accent-restore.json')) -or (Test-Path (Join-Path $local 'wallpaper-restore.json')) -or -not (Test-Path $reportPath)) -and [DateTime]::UtcNow -lt $deadline)
     Check 'Guard removes the top bar after controller termination' ([RecoverTest]::Bar() -eq [IntPtr]::Zero)
     for($i=0;$i -lt 2;$i++){Check "Guard restores fixture $i without restarting the app" ((Bounds $forms[$i].Handle) -eq $originals[$i]) (Bounds $forms[$i].Handle)}
     Check 'Guard restores opacity without restarting the app' (-not [RecoverTest]::Layered($forms[0].Handle))
+    Check 'Guard restores default corners' ([RecoverTest]::Dwm($forms[0].Handle,33) -eq 0) ([RecoverTest]::Dwm($forms[0].Handle,33))
     Check 'Guard restores the original taskbar preference' ([RecoverTest]::Taskbar() -eq $originalTaskbar)
     Check 'Guard releases the crashed top-bar reservation' ([RecoverTest]::WorkTop() -eq $originalTop)
-    Check 'Crash recovery preserves portable preferences' ([IO.File]::ReadAllText((Join-Path $a 'keyspace-profile.json')) -eq $beforeCrash)
+    $accentNow=(Get-ItemProperty $dwmKey -ErrorAction SilentlyContinue).AccentColor
+    Check 'Guard restores the Windows accent color' ($accentNow -eq $accentBefore -and -not (Test-Path (Join-Path $local 'windows-accent-restore.json'))) "$accentBefore -> $accentNow"
+    $wallNow=(Get-ItemProperty $deskKey).WallPaper
+    Check 'Guard restores the wallpaper' ($wallNow -eq $wallBefore -and -not (Test-Path (Join-Path $local 'wallpaper-restore.json'))) "$wallBefore -> $wallNow"
+    Check 'Crash recovery preserves portable preferences' ([IO.File]::ReadAllText((Join-Path $a 'overlay-profile.json')) -eq $beforeCrash)
     $report=$null;$until=[DateTime]::UtcNow.AddSeconds(3)
     do{try{$report=Get-Content -Raw $reportPath -ErrorAction Stop|ConvertFrom-Json}catch{Pump 100}}while($null -eq $report -and [DateTime]::UtcNow -lt $until)
     Check 'Recovery report records success without errors' (@($report.errors).Count -eq 0 -and $report.placement_records -ge 2 -and $report.opacity_recovered)
     $app=$null
     # Invalid profiles are checked without creating UI or applying desktop changes.
-    $bad=Join-Path $a 'invalid-profile.json';[IO.File]::WriteAllText($bad,'{"format":"keyspace-profile","version":99}')
+    $bad=Join-Path $a 'invalid-profile.json';[IO.File]::WriteAllText($bad,'{"format":"overlay-profile","version":99}')
     $check=Start-Process (Join-Path $a 'OmarchyOverlay.exe') -ArgumentList @('--check-profile',('"'+$bad+'"')) -RedirectStandardOutput (Join-Path $root 'profile-check.json') -PassThru -Wait
     Check 'Unsupported profile is rejected by read-only validation' ($check.ExitCode -eq 2)
     Check 'Profile validation does not start a controller' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)

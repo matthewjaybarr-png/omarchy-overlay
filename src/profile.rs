@@ -8,7 +8,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-pub const FILE_NAME: &str = "keyspace-profile.json";
+pub const FILE_NAME: &str = "overlay-profile.json";
 const LIMIT: u64 = 1024 * 1024;
 #[derive(Clone)]
 pub struct Active {
@@ -73,12 +73,14 @@ pub fn parse(text: &str) -> Result<Portable, String> {
         .map_err(|e| format!("Invalid Omarchy Overlay profile: {e}"))?;
     for object in [Some(&value), value.get("settings")].into_iter().flatten() {
         if let Some(key) = RECOVERY_KEYS.iter().find(|k| object.get(**k).is_some()) {
-            return Err(format!("Invalid Omarchy Overlay profile: it holds recovery data ({key})."));
+            return Err(format!(
+                "Invalid Omarchy Overlay profile: it holds recovery data ({key})."
+            ));
         }
     }
     let profile: Portable = serde_json::from_str(text.trim_start_matches('\u{feff}'))
         .map_err(|e| format!("Invalid Omarchy Overlay profile: {e}"))?;
-    if profile.format != "keyspace-profile" || profile.version != 1 {
+    if profile.format != "overlay-profile" || profile.version != 1 {
         return Err("Unsupported profile format or version.".into());
     }
     if profile.id.is_empty()
@@ -121,12 +123,12 @@ pub fn locate(executable: &Path, local: &Path, explicit: Option<PathBuf>) -> Act
 }
 /// Saves the profile as it was before this version first changes its layout. Profiles
 /// older than 0.17 keep their historical backup names; from 0.18 on the name is
-/// keyspace-profile.pre-<version>.json, written only when this version would add keys.
+/// overlay-profile.pre-<version>.json, written only when this version would add keys.
 /// One settings folder for every version on the stick (0.18 note item 2). Found by
 /// walking up from the exe, so the drive letter and version folder do not matter.
 pub const SETTINGS_FOLDER: &str = "OVERLAY SETTINGS";
 /// The repository's sample profile. A copy of it is never offered as the user's settings.
-const SAMPLE: &str = include_str!("../profiles/keyspace-profile.sample.json");
+const SAMPLE: &str = include_str!("../profiles/overlay-profile.sample.json");
 static SETTINGS: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
 /// Records the settings folder in use, if the profile is in one. Called once at startup.
 pub fn remember_settings(active: &Active) {
@@ -150,7 +152,7 @@ pub enum Found {
     },
 }
 /// `G:\Omarchy Overlay` for `G:\Omarchy Overlay\OmarchyOverlay-0.18.0-windows-x64\Omarchy Overlay\OmarchyOverlay.exe`,
-/// and `C:\Users\me\APPS\ORBIT` for a copy at `C:\Users\me\APPS\ORBIT\Omarchy Overlay\OmarchyOverlay.exe`
+/// and `C:\Users\me\APPS\TOOLS` for a copy at `C:\Users\me\APPS\TOOLS\Omarchy Overlay\OmarchyOverlay.exe`
 /// (0.19): the program folder is always named "Omarchy Overlay", on any drive.
 pub fn release_root(executable: &Path) -> Option<PathBuf> {
     let folder = executable.parent()?;
@@ -169,8 +171,11 @@ pub fn release_root(executable: &Path) -> Option<PathBuf> {
 }
 /// A release folder such as `OmarchyOverlay-0.18.0-windows-x64` (any letter case).
 fn is_version_folder(path: &Path) -> bool {
-    path.file_name()
-        .is_some_and(|n| n.to_string_lossy().to_ascii_lowercase().starts_with("omarchyoverlay-"))
+    path.file_name().is_some_and(|n| {
+        n.to_string_lossy()
+            .to_ascii_lowercase()
+            .starts_with("omarchyoverlay-")
+    })
 }
 /// The nearest OVERLAY SETTINGS folder in the exe's folder or up to three folders above it.
 pub fn settings_folder(executable: &Path) -> Option<PathBuf> {
@@ -181,8 +186,8 @@ pub fn settings_folder(executable: &Path) -> Option<PathBuf> {
         .map(|d| d.join(SETTINGS_FOLDER))
         .find(|d| d.is_dir())
 }
-/// Where the profile is. `stick` is true when the exe is on a removable drive.
-pub fn find(executable: &Path, local: &Path, explicit: Option<PathBuf>, stick: bool) -> Found {
+/// Where the profile is.
+pub fn find(executable: &Path, local: &Path, explicit: Option<PathBuf>) -> Found {
     if explicit.is_some() {
         return Found::Use(locate(executable, local, explicit));
     }
@@ -201,9 +206,7 @@ pub fn find(executable: &Path, local: &Path, explicit: Option<PathBuf>, stick: b
         };
     }
     let active = locate(executable, local, None);
-    let root = release_root(executable)
-        .or_else(|| stick.then(|| executable.parent().map(Path::to_path_buf)).flatten());
-    match root {
+    match release_root(executable) {
         Some(root) if active.id.is_none() => {
             let folder = root.join(SETTINGS_FOLDER);
             Found::Missing {
@@ -253,7 +256,13 @@ pub fn newest_profile(settings: &Path, executable: &Path) -> Option<PathBuf> {
 pub fn describe(path: &Path) -> String {
     let theme = read_text(path)
         .and_then(|t| parse(&t))
-        .map(|p| format!("theme {}, {} app rules", p.settings.theme, p.settings.rules.len()))
+        .map(|p| {
+            format!(
+                "theme {}, {} app rules",
+                p.settings.theme,
+                p.settings.rules.len()
+            )
+        })
         .unwrap_or_default();
     let size = fs::metadata(path).map(|m| m.len()).unwrap_or(0);
     format!("{} ({size} bytes, {theme})", path.display())
@@ -274,7 +283,7 @@ pub fn create_settings(folder: &Path, source: Option<&Path>) -> Result<PathBuf, 
         if !target.exists() {
             let text = read_text(source)?;
             parse(&text)?;
-            let temporary = folder.join("keyspace-profile.json.copying");
+            let temporary = folder.join("overlay-profile.json.copying");
             fs::write(&temporary, text).map_err(|e| e.to_string())?;
             fs::rename(&temporary, &target).map_err(|e| e.to_string())?;
         }
@@ -297,8 +306,7 @@ fn copy_tree(from: &Path, to: &Path, keep: &dyn Fn(&Path) -> bool) -> Result<(),
             copy_tree(&path, &target, keep)?;
         } else if !target.exists() {
             fs::create_dir_all(to).map_err(|e| e.to_string())?;
-            fs::copy(&path, &target)
-                .map_err(|e| format!("Cannot copy {}: {e}", path.display()))?;
+            fs::copy(&path, &target).map_err(|e| format!("Cannot copy {}: {e}", path.display()))?;
         }
     }
     Ok(())
@@ -309,7 +317,7 @@ pub fn backup_before_upgrade(active: &Active, config: &Config) -> Result<(), Str
     let settings = value.get("settings").unwrap_or(&value);
     let current = format!("pre-{}.json", env!("CARGO_PKG_VERSION"));
     let extension = if settings.get("cycle_workspace_shortcut").is_none() {
-        "pre-mb-keyspace.json"
+        "pre-0.10.json"
     } else if settings.get("applications").is_none() || settings.get("shortcut_overrides").is_none()
     {
         "pre-0.11.json"
@@ -339,7 +347,7 @@ pub fn backup_before_upgrade(active: &Active, config: &Config) -> Result<(), Str
     };
     keep_copy(&active.path, extension, &text)
 }
-/// Writes `text` to `path` with `extension` (e.g. `keyspace-profile.pre-0.19.0.json`)
+/// Writes `text` to `path` with `extension` (e.g. `overlay-profile.pre-0.19.0.json`)
 /// unless that copy already exists: the first copy is the one an older version can read.
 fn keep_copy(path: &Path, extension: &str, text: &str) -> Result<(), String> {
     let backup = path.with_extension(extension);
@@ -402,7 +410,7 @@ pub fn portable(config: &Config, id: &str) -> Portable {
         rule.monitor = None;
     }
     Portable {
-        format: "keyspace-profile".into(),
+        format: "overlay-profile".into(),
         version: 1,
         id: id.into(),
         settings,
@@ -440,7 +448,11 @@ pub fn save(active: &Active, local: &Path, config: &Config) -> Result<(), String
             None
         };
         write_json(&route_path, &routes)?;
-        if let Err(error) = write_kept(&active.path, &portable(config, id), &portable(&Config::default(), id)) {
+        if let Err(error) = write_kept(
+            &active.path,
+            &portable(config, id),
+            &portable(&Config::default(), id),
+        ) {
             let rollback = match previous {
                 Some(previous) => write_json(&route_path, &previous),
                 None => fs::remove_file(&route_path).map_err(|e| e.to_string()),
@@ -519,8 +531,8 @@ fn kept_value<T: Serialize + serde::de::DeserializeOwned>(
     default: &T,
 ) -> Result<Value, String> {
     let full = serde_json::to_value(value).map_err(|e| e.to_string())?;
-    let Ok(old) = read_text(path)
-        .and_then(|t| serde_json::from_str::<Value>(&t).map_err(|e| e.to_string()))
+    let Ok(old) =
+        read_text(path).and_then(|t| serde_json::from_str::<Value>(&t).map_err(|e| e.to_string()))
     else {
         return Ok(full);
     };
@@ -547,7 +559,11 @@ fn write_kept<T: Serialize + serde::de::DeserializeOwned>(
     if let Ok(text) = read_text(path) {
         if let Ok(old) = serde_json::from_str::<Value>(&text) {
             if adds_keys(&old, &kept) {
-                keep_copy(path, &format!("pre-{}.json", env!("CARGO_PKG_VERSION")), &text)?;
+                keep_copy(
+                    path,
+                    &format!("pre-{}.json", env!("CARGO_PKG_VERSION")),
+                    &text,
+                )?;
             }
         }
     }
@@ -562,6 +578,28 @@ mod tests {
         let p = std::env::temp_dir().join(new_id());
         fs::create_dir_all(&p).unwrap();
         p
+    }
+    #[test]
+    fn installed_exe_without_settings_folder_uses_local_profile() {
+        let root = temp();
+        let exe = root.join("Program Files").join("OmarchyOverlay").join("OmarchyOverlay.exe");
+        let local = root.join("local");
+        match find(&exe, &local, None) {
+            Found::Use(active) => assert_eq!(active.path, local.join("config.json")),
+            Found::Missing { .. } => panic!("an installed exe must not ask for a settings folder"),
+        }
+    }
+    #[test]
+    fn settings_folder_beside_exe_on_a_fixed_drive_is_used() {
+        let root = temp();
+        let exe = root.join("tools").join("OmarchyOverlay.exe");
+        let folder = exe.parent().unwrap().join(SETTINGS_FOLDER);
+        fs::create_dir_all(&folder).unwrap();
+        fs::write(folder.join(FILE_NAME), "{}").unwrap();
+        match find(&exe, &root.join("local"), None) {
+            Found::Use(active) => assert_eq!(active.path, folder.join(FILE_NAME)),
+            Found::Missing { .. } => panic!("the settings folder exists"),
+        }
     }
     #[test]
     fn version_010_profile_has_its_own_rollback_backup() {
@@ -642,7 +680,7 @@ mod tests {
         let mut active = locate(&root.join("OmarchyOverlay.exe"), &root, None);
         let mut config = load(&mut active, &root).unwrap();
         backup_before_upgrade(&active, &config).unwrap();
-        config.bar.left.push(crate::bar_model::Module::SystemTray);
+        config.bar.left.push(crate::bar_model::Module::Tiling);
         save(&active, &root, &config).unwrap();
         backup_before_upgrade(&active, &config).unwrap();
         assert_eq!(
@@ -653,7 +691,7 @@ mod tests {
             .unwrap()
             .bar
             .left
-            .contains(&crate::bar_model::Module::SystemTray));
+            .contains(&crate::bar_model::Module::Tiling));
         let _ = fs::remove_dir_all(root);
     }
     #[test]
@@ -734,7 +772,7 @@ mod tests {
         save(&active, &root, &config).unwrap();
         backup_before_upgrade(&active, &config).unwrap();
         assert_eq!(
-            fs::read_to_string(path.with_extension("pre-mb-keyspace.json")).unwrap(),
+            fs::read_to_string(path.with_extension("pre-0.10.json")).unwrap(),
             original
         );
         let _ = fs::remove_dir_all(root);
@@ -810,7 +848,10 @@ mod tests {
         };
         save(&active, &root, &Config::default()).unwrap();
         fs::write(path.with_extension("json.tmp"), b"{broken").unwrap();
-        assert_eq!(parse(&read_text(&path).unwrap()).unwrap().settings.gap, 10);
+        assert_eq!(
+            parse(&read_text(&path).unwrap()).unwrap().settings.gap,
+            Config::default().gap
+        );
         let config = Config {
             gap: 18,
             ..Config::default()
@@ -858,7 +899,7 @@ mod tests {
     #[test]
     fn corrupt_portable_profile_never_silently_falls_back_to_local() {
         let root = temp();
-        let exe = root.join("keyspace.exe");
+        let exe = root.join("OmarchyOverlay.exe");
         fs::write(root.join(FILE_NAME), b"{broken").unwrap();
         let mut active = locate(&exe, &root, None);
         assert!(load(&mut active, &root).is_err());
@@ -880,12 +921,15 @@ mod tests {
         config.gap = 31;
         backup_before_upgrade(&active, &config).unwrap();
         save(&active, &root, &config).unwrap();
-        let saved: serde_json::Value = serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        let saved: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
         assert_eq!(saved["future_top"]["a"], 1);
         assert_eq!(saved["settings"]["future_setting"], "kept");
         assert_eq!(saved["settings"]["bar"]["future_bar"], 7);
         assert_eq!(saved["settings"]["gap"], 31);
-        assert!(!path.with_extension(format!("pre-{}.json", env!("CARGO_PKG_VERSION"))).exists());
+        assert!(!path
+            .with_extension(format!("pre-{}.json", env!("CARGO_PKG_VERSION")))
+            .exists());
         let _ = fs::remove_dir_all(root);
     }
     #[test]
@@ -897,10 +941,17 @@ mod tests {
         let mut value = serde_json::to_value(portable(&config, "maps")).unwrap();
         value["settings"]["shortcut_overrides"] = serde_json::json!({"gone": "Ctrl+Alt+Q"});
         fs::write(&path, value.to_string()).unwrap();
-        let active = Active { path: path.clone(), id: Some("maps".into()) };
+        let active = Active {
+            path: path.clone(),
+            id: Some("maps".into()),
+        };
         save(&active, &root, &Config::default()).unwrap();
-        let saved: serde_json::Value = serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
-        assert_eq!(saved["settings"]["shortcut_overrides"], serde_json::json!({}));
+        let saved: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(
+            saved["settings"]["shortcut_overrides"],
+            serde_json::json!({})
+        );
         let _ = fs::remove_dir_all(root);
     }
     #[test]
@@ -917,7 +968,8 @@ mod tests {
         backup_before_upgrade(&active, &config).unwrap();
         save(&active, &root, &config).unwrap();
         assert!(!backup.exists());
-        let saved: serde_json::Value = serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        let saved: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
         assert!(saved["settings"].get("gap").is_none());
         let before_change = fs::read_to_string(&path).unwrap();
         // Once the setting is changed the layout changes, and the save itself keeps the
@@ -929,11 +981,16 @@ mod tests {
         config.gap += 1;
         save(&active, &root, &config).unwrap();
         assert_eq!(fs::read_to_string(&backup).unwrap(), before_change);
-        assert_eq!(load(&mut active, &root).unwrap().gap, Config::default().gap + 6);
+        assert_eq!(
+            load(&mut active, &root).unwrap().gap,
+            Config::default().gap + 6
+        );
         let _ = fs::remove_dir_all(root);
     }
     fn release(root: &Path, version: &str) -> PathBuf {
-        let folder = root.join(format!("OmarchyOverlay-{version}-windows-x64")).join("Omarchy Overlay");
+        let folder = root
+            .join(format!("OmarchyOverlay-{version}-windows-x64"))
+            .join("Omarchy Overlay");
         fs::create_dir_all(&folder).unwrap();
         folder.join("OmarchyOverlay.exe")
     }
@@ -942,9 +999,13 @@ mod tests {
         let root = temp();
         let settings = root.join(SETTINGS_FOLDER);
         fs::create_dir_all(&settings).unwrap();
-        fs::write(settings.join(FILE_NAME), serde_json::to_string(&portable(&Config::default(), "user")).unwrap()).unwrap();
+        fs::write(
+            settings.join(FILE_NAME),
+            serde_json::to_string(&portable(&Config::default(), "user")).unwrap(),
+        )
+        .unwrap();
         let exe = release(&root, "0.18.0");
-        match find(&exe, &root.join("local"), None, false) {
+        match find(&exe, &root.join("local"), None) {
             Found::Use(active) => assert_eq!(active.path, settings.join(FILE_NAME)),
             Found::Missing { .. } => panic!("settings not found"),
         }
@@ -953,20 +1014,36 @@ mod tests {
     #[test]
     fn missing_settings_offer_the_newest_real_profile_not_the_sample() {
         let root = temp();
-        let live = root.join("ARCHIVED VERSIONS").join("OmarchyOverlay-0.16.0-windows-x64").join("Omarchy Overlay");
+        let live = root
+            .join("ARCHIVED VERSIONS")
+            .join("OmarchyOverlay-0.16.0-windows-x64")
+            .join("Omarchy Overlay");
         fs::create_dir_all(live.join("wallpapers")).unwrap();
         fs::create_dir_all(live.join("config").join("examples")).unwrap();
-        let user = Config { gap: 19, ..Config::default() };
-        fs::write(live.join(FILE_NAME), serde_json::to_string(&portable(&user, "old-work")).unwrap()).unwrap();
+        let user = Config {
+            gap: 19,
+            ..Config::default()
+        };
+        fs::write(
+            live.join(FILE_NAME),
+            serde_json::to_string(&portable(&user, "old-work")).unwrap(),
+        )
+        .unwrap();
         fs::write(live.join("wallpapers").join("w.png"), b"png").unwrap();
         fs::write(live.join("config").join("binds.conf"), b"# mine").unwrap();
-        fs::write(live.join("config").join("examples").join("binds.conf"), b"# example").unwrap();
+        fs::write(
+            live.join("config").join("examples").join("binds.conf"),
+            b"# example",
+        )
+        .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(20));
-        let sample = root.join("OmarchyOverlay-0.17.0-windows-x64").join("Omarchy Overlay");
+        let sample = root
+            .join("OmarchyOverlay-0.17.0-windows-x64")
+            .join("Omarchy Overlay");
         fs::create_dir_all(&sample).unwrap();
         fs::write(sample.join(FILE_NAME), SAMPLE).unwrap();
         let exe = release(&root, "0.18.0");
-        let Found::Missing { folder, source } = find(&exe, &root.join("local"), None, false) else {
+        let Found::Missing { folder, source } = find(&exe, &root.join("local"), None) else {
             panic!("expected missing settings");
         };
         assert_eq!(folder, root.join(SETTINGS_FOLDER));
@@ -987,33 +1064,72 @@ mod tests {
     #[test]
     fn search_skips_folders_that_are_not_releases() {
         let root = temp();
-        let release016 = root.join("ARCHIVED VERSIONS").join("OmarchyOverlay-0.16.0-windows-x64").join("Omarchy Overlay");
+        let release016 = root
+            .join("ARCHIVED VERSIONS")
+            .join("OmarchyOverlay-0.16.0-windows-x64")
+            .join("Omarchy Overlay");
         fs::create_dir_all(&release016).unwrap();
-        fs::write(release016.join(FILE_NAME), serde_json::to_string(&portable(&Config { gap: 19, ..Config::default() }, "work")).unwrap()).unwrap();
+        fs::write(
+            release016.join(FILE_NAME),
+            serde_json::to_string(&portable(
+                &Config {
+                    gap: 19,
+                    ..Config::default()
+                },
+                "work",
+            ))
+            .unwrap(),
+        )
+        .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(20));
         // Newer, but in OLD DEFAULTS and SAVED: never offered.
         for other in ["OLD DEFAULTS", "SAVED"] {
             let dir = root.join(other).join("Omarchy Overlay");
             fs::create_dir_all(&dir).unwrap();
-            fs::write(dir.join(FILE_NAME), serde_json::to_string(&portable(&Config { gap: 3, ..Config::default() }, "x")).unwrap()).unwrap();
-            fs::write(root.join(other).join(FILE_NAME), serde_json::to_string(&portable(&Config { gap: 4, ..Config::default() }, "y")).unwrap()).unwrap();
+            fs::write(
+                dir.join(FILE_NAME),
+                serde_json::to_string(&portable(
+                    &Config {
+                        gap: 3,
+                        ..Config::default()
+                    },
+                    "x",
+                ))
+                .unwrap(),
+            )
+            .unwrap();
+            fs::write(
+                root.join(other).join(FILE_NAME),
+                serde_json::to_string(&portable(
+                    &Config {
+                        gap: 4,
+                        ..Config::default()
+                    },
+                    "y",
+                ))
+                .unwrap(),
+            )
+            .unwrap();
         }
         let exe = release(&root, "0.19.0");
-        let Found::Missing { source, .. } = find(&exe, &root.join("local"), None, false) else {
+        let Found::Missing { source, .. } = find(&exe, &root.join("local"), None) else {
             panic!("expected missing settings");
         };
-        assert_eq!(source.as_deref(), Some(release016.join(FILE_NAME).as_path()));
+        assert_eq!(
+            source.as_deref(),
+            Some(release016.join(FILE_NAME).as_path())
+        );
         let _ = fs::remove_dir_all(root);
     }
     #[test]
     fn a_pc_copy_in_any_folder_uses_the_settings_folder_beside_it() {
-        // C:\Users\me\APPS\ORBIT\Omarchy Overlay\OmarchyOverlay.exe with ORBIT\OVERLAY SETTINGS.
-        let root = temp().join("APPS").join("ORBIT");
+        // C:\Users\me\APPS\TOOLS\Omarchy Overlay\OmarchyOverlay.exe with TOOLS\OVERLAY SETTINGS.
+        let root = temp().join("APPS").join("TOOLS");
         let exe = root.join("Omarchy Overlay").join("OmarchyOverlay.exe");
         fs::create_dir_all(exe.parent().unwrap()).unwrap();
         assert_eq!(release_root(&exe).as_deref(), Some(root.as_path()));
         // No settings folder yet, on a fixed drive: it asks instead of using local mode.
-        match find(&exe, &root.join("local"), None, false) {
+        match find(&exe, &root.join("local"), None) {
             Found::Missing { folder, source } => {
                 assert_eq!(folder, root.join(SETTINGS_FOLDER));
                 assert!(source.is_none());
@@ -1022,8 +1138,12 @@ mod tests {
         }
         let settings = root.join(SETTINGS_FOLDER);
         fs::create_dir_all(&settings).unwrap();
-        fs::write(settings.join(FILE_NAME), serde_json::to_string(&portable(&Config::default(), "user")).unwrap()).unwrap();
-        match find(&exe, &root.join("local"), None, false) {
+        fs::write(
+            settings.join(FILE_NAME),
+            serde_json::to_string(&portable(&Config::default(), "user")).unwrap(),
+        )
+        .unwrap();
+        match find(&exe, &root.join("local"), None) {
             Found::Use(active) => assert_eq!(active.path, settings.join(FILE_NAME)),
             Found::Missing { .. } => panic!("settings not found"),
         }
@@ -1034,7 +1154,7 @@ mod tests {
         let root = temp();
         let exe = root.join("bin").join("OmarchyOverlay.exe");
         fs::create_dir_all(exe.parent().unwrap()).unwrap();
-        match find(&exe, &root, None, false) {
+        match find(&exe, &root, None) {
             Found::Use(active) => assert!(active.id.is_none()),
             Found::Missing { .. } => panic!("dev folder should stay local"),
         }

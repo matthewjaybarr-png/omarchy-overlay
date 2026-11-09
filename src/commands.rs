@@ -33,6 +33,7 @@ pub const BUILTINS: &[(&str, &str)] = &[
         "Move a window to another workspace (Task View)",
     ),
     ("apply-windows-theme", "Apply the theme to Windows"),
+    ("next-background", "Next theme background"),
     (
         "restore-windows-appearance",
         "Restore the original Windows appearance",

@@ -1,5 +1,5 @@
 {
-  "format": "keyspace-profile",
+  "format": "overlay-profile",
   "version": 1,
   "id": "overlay-sample",
   "settings": {
@@ -80,22 +80,6 @@
     "inactive_opacity": 98,
     "layout": "main-stack",
     "rules": [
-      {
-        "executable": "Mastercam.exe",
-        "title_contains": "",
-        "window_class": "",
-        "mode": "ignore",
-        "allow_opacity": false,
-        "monitor": null
-      },
-      {
-        "executable": "mbeditor.exe",
-        "title_contains": "",
-        "window_class": "",
-        "mode": "tile",
-        "allow_opacity": true,
-        "monitor": null
-      },
       {
         "executable": "msedge.exe",
         "title_contains": "",

@@ -24,12 +24,12 @@ public static class RecoverTest {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main",null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Settings() { return FindWindow("OmarchyOverlay.Settings",null); }
   [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr hwnd);
   public static IntPtr ModuleSettings() { return FindWindow("OmarchyOverlay.ModuleSettings",null); }
@@ -103,7 +103,7 @@ function Check([string]$name,[bool]$ok,$detail=''){$results.Add(@{name=$name;pas
 function Bounds($hwnd){$r=[RecoverTest+RECT]::new();[void][RecoverTest]::GetWindowRect($hwnd,[ref]$r);return "$($r.l),$($r.t),$($r.r),$($r.b)"}
 function Click($hwnd,[int]$id){[void][RecoverTest]::PostMessage($hwnd,0x111,[IntPtr]$id,[IntPtr]::Zero);Pump}
 # 0.17 turns tiling on at start by default (K7); these tests expect a paused start unless they set start_tiling themselves.
-function Seed-Paused([string]$folder){$path=Join-Path $folder 'keyspace-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
+function Seed-Paused([string]$folder){$path=Join-Path $folder 'overlay-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
 function Start-App([string]$folder){
     Seed-Paused $folder
     $process=Start-Process (Join-Path $folder 'OmarchyOverlay.exe') -PassThru
@@ -114,7 +114,7 @@ function Start-App([string]$folder){
     Pump 700;return $process
 }
 function Stop-App($process){[void][RecoverTest]::PostMessage($controllerWindow,0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
-function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'keyspace-profile.json')|ConvertFrom-Json}
+function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 
 function State {
  $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops'
@@ -139,8 +139,8 @@ try {
  [void][RecoverTest]::SetProcessDpiAwarenessContext([IntPtr](-4))
  $principal=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
  Check 'Workspace tests use a limited desktop token' (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
- Check 'No existing Keyspace controller to disturb' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
- $f=[Windows.Forms.Form]::new();$f.Text='Keyspace desktop anchor';$f.SetBounds(180,150,520,340);$f.Show();$forms+=,$f;Pump
+ Check 'No existing Omarchy Overlay controller to disturb' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
+ $f=[Windows.Forms.Form]::new();$f.Text='Omarchy Overlay desktop anchor';$f.SetBounds(180,150,520,340);$f.Show();$forms+=,$f;Pump
  $originalDesktop=[RecoverTest]::DesktopId($f.Handle).ToString()
  # Only create missing test desktops. Their exact GUIDs are tracked for cleanup.
  $initial=State
@@ -153,10 +153,10 @@ try {
  Check 'Four real Windows desktops are available' (@((State).ids).Count -ge 4)
  $folder=Join-Path $root ('bar-workspaces-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory -Force $folder|Out-Null
  Copy-Item (Join-Path $root 'OmarchyOverlay.exe') (Join-Path $folder 'OmarchyOverlay.exe') -Force
- $profilePath=Join-Path $folder 'keyspace-profile.json'
+ $profilePath=Join-Path $folder 'overlay-profile.json'
  $originalProfile=$null
 
- $profile=@{format='keyspace-profile';version=1;id=('workspace-test-'+[Guid]::NewGuid().ToString('N'));settings=@{inactive_opacity=100}}
+ $profile=@{format='overlay-profile';version=1;id=('workspace-test-'+[Guid]::NewGuid().ToString('N'));settings=@{inactive_opacity=100}}
  [IO.File]::WriteAllText($profilePath,($profile|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))
  Seed-Paused $folder;$originalProfile=[IO.File]::ReadAllText($profilePath)
  $app=Start-App $folder
@@ -167,7 +167,7 @@ try {
  Click $controllerWindow 3;Click ([RecoverTest]::Settings()) 69
  $panel=[RecoverTest]::BarSettings()
  Check 'Bar and workspace settings open' ([RecoverTest]::IsWindowVisible($panel))
- Capture $panel 'keyspace-bar-settings.png'
+ Capture $panel 'overlay-bar-settings.png'
  Input-Text $panel 204 '40';Input-Text $panel 206 '9';[void][RecoverTest]::SendMessage([RecoverTest]::GetDlgItem($panel,219),0x14e,[IntPtr]2,[IntPtr]::Zero);[void][RecoverTest]::PostMessage($panel,0x111,[IntPtr](219+(1 -shl 16)),[RecoverTest]::GetDlgItem($panel,219));Pump
  Input-Text $panel 201 'menu, divider, workspaces, divider, tiling'
  Input-Text $panel 203 'network, divider, sound, power, controls';Click $panel 211
@@ -198,9 +198,7 @@ try {
  Check 'Rebrand retains the normal-user manifest' ($manifest -match 'asInvoker' -and $manifest -match 'uiAccess="false"')
  # 0.21: visual styles (Common Controls 6) are what let the dropdowns and lists use Windows' dark styles.
  Check 'Manifest asks for Common Controls 6' ($manifest -match 'Microsoft.Windows.Common-Controls' -and $manifest -match '6\.0\.0\.0')
- Check 'Old portable profile is preserved for rollback before editing' ([IO.File]::ReadAllText([IO.Path]::ChangeExtension($profilePath,'pre-mb-keyspace.json')) -eq $originalProfile)
- $rollback=Start-Process (Join-Path $root 'keyspace-rollback.exe') -PassThru
- Check 'Older Keyspace cannot start a second controller beside Omarchy Overlay' ($rollback.WaitForExit(5000) -and [RecoverTest]::MainWindow() -eq $controllerWindow)
+ Check 'Old portable profile is preserved for rollback before editing' ([IO.File]::ReadAllText([IO.Path]::ChangeExtension($profilePath,'pre-0.10.json')) -eq $originalProfile)
  Click $controllerWindow 28
  Check 'About identifies the personal prototype and its version' ([RecoverTest]::ControlText([RecoverTest]::AboutDialog(),65535) -match ('Omarchy Overlay '+[regex]::Escape("$($v=[Diagnostics.FileVersionInfo]::GetVersionInfo($exe);$v.FileMajorPart).$($v.FileMinorPart).$($v.FileBuildPart)")))
  [void][RecoverTest]::PostMessage([RecoverTest]::AboutDialog(),0x10,[IntPtr]::Zero,[IntPtr]::Zero);Pump 300
@@ -240,7 +238,7 @@ try {
  Check 'External registration conflict is visible in Settings' ([RecoverTest]::ControlText($settings,74) -like 'Unavailable:*')
  [void][RecoverTest]::UnregisterHotKey($f.Handle,902)
  Input-Text $settings 71 'Ctrl+Alt+T';Click $settings 73
- Check 'Conflicts with Keyspace actions are detected before registration' ([RecoverTest]::ControlText($settings,74) -like 'Unavailable:*')
+ Check 'Conflicts with Omarchy Overlay actions are detected before registration' ([RecoverTest]::ControlText($settings,74) -like 'Unavailable:*')
  Input-Text $settings 71 'Ctrl+Alt+F12';Click $settings 73
  Check 'Reserved F12 is rejected with a visible reason' ([RecoverTest]::ControlText($settings,74) -match 'reserves F12' -and (Read-Profile $folder).settings.cycle_workspace_shortcut -eq 'Ctrl+Alt+T')
  Input-Text $settings 71 '';Click $settings 73
@@ -250,18 +248,18 @@ try {
  Click $settings 75;Click $settings 73
  Check 'Default button restores the chosen Ctrl+Alt+F11 chord' ((Read-Profile $folder).settings.cycle_workspace_shortcut -eq 'Ctrl+Alt+F11')
  [void][RecoverTest]::SendMessage($settings,0x115,[IntPtr]7,[IntPtr]::Zero);Pump 200
- Capture $settings 'mb-keyspace-shortcut-settings.png'
+ Capture $settings 'overlay-shortcut-settings.png'
  [void][RecoverTest]::PostMessage($settings,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
  Check 'Workspace cycle returns to the fourth desktop before native-navigation regression' (Select-Desktop 3)
  Pump 1500
- # A native shortcut outside Keyspace must update the bar as well.
+ # A native shortcut outside Omarchy Overlay must update the bar as well.
  [RecoverTest]::NativeDesktop(0x25)
  Check 'External Windows desktop switch is observed' (Wait-Current ((State).ids[2]))
  Pump 700;Check 'Bar follows an external desktop switch' ([RecoverTest]::OnCurrent([RecoverTest]::Bar()))
  # MENU widens the left group; x=93 is inside the first workspace cell.
  $bar=[RecoverTest]::Bar();[void][RecoverTest]::PostMessage($bar,0x202,[IntPtr]::Zero,[IntPtr]([int](93*$dpi/96)+([int](12*$dpi/96) -shl 16)))
  Check 'Clicking workspace 1 selects the first actual Windows desktop' (Wait-Current ((State).ids[0]))
- Pump 700;Capture ([RecoverTest]::Bar()) 'keyspace-omarchy-bar.png'
+ Pump 700;Capture ([RecoverTest]::Bar()) 'overlay-omarchy-bar.png'
  # Exercise the optional compact previous/next controls against observed desktop IDs.
  Click $controllerWindow 14;$panel=[RecoverTest]::BarSettings();Click $panel 214
  $styles=[RecoverTest]::ModuleSettings()
@@ -272,12 +270,14 @@ try {
  $bar=[RecoverTest]::Bar()
  [void][RecoverTest]::PostMessage($bar,0x202,[IntPtr]::Zero,[IntPtr]([int](20*$dpi/96)+([int](14*$dpi/96) -shl 16)));Pump 500
  Check 'Previous-desktop module stops at the first desktop' ((State).current -eq (State).ids[0])
- [void][RecoverTest]::PostMessage($bar,0x202,[IntPtr]::Zero,[IntPtr]([int](60*$dpi/96)+([int](14*$dpi/96) -shl 16)))
- Check 'Next-desktop icon selects the next observed desktop' (Wait-Current ((State).ids[1]))
+ # The bar holds only Previous then Next, and Previous is a no-op on the first desktop, so walk right
+ # until Next is hit: cell widths follow the theme font, so a fixed x breaks when the font changes.
+ $next=$false;foreach($x in 40..200|Where-Object{$_ % 8 -eq 0}){[void][RecoverTest]::PostMessage($bar,0x202,[IntPtr]::Zero,[IntPtr]([int]($x*$dpi/96)+([int](14*$dpi/96) -shl 16)));$until=[DateTime]::UtcNow.AddMilliseconds(1200);do{Pump 150;$now=(State).current}while($now -eq (State).ids[0] -and [DateTime]::UtcNow -lt $until);if($now -ne (State).ids[0]){$next=$now -eq (State).ids[1];break}}
+ Check 'Next-desktop icon selects the next observed desktop' $next
  Pump 500;Check 'Bar follows the next-desktop module' ([RecoverTest]::OnCurrent([RecoverTest]::Bar()))
  [void][RecoverTest]::PostMessage([RecoverTest]::Bar(),0x202,[IntPtr]::Zero,[IntPtr]([int](20*$dpi/96)+([int](14*$dpi/96) -shl 16)))
  Check 'Previous-desktop icon returns to the preceding desktop' (Wait-Current ((State).ids[0]))
- # The anchor stays on its original desktop; Keyspace never shuffles other app windows between desktops.
+ # The anchor stays on its original desktop; Omarchy Overlay never shuffles other app windows between desktops.
  Check 'Existing app keeps its native desktop assignment' ([RecoverTest]::DesktopId($f.Handle).ToString() -eq $originalDesktop)
  Stop-App $app;$app=$null
  $app=Start-App $folder;Click $controllerWindow 3

@@ -19,7 +19,15 @@ mod desktops;
 #[cfg(any(windows, test))]
 mod dwindle;
 #[cfg(any(windows, test))]
+mod effects_gate;
+#[cfg(any(windows, test))]
+mod frame_colors;
+#[cfg(any(windows, test))]
 mod font_names;
+#[cfg(any(windows, test))]
+mod install;
+#[cfg(any(windows, test))]
+mod launch_unelevated;
 #[cfg(any(windows, test))]
 mod layout;
 #[cfg(any(windows, test))]
@@ -28,6 +36,8 @@ mod material;
 mod menu_model;
 #[cfg(any(windows, test))]
 mod motion;
+#[cfg(any(windows, test))]
+mod omarchy_themes;
 #[cfg(any(windows, test))]
 mod picker;
 #[cfg(any(windows, test))]

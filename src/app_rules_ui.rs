@@ -384,12 +384,6 @@ pub(super) unsafe fn command(app: &mut App, id: usize, notification: usize) {
                 return Err("The app rule is invalid.".into());
             }
             app.selected = task.hwnd;
-            if crate::config::always_ignored(&rule.executable) {
-                app.save_app_rule(index, rule.clone());
-                return Ok(
-                    "Mastercam is always left alone: its rule stays Ignore (always).".into(),
-                );
-            }
             let count = app.save_app_rule(index, rule.clone());
             Ok(format!("Saved {} for {} ({}). Applied to {count} matching window(s). Other apps keep their choices.",mode.label(),rules::app_name(&rule.executable),rule.executable))
         }
@@ -447,19 +441,8 @@ impl App {
     pub(super) unsafe fn save_app_rule(
         &mut self,
         index: Option<usize>,
-        mut rule: AppRule,
+        rule: AppRule,
     ) -> usize {
-        if crate::config::always_ignored(&rule.executable) {
-            // Mastercam is a fixed Ignore: whatever was asked, only Ignore is stored.
-            rule = AppRule {
-                executable: rule.executable,
-                title_contains: rule.title_contains,
-                window_class: rule.window_class,
-                mode: Mode::Ignore,
-                allow_opacity: false,
-                ..AppRule::default()
-            };
-        }
         let mut affected = vec![];
         unsafe extern "system" fn collect(h: HWND, p: LPARAM) -> i32 {
             (*(p as *mut Vec<HWND>)).push(h);

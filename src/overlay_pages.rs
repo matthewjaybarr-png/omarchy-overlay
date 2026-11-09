@@ -647,6 +647,9 @@ impl App {
                     })
                     .collect();
                 for t in crate::theme_files::loaded() {
+                    if theme::NAMES.iter().any(|(n, _)| *n == t.id) {
+                        continue; // replaces the built-in entry above
+                    }
                     list.push((t.id.clone(), format!("{} (config\\themes)", t.label), t.dark));
                 }
                 list.into_iter()
@@ -927,7 +930,7 @@ impl App {
                     Row::new(SLIDERS, "Omarchy Overlay menus", Act::Open(Level::Page("menu-materials")))
                         .detail(material_name(&self.config.menu_backdrop)),
                     info("Omarchy Overlay's own settings windows always stay plain so their text stays readable."),
-                    info("Only apps that allow it change. An app's own rule wins. Mastercam and Ignore apps are never touched."),
+                    info("Only apps that allow it change. An app's own rule wins. Ignore apps are never touched."),
                 ];
                 if windows_personalization::current("EnableTransparency") == Some(0) {
                     rows.push(
@@ -951,7 +954,7 @@ impl App {
                     })
                     .collect();
                 rows.push(info(if id == "app-materials" {
-                    "Other apps' windows. An app's own rule wins; Mastercam and Ignore apps are never touched."
+                    "Other apps' windows. An app's own rule wins; Ignore apps are never touched."
                 } else {
                     "The Omarchy Overlay menu, the app picker and launcher. A tint keeps the text readable over any window."
                 }));
@@ -1077,11 +1080,7 @@ impl App {
                     if !rule.window_class.is_empty() {
                         label = format!("{label}, class {}", rule.window_class);
                     }
-                    let mode = if crate::config::always_ignored(&rule.executable) {
-                        "Ignore (always)"
-                    } else {
-                        rule.mode.label()
-                    };
+                    let mode = rule.mode.label();
                     rows.push(
                         Row::new(WINDOW, label, Act::Open(Level::Rule(Some(i))))
                             .detail(format!("{mode}  {}", rule.executable)),
@@ -1139,7 +1138,6 @@ impl App {
             }
             "windows-theme" => self.windows_theme_rows(),
             "windows-checklist" => vec![
-                info("Mastercam stays on Ignore: Omarchy Overlay never moves, recolors or repaints it."),
                 info("Word, Excel, PowerPoint, Outlook: File → Account → Office Theme (Black or Dark Gray)."),
                 info("Teams: Settings → Appearance and accessibility → Theme."),
                 info("Chrome and Edge: follow the Windows dark mode once it is applied."),
@@ -1290,7 +1288,7 @@ impl App {
             let mut row = Row::new(OPTION, text, Act::Choose("modifiers", m.into()))
                 .checked(self.config.modifiers == m);
             if m == "Alt" {
-                row = row.detail("not recommended: Mastercam uses Alt+letter keys");
+                row = row.detail("takes Alt+letter shortcuts from programs");
             }
             rows.push(row);
         }
@@ -1513,15 +1511,6 @@ impl App {
                 vec![info("This rule no longer exists. Esc goes back.")],
             );
         };
-        if crate::config::always_ignored(&rule.executable) {
-            return page(
-                crate::rules::app_name(&rule.executable),
-                vec![
-                    Row::new(CLOSE, "Ignore (always)", Act::None).checked(true),
-                    info("Omarchy Overlay never tiles, floats, moves, recolors, blurs or fades Mastercam, whatever any rule says."),
-                ],
-            );
-        }
         let mut rows = vec![];
         let exe = rule.executable.to_ascii_lowercase();
         if exe == "outlook.exe" || exe == "olk.exe" {
@@ -1783,8 +1772,7 @@ impl App {
     }
 
     /// Saves a changed configuration and applies only what changed.
-    pub(super) unsafe fn commit(&mut self, mut config: Config) -> bool {
-        config.force_mastercam_ignore();
+    pub(super) unsafe fn commit(&mut self, config: Config) -> bool {
         if let Err(error) = config
             .validate()
             .and_then(|()| config.always_float.validate())
@@ -1988,12 +1976,12 @@ impl App {
             Some(undo) if undo.page == key => {
                 match key {
                     "background" => {
-                        if let Err(error) = appearance_effects::restore_wallpaper(&self.directory) {
+                        if let Err(error) = appearance_effects::with_effects(|| appearance_effects::restore_wallpaper(&self.directory)) {
                             overlay::message(&error);
                         }
                     }
                     "windows-theme" => {
-                        if let Err(error) = windows_personalization::restore(&self.directory) {
+                        if let Err(error) = appearance_effects::with_effects(|| windows_personalization::restore(&self.directory)) {
                             overlay::message(&error);
                         }
                     }
@@ -2034,9 +2022,9 @@ impl App {
             "background" => {
                 c.appearance_wallpaper.clear();
                 self.commit(c);
-                appearance_effects::restore_wallpaper(&self.directory)
+                appearance_effects::with_effects(|| appearance_effects::restore_wallpaper(&self.directory))
             }
-            "windows-theme" => windows_personalization::restore(&self.directory),
+            "windows-theme" => appearance_effects::with_effects(|| windows_personalization::restore(&self.directory)),
             "webapps" | "install-webapp" => {
                 self.webapps = crate::webapps::defaults();
                 self.save_webapps();
@@ -2208,7 +2196,7 @@ impl App {
                         let mut c = self.config.clone();
                         c.appearance_wallpaper.clear();
                         self.commit(c);
-                        appearance_effects::restore_wallpaper(&self.directory)
+                        appearance_effects::with_effects(|| appearance_effects::restore_wallpaper(&self.directory))
                     }
                     path => {
                         self.remember(key);
@@ -2224,7 +2212,7 @@ impl App {
                                 }
                             }
                         }
-                        appearance_effects::apply_wallpaper(&self.directory, &path).map(|()| {
+                        appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&self.directory, &path)).map(|()| {
                             let mut c = self.config.clone();
                             c.appearance_wallpaper = path
                                 .strip_prefix(self.profile_folder())
@@ -2464,10 +2452,10 @@ impl App {
             }
             "windows-theme" => {
                 let result = if value == "mode" {
-                    windows_personalization::apply(&self.directory, theme::current().dark)
+                    appearance_effects::with_effects(|| windows_personalization::apply(&self.directory, theme::current().dark))
                 } else {
                     let on = windows_personalization::current(value) != Some(1);
-                    windows_personalization::apply_effect(&self.directory, value, on)
+                    appearance_effects::with_effects(|| windows_personalization::apply_effect(&self.directory, value, on))
                 };
                 overlay::message(&match result {
                     Ok(()) => "Applied. Restore puts back the original.".into(),

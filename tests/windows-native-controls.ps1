@@ -9,12 +9,12 @@ public static class ControlsTest {
  [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
  public static IntPtr MainWindow(){return FindWindow("OmarchyOverlay.Main",null);}
  public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
- // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+ // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
  public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
- [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
- public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
- [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
- public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+ [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+ public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+ [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+ public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
@@ -53,7 +53,7 @@ function Check($name,[bool]$ok,$detail=''){$results.Add(@{name=$name;passed=$ok;
 try {
  Check 'No controller to disturb' ([ControlsTest]::MainWindow() -eq [IntPtr]::Zero)
  Check 'Read-only input observer is installed for the fixture' ([ControlsTest]::StartHook())
- $fixture=[Windows.Forms.Form]::new();$fixture.Text='Keyspace native control fixture';$fixture.SetBounds(180,160,600,400);$fixture.Show();Pump 300
+ $fixture=[Windows.Forms.Form]::new();$fixture.Text='Omarchy Overlay native control fixture';$fixture.SetBounds(180,160,600,400);$fixture.Show();Pump 300
  $app=Start-Process "$root\OmarchyOverlay.exe" -PassThru
  $until=[DateTime]::UtcNow.AddSeconds(20)
  do{Pump 100;$main=[ControlsTest]::MainWindow()}while(-not [ControlsTest]::Ready($main) -and [DateTime]::UtcNow -lt $until)
@@ -80,11 +80,11 @@ try {
   Check $label ([ControlsTest]::Keys() -eq $expectedKeys) ("keys=$([ControlsTest]::Keys()); visible native host=$nativeVisible")
   [ControlsTest]::Key(0x1b,$false);[ControlsTest]::Key(0x1b,$true);Pump 1000
  }
- # 0.16: the POWER bar module opens the Keyspace System menu instead of sending Win+X.
+ # 0.16: the POWER bar module opens the Omarchy Overlay System menu instead of sending Win+X.
  [ControlsTest]::ClearKeys();[void][ControlsTest]::PostMessage($main,0x800a,[IntPtr]203,[IntPtr]::Zero)
  $until=[DateTime]::UtcNow.AddSeconds(5)
  do{Pump 100}while(-not [ControlsTest]::IsWindowVisible([ControlsTest]::Overlay()) -and [DateTime]::UtcNow -lt $until)
- Check 'POWER module opens the Keyspace System menu without a Windows chord' ([ControlsTest]::IsWindowVisible([ControlsTest]::Overlay()) -and [ControlsTest]::Keys() -eq '') ("keys=$([ControlsTest]::Keys())")
+ Check 'POWER module opens the Omarchy Overlay System menu without a Windows chord' ([ControlsTest]::IsWindowVisible([ControlsTest]::Overlay()) -and [ControlsTest]::Keys() -eq '') ("keys=$([ControlsTest]::Keys())")
  [ControlsTest]::CloseMenu();Pump 300
 } catch {$results.Add(@{name='Native controls harness';passed=$false;detail=$_.Exception.ToString()})}
 finally {

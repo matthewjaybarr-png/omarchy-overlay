@@ -89,6 +89,9 @@ p.add_argument("source", help="PowerShell expression, or @path to read a script"
 p = commands.add_parser("interactive")
 p.add_argument("script", help="Absolute guest path to a PowerShell script")
 p.add_argument("--user", default=os.environ.get("OVERLAY_VM_USER", "tester"))
+p.add_argument("--elevated", action="store_true", help="Run with the user's full admin token (RunLevel Highest)")
+p = commands.add_parser("keys", help="Press keys on the VM's virtual keyboard (not flagged as injected)")
+p.add_argument("keys", nargs="+", help="Linux key names pressed together, e.g. KEY_LEFTMETA KEY_K")
 OPTIONS = parser.parse_args()
 if OPTIONS.command == "push":
     push(OPTIONS.source, OPTIONS.destination)
@@ -99,8 +102,12 @@ elif OPTIONS.command == "ps":
     if source.startswith("@"):
         source = pathlib.Path(source[1:]).read_text()
     print(powershell(source))
+elif OPTIONS.command == "keys":
+    subprocess.run(["virsh", "-c", "qemu:///system", "send-key", OPTIONS.vm, *OPTIONS.keys], check=True,
+                   capture_output=True)
+    print("Pressed " + "+".join(OPTIONS.keys))
 elif OPTIONS.command == "interactive":
-    task = f"Keyspace-Test-{int(time.time())}-{os.getpid()}"
+    task = f"Overlay-Test-{int(time.time())}-{os.getpid()}"
     wrapped = f"""
 $ErrorActionPreference = 'Stop'
 Start-Transcript -Path {quote(OPTIONS.script + '.console.log')} -Force | Out-Null
@@ -112,10 +119,10 @@ finally {{ Stop-Transcript | Out-Null }}
     source = f"""
 $ErrorActionPreference = 'Stop'
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encoded}'
-$principal = New-ScheduledTaskPrincipal -UserId {quote(OPTIONS.user)} -LogonType Interactive -RunLevel Limited
+$principal = New-ScheduledTaskPrincipal -UserId {quote(OPTIONS.user)} -LogonType Interactive -RunLevel {'Highest' if OPTIONS.elevated else 'Limited'}
 $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
 Register-ScheduledTask -TaskName {quote(task)} -Action $action -Principal $principal -Settings $settings | Out-Null
 Start-ScheduledTask -TaskName {quote(task)}
-"Started limited interactive task: {task}"
+"Started {'elevated' if OPTIONS.elevated else 'limited'} interactive task: {task}"
 """
     print(powershell(source))

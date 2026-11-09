@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub bar: crate::bar_model::BarConfig,
     pub gap: i32,
+    /// Space between tiled windows and the monitor edge (Hyprland gaps_out).
+    pub outer_gap: i32,
+    /// Square corners and a 1 px theme border on managed windows, accent when focused.
+    pub window_borders: bool,
     pub main_ratio: f64,
     pub modifiers: String,
     pub cycle_workspace_shortcut: String,
@@ -78,11 +82,6 @@ pub const MENU_FONTS: &[(&str, &str)] = &[
     ("Segoe UI", "Segoe UI (Windows)"),
 ];
 pub const MATERIALS: [&str; 3] = ["solid", "mica", "acrylic"];
-/// Mastercam is always left alone: never tiled, floated, moved, recolored, given a
-/// material or made see-through, whatever any rule says.
-pub fn always_ignored(exe: &str) -> bool {
-    exe.to_ascii_lowercase().starts_with("mastercam")
-}
 /// A menu font name must be a plausible Windows family name; whether it is installed
 /// is checked when drawing, so a missing font never makes the profile invalid.
 pub fn valid_font_name(name: &str) -> bool {
@@ -92,7 +91,9 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             bar: crate::bar_model::BarConfig::default(),
-            gap: 10,
+            gap: 5,
+            outer_gap: 10,
+            window_borders: true,
             main_ratio: 0.55,
             modifiers: "CtrlAlt".into(),
             cycle_workspace_shortcut: crate::shortcuts::DEFAULT_CYCLE.into(),
@@ -106,7 +107,7 @@ impl Default for Config {
             show_osd: true,
             appearance_profiles: vec![],
             appearance_wallpaper: String::new(),
-            bar_opacity: 100,
+            bar_opacity: 79,
             inactive_opacity: 100,
             layout: "main-stack".into(),
             scrolling_columns: 2,
@@ -123,8 +124,8 @@ impl Default for Config {
             taskbar_mode: "legacy".into(),
             keymap: "both".into(),
             tap_super: "start".into(),
-            menu_font: MENU_FONTS[0].0.into(),
-            menu_font_size: 12,
+            menu_font: MENU_FONTS[1].0.into(),
+            menu_font_size: 14,
             always_float: Default::default(),
             excluded_processes: vec![
                 "Taskmgr.exe".into(),
@@ -172,8 +173,8 @@ impl Config {
         if !self.main_ratio.is_finite() || !(0.25..=0.75).contains(&self.main_ratio) {
             return Err("main_ratio must be between 0.25 and 0.75.".into());
         }
-        if !(0..=80).contains(&self.gap) {
-            return Err("gap must be between 0 and 80.".into());
+        if !(0..=80).contains(&self.gap) || !(0..=80).contains(&self.outer_gap) {
+            return Err("gap and outer_gap must be between 0 and 80.".into());
         }
         if !["WinAlt", "CtrlAlt", "Alt"].contains(&self.modifiers.as_str()) {
             return Err("Unsupported shortcut modifier.".into());
@@ -226,42 +227,7 @@ impl Config {
 }
 
 impl Config {
-    /// Puts every Mastercam rule back to plain Ignore. Returns true when a rule changed,
-    /// so the caller can say so once and save.
-    pub fn force_mastercam_ignore(&mut self) -> bool {
-        let mut changed = false;
-        for r in self
-            .rules
-            .iter_mut()
-            .filter(|r| always_ignored(&r.executable))
-        {
-            let fixed = AppRule {
-                executable: r.executable.clone(),
-                title_contains: r.title_contains.clone(),
-                window_class: r.window_class.clone(),
-                mode: crate::rules::Mode::Ignore,
-                allow_opacity: false,
-                ..AppRule::default()
-            };
-            if serde_json::to_value(&*r).ok() != serde_json::to_value(&fixed).ok() {
-                *r = fixed;
-                changed = true;
-            }
-        }
-        changed
-    }
     pub fn policy(&self, exe: &str, title: &str, class: &str) -> crate::rules::Policy {
-        if always_ignored(exe) {
-            return crate::rules::Policy {
-                mode: crate::rules::Mode::Ignore,
-                allow_opacity: false,
-                active_opacity: 100,
-                inactive_opacity: 100,
-                material_explicit: false,
-                backdrop: 0,
-                coordinate_theme: false,
-            };
-        }
         if self.always_float.matches(exe, title, class).is_some() {
             return crate::rules::Policy {
                 mode: crate::rules::Mode::Float,
@@ -302,6 +268,27 @@ impl Config {
 mod tests {
     use super::*;
     #[test]
+    fn walker_menu_font_by_default() {
+        let c = Config::default();
+        assert_eq!((c.menu_font.as_str(), c.menu_font_size), ("JetBrainsMono Nerd Font", 14));
+    }
+    #[test]
+    fn waybar_bar_opacity_by_default() {
+        assert_eq!(Config::default().bar_opacity, 79);
+    }
+    #[test]
+    fn hyprland_gaps_and_borders_by_default_and_for_older_profiles() {
+        let c = Config::default();
+        assert_eq!((c.gap, c.outer_gap, c.window_borders), (5, 10, true));
+        let old: Config = serde_json::from_str(r#"{"theme":"tokyo-night"}"#).unwrap();
+        assert_eq!((old.gap, old.outer_gap, old.window_borders), (5, 10, true));
+        let wide = Config {
+            outer_gap: 81,
+            ..Default::default()
+        };
+        assert!(wide.validate().is_err());
+    }
+    #[test]
     fn tiling_starts_on_by_default_and_for_older_settings() {
         assert!(Config::default().start_tiling);
         // A 0.16 file has no start_tiling key; K7 wants it to tile after the update too.
@@ -311,44 +298,17 @@ mod tests {
         assert!(!off.start_tiling);
     }
     #[test]
-    fn mastercam_float_acrylic_rule_still_leaves_mastercam_alone() {
-        let mut c = Config {
-            window_backdrop: "acrylic".into(),
-            default_mode: crate::rules::Mode::Tile,
-            ..Default::default()
-        };
+    fn an_app_tile_rule_survives_save_and_load() {
+        let mut c = Config::default();
         c.rules.push(AppRule {
-            executable: "Mastercam.exe".into(),
-            mode: crate::rules::Mode::Float,
-            backdrop: Some("acrylic".into()),
-            active_opacity: Some(80),
+            executable: "Paint.exe".into(),
+            mode: crate::rules::Mode::Tile,
             ..Default::default()
         });
-        for exe in [
-            "Mastercam.exe",
-            "MASTERCAM2026.EXE",
-            "mastercamlauncher.exe",
-        ] {
-            let p = c.policy(exe, "Mastercam 2026", "Afx:Mastercam");
-            assert_eq!(p.mode, crate::rules::Mode::Ignore, "{exe}");
-            assert_eq!((p.backdrop, p.material_explicit), (0, false));
-            assert!(!p.allow_opacity && p.active_opacity == 100 && p.inactive_opacity == 100);
-            assert!(!p.coordinate_theme);
-        }
-        assert!(
-            c.force_mastercam_ignore(),
-            "the Float rule is changed on load"
-        );
-        assert!(!c.force_mastercam_ignore(), "and only reported once");
-        let r = &c.rules[0];
-        assert_eq!(
-            (r.mode, r.backdrop.clone(), r.active_opacity),
-            (crate::rules::Mode::Ignore, None, None)
-        );
-        assert_eq!(r.executable, "Mastercam.exe");
+        let c: Config = serde_json::from_str(&serde_json::to_string(&c).unwrap()).unwrap();
         c.validate().unwrap();
-        // Other apps are untouched.
-        assert_eq!(c.policy("notepad.exe", "", "").backdrop, 3);
+        assert_eq!(c.rules[0].mode, crate::rules::Mode::Tile);
+        assert_eq!(c.policy("Paint.exe", "", "").mode, crate::rules::Mode::Tile);
     }
     #[test]
     fn global_defaults_and_explicit_app_choices_are_independent() {

@@ -365,7 +365,7 @@ pub(super) unsafe fn command(app: &mut App, id: usize, notification: usize) {
                 } else {
                     app.profile_folder().join(path)
                 };
-                appearance_effects::apply_wallpaper(&app.directory, &path)?;
+                appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&app.directory, &path))?;
             }
             816 => appearance_effects::apply_terminal(&app.directory, &app.config.theme)?,
             817 => appearance_effects::restore(&app.directory)?,
@@ -403,7 +403,7 @@ impl App {
             } else {
                 self.profile_folder().join(path)
             };
-            appearance_effects::apply_wallpaper(&self.directory, &path)?;
+            appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&self.directory, &path))?;
         }
         self.config = candidate;
         let name = self.config.theme.clone();

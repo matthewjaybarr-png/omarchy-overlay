@@ -225,19 +225,18 @@ impl Default for BarConfig {
         use Module::*;
         Self {
             height: 30,
-            font_size: 13,
-            font_family: "Consolas".into(),
+            font_size: 14,
+            font_family: "JetBrainsMono Nerd Font".into(),
             spacing: 6,
             task_buttons: 2,
             split_task_modules: true,
             module_display: BTreeMap::new(),
             clock_format: "day-time".into(),
             workspace_labels: vec!["1".into(), "2".into(), "3".into(), "4".into()],
-            left: vec![
-                Menu, Divider, Workspaces, Divider, Tiling, Divider, AppDrawer, Tasks,
-            ],
+            // Omarchy's Waybar: logo menu and workspaces, clock, tray and status icons.
+            left: vec![Menu, Workspaces],
             center: vec![Clock],
-            right: vec![Sound, Divider, Network, Power, Divider, Controls],
+            right: vec![SystemTray, Sound, Network, Power],
         }
     }
 }
@@ -378,6 +377,17 @@ pub fn arrange(width: i32, spacing: i32, sections: [Vec<Item>; 3]) -> Vec<Slot> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn waybar_style_defaults() {
+        use Module::*;
+        let c = BarConfig::default();
+        assert_eq!(c.left, vec![Menu, Workspaces]);
+        assert_eq!(c.center, vec![Clock]);
+        assert_eq!(c.right, vec![SystemTray, Sound, Network, Power]);
+        assert_eq!((c.font_family.as_str(), c.font_size), ("JetBrainsMono Nerd Font", 14));
+        assert_eq!(c.clock_format, "day-time");
+        assert!(c.validate().is_ok());
+    }
     fn item(m: Module, w: i32) -> Item {
         Item {
             module: m,

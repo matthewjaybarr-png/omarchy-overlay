@@ -1,6 +1,6 @@
 //! config\binds.conf: one keybind per line as `key, description, command`.
-//! Super is the Windows key. Keys Windows never gives up, plain Alt keys that
-//! programs such as Mastercam use, and Ctrl-only program shortcuts are refused.
+//! Super is the Windows key. Keys Windows never gives up and Ctrl-only program
+//! shortcuts are refused; plain Alt keys work but are logged as a warning.
 use crate::commands::{self, Command};
 
 pub const DEFAULT: &str = include_str!("../config/examples/binds.conf");
@@ -107,12 +107,8 @@ impl Key {
         let last = parts[parts.len() - 1];
         let vk = key_code(last).ok_or_else(|| format!("\"{last}\" is not a key name."))?;
         let key = Self { modifiers, vk };
-        if modifiers & SUPER == 0 && modifiers & (CTRL | ALT) != CTRL | ALT {
-            return Err(if modifiers & ALT != 0 {
-                "Plain Alt keys stay with programs such as Mastercam. Use Super or Ctrl+Alt.".into()
-            } else {
-                "Use Super, or Ctrl+Alt, so program shortcuts stay free.".into()
-            });
+        if modifiers & (SUPER | ALT) == 0 {
+            return Err("Use Super, Alt or Ctrl+Alt, so program shortcuts stay free.".into());
         }
         if modifiers == SUPER && vk == 0x4c {
             return Err("Super+L always locks Windows and cannot be used.".into());
@@ -121,6 +117,11 @@ impl Key {
             return Err("Ctrl+Alt+Delete always belongs to Windows.".into());
         }
         Ok(key)
+    }
+    /// A plain-Alt key works but takes the shortcut from the focused program.
+    pub fn warning(self) -> Option<&'static str> {
+        (self.modifiers & (SUPER | CTRL) == 0)
+            .then_some("Plain Alt keys take the shortcut from programs that use them.")
     }
     pub fn label(self) -> String {
         let mut parts = vec![];
@@ -223,6 +224,15 @@ mod tests {
         }
     }
     #[test]
+    fn plain_alt_is_allowed_with_a_warning() {
+        let key = Key::parse("Alt+J").unwrap();
+        assert!(key.warning().unwrap().contains("Alt"));
+        assert_eq!(Key::parse("Super+J").unwrap().warning(), None);
+        assert!(Key::parse("Ctrl+J").is_err());
+        assert!(Key::parse("Super+L").is_err());
+        assert!(Key::parse("Ctrl+Alt+Delete").is_err());
+    }
+    #[test]
     fn broken_lines_name_the_line_and_reserved_keys_are_refused() {
         assert_eq!(
             Key::parse("super+shift+return").unwrap().label(),
@@ -232,9 +242,7 @@ mod tests {
             parse("# note\n\nSuper+B, Browser, app browser\nSuper+B, Again, apps").unwrap_err();
         assert!(err.contains("line 4") && err.contains("line 3"), "{err}");
         assert!(parse("Super+L, Lock, lock").unwrap_err().contains("line 1"));
-        assert!(parse("Alt+E, Hide, apps")
-            .unwrap_err()
-            .contains("Mastercam"));
+        assert_eq!(parse("Alt+E, Hide, apps").unwrap().len(), 1);
         assert!(parse("Ctrl+C, Copy, apps").is_err());
         assert!(parse("Ctrl+Alt+Delete, No, apps").is_err());
         assert!(parse("Super+Q, Quit").unwrap_err().contains("commas"));

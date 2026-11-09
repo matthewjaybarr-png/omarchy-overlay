@@ -19,11 +19,13 @@ pub struct Profile {
 pub const THEMES: &[(&str, &str)] = &[
     ("neon-ridge", "Neon Ridge"),
     ("tokyo-night", "Tokyo Night"),
-    ("jade", "Jade"),
+    ("everforest", "Everforest"),
     ("nord", "Nord"),
-    ("paper", "Paper"),
+    ("flexoki-light", "Flexoki Light"),
     ("alpenglow-night", "Alpenglow Night"),
 ];
+/// Menu commands 20-24, in id order.
+pub const COMMAND_THEMES: [&str; 5] = ["everforest", "tokyo-night", "nord", "flexoki-light", "alpenglow-night"];
 impl Profile {
     pub fn capture(config: &Config, name: String) -> Self {
         Self {
@@ -233,5 +235,17 @@ mod advanced_tests {
         c.window_backdrop = "mica".into();
         old.apply(&mut c).unwrap();
         assert_eq!(c.window_backdrop, "mica");
+    }
+}
+
+#[cfg(test)]
+mod theme_list_tests {
+    use super::*;
+    #[test]
+    fn every_offered_theme_is_a_real_theme() {
+        let ids = THEMES.iter().map(|(id, _)| *id).chain(COMMAND_THEMES);
+        for id in ids {
+            assert!(crate::theme_files::resolve(id).is_some(), "{id}");
+        }
     }
 }

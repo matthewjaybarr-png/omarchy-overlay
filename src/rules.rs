@@ -111,7 +111,6 @@ pub fn matching<'a>(
 #[cfg(windows)]
 pub fn work_starters() -> Vec<AppRule> {
     [
-        ("Mastercam.exe", Mode::Ignore, false),
         ("msedge.exe", Mode::Tile, true),
         ("explorer.exe", Mode::Tile, true),
         ("EXCEL.EXE", Mode::Float, false),
@@ -220,7 +219,6 @@ pub fn app_name(executable: &str) -> &str {
         "olk.exe" => "Outlook (new)",
         "outlook.exe" => "Outlook (classic)",
         "excel.exe" => "Excel",
-        "mastercam.exe" => "Mastercam",
         "msedge.exe" => "Microsoft Edge",
         "explorer.exe" => "File Explorer",
         "chrome.exe" => "Google Chrome",

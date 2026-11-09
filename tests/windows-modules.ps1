@@ -10,7 +10,7 @@ $originalTaskbar = $null
 $configTouched = $false
 $configPath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'OmarchyOverlay\config.json'
 $originalConfig = if (Test-Path $configPath) { [IO.File]::ReadAllText($configPath) } else { $null }
-$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-mb-keyspace.json')
+$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-0.10.json')
 $originalUpgradeBackup=if(Test-Path $upgradeBackupPath){[IO.File]::ReadAllBytes($upgradeBackupPath)}else{$null}
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -25,12 +25,12 @@ public static class Desktop {
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string name, string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main", null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Launcher() { return FindWindow("OmarchyOverlay.Launcher", null); }
   public static IntPtr Bar() { return FindWindow("OmarchyOverlay.TopBar", null); }
   public static IntPtr Appearance() { return FindWindow("OmarchyOverlay.Appearance", null); }
@@ -182,7 +182,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Choose $modules 403 2;Choose $modules 402 1;Choose $modules 410 1;Choose $modules 409 0;Choose $modules 407 2;Click $modules 451
  $saved=Get-Content -Raw $configPath|ConvertFrom-Json
  Check 'Independent module display choices save' ($saved.bar.module_display.menu -eq 'icon' -and $saved.bar.module_display.sound -eq 'icon-text' -and $saved.bar.module_display.clock -eq 'text' -and $saved.bar.module_display.tasks -eq 'icon')
- [ModulesTest]::Top($modules);Wait-Desktop 300;Capture $modules 'keyspace-module-settings.png'
+ [ModulesTest]::Top($modules);Wait-Desktop 300;Capture $modules 'overlay-module-settings.png'
  [void][Desktop]::SendMessage($modules,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
  Input-Text $settings 201 'menu, launcher, start';Input-Text $settings 202 'clock';Input-Text $settings 203 'sound, network, power, controls';Click $settings 211
  $saved=Get-Content -Raw $configPath|ConvertFrom-Json
@@ -192,11 +192,11 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Bar-Click 20
  Check 'Icon-only menu retains its click action' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
  [Desktop]::CloseMenu();Wait-Desktop 300
- # 0.16: the launcher module opens the Keyspace app picker.
+ # 0.16: the launcher module opens the Omarchy Overlay app picker.
  Bar-Click 65;$overlayDeadline=[DateTime]::UtcNow.AddSeconds(5)
  while(-not [Desktop]::IsWindowVisible([Desktop]::Overlay()) -and [DateTime]::UtcNow -lt $overlayDeadline){Wait-Desktop 100}
- Check 'Launcher module opens the Keyspace app picker' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
- [ModulesTest]::Top([Desktop]::Overlay());Wait-Desktop 700;Capture ([Desktop]::Overlay()) 'keyspace-overlay-picker.png'
+ Check 'Launcher module opens the Omarchy Overlay app picker' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
+ [ModulesTest]::Top([Desktop]::Overlay());Wait-Desktop 700;Capture ([Desktop]::Overlay()) 'overlay-overlay-picker.png'
  [Desktop]::CloseMenu();Wait-Desktop 300
  # The 0.15 search window, still opened from the dashboard, keeps its owner-drawn icon rows.
  [void][Desktop]::PostMessage($main,0x0111,[IntPtr]2,[IntPtr]::Zero);$picker=[Desktop]::Launcher();$searchDeadline=[DateTime]::UtcNow.AddSeconds(5)
@@ -205,7 +205,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Check '0.15 app search opens from the dashboard' ([Desktop]::IsWindowVisible($picker))
  Check 'App picker uses icon-capable owner-drawn rows' (([ModulesTest]::GetWindowLongPtr($list,-16).ToInt64()-band 0x10)-ne 0)
  Check 'Owner-drawn rows retain searchable native strings' ([Desktop]::SendMessage($list,0x18b,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-gt 5)
- [ModulesTest]::Top($picker);Wait-Desktop 700;Capture $picker 'keyspace-picker-icons.png'
+ [ModulesTest]::Top($picker);Wait-Desktop 700;Capture $picker 'overlay-picker-icons.png'
  [void][Desktop]::SendMessage($picker,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
  $bar=[Desktop]::Bar();$r=Bounds $bar;$scale=($r[3]-$r[1])/30
  [void][ModulesTest]::SetCursorPos(($r[0]+[int](20*$scale)),($r[1]+[int](14*$scale)));Wait-Desktop 1300
@@ -215,15 +215,15 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  $diagnostic="natural=$natural bar=$bar tooltip=$tooltip tools=$([Desktop]::SendMessage($tooltip,1037,[IntPtr]::Zero,[IntPtr]::Zero)) cursor=$([ModulesTest]::CursorWindow()) text=$([ModulesTest]::Tip($tooltip,$bar))"
  if(-not $natural){[void][Desktop]::PostMessage($bar,0x200,[IntPtr]::Zero,[IntPtr](24+(16 -shl 16)));Wait-Desktop 700;$diagnostic+=" after-move=$([Desktop]::IsWindowVisible($tooltip)) text=$([ModulesTest]::Tip($tooltip,$bar))";[void][Desktop]::PostMessage($bar,0x2a1,[IntPtr]::Zero,[IntPtr](24+(16 -shl 16)));Wait-Desktop 300;$diagnostic+=" after-hover=$([Desktop]::IsWindowVisible($tooltip))"}
  Check 'Hover shows a visible native tooltip' $natural $diagnostic
- Capture $tooltip 'keyspace-tooltip.png'
+ Capture $tooltip 'overlay-tooltip.png'
  $tip=[ModulesTest]::Tip($tooltip,$bar)
  Check 'Icon-only menu tooltip explains its action' ($tip.Contains('Omarchy Overlay menu')) $tip
- Capture $bar 'keyspace-module-bar.png'
+ Capture $bar 'overlay-module-bar.png'
  # Start is the third item: icon menu 28 + gap, launcher icon/text 72 + gap.
  [ModulesTest]::Click(($r[0]+[int](145*$scale)),($r[1]+[int](14*$scale)));Wait-Desktop 1500
  $pidValue=0;[void][ModulesTest]::GetWindowThreadProcessId([Desktop]::GetForegroundWindow(),[ref]$pidValue)
  $process=Get-Process -Id $pidValue -ErrorAction SilentlyContinue
- Capture ([Desktop]::GetForegroundWindow()) 'keyspace-windows-start.png'
+ Capture ([Desktop]::GetForegroundWindow()) 'overlay-windows-start.png'
  Check 'Start module opens the native Windows Start shell' ($process.ProcessName -in @('StartMenuExperienceHost','SearchHost')) $process.ProcessName
  [Desktop]::keybd_event(0x1b,0,0,[UIntPtr]::Zero);[Desktop]::keybd_event(0x1b,0,2,[UIntPtr]::Zero);Wait-Desktop 400
  [void][Desktop]::PostMessage($main,0x312,[IntPtr]105,[IntPtr]::Zero);Wait-Desktop 1200
@@ -232,7 +232,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  $deadline=[DateTime]::UtcNow.AddSeconds(30)
  do{Wait-Desktop 200;$main=[Desktop]::MainWindow()}while(-not [Desktop]::Ready($main)-and [DateTime]::UtcNow -lt $deadline);[Desktop]::CloseMenu()
  Click $main 14;$settings=[ModulesTest]::Find('OmarchyOverlay.BarSettings');Click $settings 214;$modules=[ModulesTest]::Find('OmarchyOverlay.ModuleSettings')
- Check 'Module choices survive restarting Keyspace' ([Desktop]::SendMessage([Desktop]::GetDlgItem($modules,403),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 2)
+ Check 'Module choices survive restarting Omarchy Overlay' ([Desktop]::SendMessage([Desktop]::GetDlgItem($modules,403),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 2)
  Click $modules 452;Click $modules 451
  $saved=Get-Content -Raw $configPath|ConvertFrom-Json
  Check 'Restore defaults keeps native app icons with text' ($saved.bar.module_display.menu -eq 'text' -and $saved.bar.module_display.tasks -eq 'icon-text')

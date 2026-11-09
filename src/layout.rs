@@ -6,6 +6,17 @@ pub struct Rect {
     pub h: i32,
 }
 
+/// Shifts the work area so layouts, which put `gap` at their edges, end `outer_gap` from the monitor edge.
+pub fn outer(area: Rect, gap: i32, outer_gap: i32) -> Rect {
+    let d = outer_gap - gap;
+    Rect {
+        x: area.x + d,
+        y: area.y + d,
+        w: (area.w - 2 * d).max(1),
+        h: (area.h - 2 * d).max(1),
+    }
+}
+
 /// The first window is the main pane; the remainder share a vertical stack.
 pub fn tile(area: Rect, count: usize, gap: i32, ratio: f64) -> Vec<Rect> {
     if count == 0 || area.w < 1 || area.h < 1 {
@@ -169,6 +180,20 @@ pub fn transfer(window: Rect, source: Rect, target: Rect) -> Rect {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn outer_gap_sets_monitor_edges_and_gap_sets_spacing() {
+        let area = Rect {
+            x: 0,
+            y: 0,
+            w: 1000,
+            h: 800,
+        };
+        let r = tile(outer(area, 5, 10), 2, 5, 0.5);
+        assert_eq!((r[0].x, r[0].y), (10, 10));
+        assert_eq!(r[1].x - (r[0].x + r[0].w), 5);
+        assert_eq!((r[1].x + r[1].w, r[0].y + r[0].h), (990, 790));
+        assert_eq!(outer(area, 10, 0).x, -10);
+    }
     #[test]
     fn grid_fits_irregular_screens_without_overlap_and_fills_last_row() {
         for area in [

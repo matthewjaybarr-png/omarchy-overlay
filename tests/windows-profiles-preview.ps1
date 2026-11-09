@@ -35,7 +35,7 @@ try {
  [void][Preview]::GetWindowRect($window,[ref]$r)
  $bitmap=[Drawing.Bitmap]::new(($r.right-$r.left),($r.bottom-$r.top))
  $graphics=[Drawing.Graphics]::FromImage($bitmap)
- try {$graphics.CopyFromScreen($r.left,$r.top,0,0,$bitmap.Size);$bitmap.Save((Join-Path $root 'keyspace-profiles.png'),[Drawing.Imaging.ImageFormat]::Png)} finally {$graphics.Dispose();$bitmap.Dispose()}
+ try {$graphics.CopyFromScreen($r.left,$r.top,0,0,$bitmap.Size);$bitmap.Save((Join-Path $root 'overlay-profiles.png'),[Drawing.Imaging.ImageFormat]::Png)} finally {$graphics.Dispose();$bitmap.Dispose()}
 } finally {
  [void][Preview]::PostMessage([Preview]::Controls(),0x312,[IntPtr]105,[IntPtr]::Zero)
  [void]$app.WaitForExit(8000)

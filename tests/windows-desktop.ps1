@@ -10,7 +10,7 @@ $originalTaskbar = $null
 $configTouched = $false
 $configPath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'OmarchyOverlay\config.json'
 $originalConfig = if (Test-Path $configPath) { [IO.File]::ReadAllText($configPath) } else { $null }
-$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-mb-keyspace.json')
+$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-0.10.json')
 $originalUpgradeBackup=if(Test-Path $upgradeBackupPath){[IO.File]::ReadAllBytes($upgradeBackupPath)}else{$null}
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -25,12 +25,12 @@ public static class Desktop {
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string name, string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main", null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Launcher() { return FindWindow("OmarchyOverlay.Launcher", null); }
   public static IntPtr Bar() { return FindWindow("OmarchyOverlay.TopBar", null); }
   public static IntPtr Appearance() { return FindWindow("OmarchyOverlay.Appearance", null); }
@@ -195,12 +195,12 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  $deadline=[DateTime]::UtcNow.AddSeconds(30)
  do {Wait-Desktop 150;$main=[Desktop]::MainWindow()} while (-not [Desktop]::Ready($main) -and -not $app.HasExited -and [DateTime]::UtcNow -lt $deadline)
  $bar=[Desktop]::Bar()
- Check 'Startup opens the Keyspace menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
+ Check 'Startup opens the Omarchy Overlay menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
  [Desktop]::CloseMenu();Wait-Desktop 400
- Check 'Escape closes the Keyspace menu' (-not [Desktop]::IsWindowVisible([Desktop]::Overlay()))
+ Check 'Escape closes the Omarchy Overlay menu' (-not [Desktop]::IsWindowVisible([Desktop]::Overlay()))
  Check 'The 0.15 dashboard still opens' ([Desktop]::ShowDashboard($main));Wait-Desktop 300
  Focus-Panel $main
- Capture $main 'keyspace-dashboard.png'
+ Capture $main 'overlay-dashboard.png'
  Click $main 5
  $help=[TasksTest]::Find('OmarchyOverlay.Help')
  Check 'Dedicated shortcut reference opens' ([Desktop]::IsWindowVisible($help)) "main=$main help=$help exited=$($app.HasExited)"
@@ -208,7 +208,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  # Verify the MENU action with controls initially hidden.
  [void][Desktop]::SendMessage($main,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
  [void][Desktop]::PostMessage($bar,0x202,[IntPtr]::Zero,[IntPtr](20+(10 -shl 16)));Wait-Desktop 500
- Check 'MENU opens the Keyspace menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
+ Check 'MENU opens the Omarchy Overlay menu' ([Desktop]::IsWindowVisible([Desktop]::Overlay()))
  [Desktop]::CloseMenu();Wait-Desktop 300;[void][Desktop]::ShowDashboard($main)
  [Desktop]::Shortcut(0x57);Wait-Desktop 800
  $tasks=[TasksTest]::Find('OmarchyOverlay.Tasks');$list=[Desktop]::GetDlgItem($tasks,302)
@@ -221,7 +221,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Check 'Minimize button minimizes selected app' ([TasksTest]::IsIconic($forms[1].Handle))
  Check 'Minimized app remains searchable' ([Desktop]::SendMessage($list,0x18b,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32() -eq 1)
  Focus-Panel $tasks
- Capture $tasks 'keyspace-open-windows.png'
+ Capture $tasks 'overlay-open-windows.png'
  Key 0x0d
  Check 'Enter restores and activates minimized app' (-not [TasksTest]::IsIconic($forms[1].Handle) -and [Desktop]::GetForegroundWindow() -eq $forms[1].Handle) "min=$([TasksTest]::IsIconic($forms[1].Handle)) foreground=$([Desktop]::GetForegroundWindow()) target=$($forms[1].Handle)"
  [Desktop]::Shortcut(0x57);Wait-Desktop 700
@@ -275,7 +275,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Check 'Drawer list reports monitor scope' ([TasksTest]::Text([Desktop]::GetDlgItem($tasks,303)).Contains('this monitor'))
  [void][Desktop]::SendMessage($tasks,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
  Focus-Panel $main
- Capture $bar 'keyspace-taskbar.png'
+ Capture $bar 'overlay-taskbar.png'
  $buttonX=$null
  for($x=20;$x -lt [int](($r[2]-$r[0])/$scale/2);$x+=32){
   [void][TasksTest]::SetCursorPos(($r[0]+[int]($x*$scale)),($r[1]+[int](15*$scale)));Wait-Desktop 550
@@ -289,7 +289,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Check 'Clicking active app button minimizes it' ([TasksTest]::IsIconic($target)) ("target=$target foreground=$([Desktop]::GetForegroundWindow()) cursor=$buttonX scale=$scale tooltip=$([TasksTest]::Tooltip($bar)) bounds=$((Bounds $bar)-join ',')")
  [TasksTest]::Click($buttonX,($r[1]+15*$scale));Wait-Desktop 700
  Check 'Clicking minimized app button restores it' (-not [TasksTest]::IsIconic($target) -and [Desktop]::GetForegroundWindow() -eq $target)
- Capture $bar 'keyspace-taskbar.png'
+ Capture $bar 'overlay-taskbar.png'
  [Desktop]::Shortcut(0x1b);Wait-Desktop 1400
  Check 'Exit closes controller' $app.HasExited
  Check 'Exit restores Windows taskbar preference' ([Desktop]::TaskbarState() -eq $originalTaskbar)

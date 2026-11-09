@@ -834,7 +834,7 @@ impl State {
                 CLIP_DEFAULT_PRECIS as u32,
                 CLEARTYPE_QUALITY as u32,
                 FIXED_PITCH as u32,
-                wide(&self.config.font_family).as_ptr(),
+                wide(&fonts::face(&self.config.font_family)).as_ptr(),
             );
             apply_opacity(hwnd, self.opacity);
             desktops::follow(hwnd);
@@ -1352,7 +1352,7 @@ unsafe fn paint(state: &State, hwnd: HWND) {
                 slot.right,
                 if slot.item.active || slot.item.module == Module::Menu {
                     palette.accent
-                } else if slot.item.module == Module::Tiling {
+                } else if matches!(slot.item.module, Module::Tiling | Module::Workspaces) {
                     palette.muted
                 } else {
                     palette.text

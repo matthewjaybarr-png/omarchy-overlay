@@ -25,12 +25,12 @@ public static class RecoverTest {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main",null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Launcher(){return FindWindow("OmarchyOverlay.Launcher",null);}
  public static IntPtr Help(){return FindWindow("OmarchyOverlay.Help",null);}
   public static string ClassName(IntPtr h){var t=new System.Text.StringBuilder(256);GetClassName(h,t,256);return t.ToString();}
@@ -108,7 +108,7 @@ function Check([string]$name,[bool]$ok,$detail=''){$results.Add(@{name=$name;pas
 function Bounds($hwnd){$r=[RecoverTest+RECT]::new();[void][RecoverTest]::GetWindowRect($hwnd,[ref]$r);return "$($r.l),$($r.t),$($r.r),$($r.b)"}
 function Click($hwnd,[int]$id){[void][RecoverTest]::PostMessage($hwnd,0x111,[IntPtr]$id,[IntPtr]::Zero);Pump}
 # 0.17 turns tiling on at start by default (K7); these tests expect a paused start unless they set start_tiling themselves.
-function Seed-Paused([string]$folder){$path=Join-Path $folder 'keyspace-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
+function Seed-Paused([string]$folder){$path=Join-Path $folder 'overlay-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
 function Start-App([string]$folder){
     Seed-Paused $folder
     $process=Start-Process (Join-Path $folder 'OmarchyOverlay.exe') -PassThru
@@ -119,7 +119,7 @@ function Start-App([string]$folder){
     Pump 700;return $process
 }
 function Stop-App($process){[void][RecoverTest]::PostMessage($controllerWindow,0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
-function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'keyspace-profile.json')|ConvertFrom-Json}
+function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 
 function State {
  $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops'
@@ -165,10 +165,10 @@ try {
  for($i=0;$i -lt 2;$i++){$f=[Windows.Forms.Form]::new();$f.Text="Layout preference fixture $i";$f.SetBounds(100+120*$i,180+60*$i,520,340);$f.Show();$forms+=,$f}
  $class=[RecoverTest]::ClassName($forms[0].Handle)
  $excluded=@(Get-Process|Where-Object {$_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId -and $_.ProcessName -ne 'powershell'}|ForEach-Object {$_.ProcessName+'.exe'}|Select-Object -Unique)
- $profile=@{format='keyspace-profile';version=1;id='workspace-ui-test';settings=@{layout='main-stack';excluded_processes=$excluded;rules=@(@{executable='powershell.exe';mode='ignore'},@{executable='powershell.exe';window_class=$class;title_contains='Layout preference fixture';mode='tile'})}}
- [IO.File]::WriteAllText("$folder\keyspace-profile.json",($profile|ConvertTo-Json -Depth 10));[IO.File]::WriteAllText($choices,'{"entries":[]}')
+ $profile=@{format='overlay-profile';version=1;id='workspace-ui-test';settings=@{layout='main-stack';excluded_processes=$excluded;rules=@(@{executable='powershell.exe';mode='ignore'},@{executable='powershell.exe';window_class=$class;title_contains='Layout preference fixture';mode='tile'})}}
+ [IO.File]::WriteAllText("$folder\overlay-profile.json",($profile|ConvertTo-Json -Depth 10));[IO.File]::WriteAllText($choices,'{"entries":[]}')
  $app=Start-App $folder;Click $controllerWindow 1
- # 0.17 (3.3): "Layouts by workspace" is a page of the Keyspace menu; its window name is
+ # 0.17 (3.3): "Layouts by workspace" is a page of the Omarchy Overlay menu; its window name is
  # "<page> | <highlighted row> | <detail>" (see overlay.rs).
  Click $controllerWindow 14;Click ([RecoverTest]::BarSettings()) 215;Pump 400
  Check 'Workspace-specific layout page opens' ([RecoverTest]::IsWindowVisible((Menu)) -and (Menu-Name) -like 'Layouts by workspace*') (Menu-Name)
@@ -188,11 +188,11 @@ try {
  Native-Select $originalDesktop
  [void][RecoverTest]::GetWindowRect($forms[0].Handle,[ref]$a);[void][RecoverTest]::GetWindowRect($forms[1].Handle,[ref]$b)
  Check 'Returning to the original desktop reapplies its rows' ([Math]::Abs($a.l-$b.l)-lt 4 -and [Math]::Abs($a.t-$b.t)-gt 100)
- Check 'Portable profile does not receive machine desktop or monitor identities' (-not ([IO.File]::ReadAllText("$folder\keyspace-profile.json") -match 'workspace-layouts|"desktop"|"monitor"\s*:\s*"[^n]'))
- # 0.16: the primary shortcut opens the Keyspace menu; the 0.15 command search opens from the dashboard.
+ Check 'Portable profile does not receive machine desktop or monitor identities' (-not ([IO.File]::ReadAllText("$folder\overlay-profile.json") -match 'workspace-layouts|"desktop"|"monitor"\s*:\s*"[^n]'))
+ # 0.16: the primary shortcut opens the Omarchy Overlay menu; the 0.15 command search opens from the dashboard.
  [RecoverTest]::Shortcut(0x20);$overlayDeadline=[DateTime]::UtcNow.AddSeconds(5)
  do{Pump 100}while(-not [RecoverTest]::IsWindowVisible([RecoverTest]::Overlay()) -and [DateTime]::UtcNow -lt $overlayDeadline)
- Check 'Primary shortcut opens the Keyspace menu' ([RecoverTest]::IsWindowVisible([RecoverTest]::Overlay()))
+ Check 'Primary shortcut opens the Omarchy Overlay menu' ([RecoverTest]::IsWindowVisible([RecoverTest]::Overlay()))
  [RecoverTest]::CloseMenu();Pump 300
  $launcher=Open-Search
  Check 'Dashboard opens unified command menu' ([RecoverTest]::Caption($launcher) -match 'command menu')

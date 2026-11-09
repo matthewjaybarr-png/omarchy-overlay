@@ -78,7 +78,6 @@ impl App {
         if !basic_eligible(hwnd)
             || elevated(hwnd)
             || !can_change_opacity(&self.config, hwnd)
-            || name.starts_with("mastercam")
             || [
                 "windowsterminal.exe",
                 "windowsterminalpreview.exe",

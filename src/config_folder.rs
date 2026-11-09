@@ -71,31 +71,43 @@ fn read(folder: &Path, name: &str, errors: &mut Vec<String>) -> Option<String> {
     }
 }
 
+/// config\themes\<id>.toml files and Omarchy-layout config\themes\<id>\colors.toml
+/// folders (with an optional backgrounds folder). A user theme with a built-in id replaces it.
 fn themes(folder: &Path, errors: &mut Vec<String>) -> Vec<theme_files::Theme> {
     let Ok(entries) = fs::read_dir(folder.join("themes")) else {
         return vec![];
     };
-    let mut paths: Vec<_> = entries
+    let mut found: Vec<(String, PathBuf, Option<PathBuf>)> = entries
         .flatten()
-        .map(|e| e.path())
-        .filter(|p| {
-            p.extension()
+        .filter_map(|e| {
+            let path = e.path();
+            if path.is_dir() {
+                let colors = path.join("colors.toml");
+                let backgrounds = path.join("backgrounds");
+                let id = path.file_name()?.to_string_lossy().into_owned();
+                colors
+                    .is_file()
+                    .then(|| (id, colors, backgrounds.is_dir().then_some(backgrounds)))
+            } else if path
+                .extension()
                 .is_some_and(|x| x.eq_ignore_ascii_case("toml"))
+            {
+                let id = path.file_stem()?.to_string_lossy().into_owned();
+                Some((id, path, None))
+            } else {
+                None
+            }
         })
         .collect();
-    paths.sort();
+    found.sort();
     let mut themes: Vec<theme_files::Theme> = vec![];
-    for path in paths.into_iter().take(64) {
-        let id = path
-            .file_stem()
-            .map(|s| s.to_string_lossy().into_owned())
-            .unwrap_or_default();
-        let parsed = profile::read_text(&path).and_then(|text| theme_files::parse(&id, &text));
-        match parsed {
-            Ok(theme) if theme::NAMES.iter().any(|(name, _)| *name == theme.id) => errors.push(
-                format!("themes\\{id}.toml: {id} is a built-in theme; rename the file."),
-            ),
-            Ok(theme) => themes.push(theme),
+    for (id, path, backgrounds) in found.into_iter().take(64) {
+        match profile::read_text(&path).and_then(|text| theme_files::parse(&id, &text)) {
+            Ok(theme) if themes.iter().any(|t| t.id == theme.id) => {}
+            Ok(theme) => themes.push(theme_files::Theme {
+                backgrounds,
+                ..theme
+            }),
             Err(error) => errors.push(error),
         }
     }
@@ -120,6 +132,11 @@ pub(super) fn load() -> Loaded {
         .and_then(|text| always_float::parse(&text).map_err(|e| errors.push(e)).ok())
         .unwrap_or_default();
     theme_files::install(themes(&folder, &mut errors));
+    for bind in &binds {
+        if let Some(warning) = bind.key.warning() {
+            log(&format!("binds.conf line {}: {} {warning}", bind.line, bind.key.label()));
+        }
+    }
     for error in &errors {
         log(&format!(
             "Config file skipped, using the built-in version. {error}"

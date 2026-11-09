@@ -146,6 +146,7 @@ pub(super) unsafe fn recover(directory: &Path) -> Report {
         || directory.join("window-theme-restore.json").exists()
         || directory.join("windows-colors-restore.json").exists()
         || directory.join("windows-effects-restore.json").exists()
+        || directory.join("windows-accent-restore.json").exists()
         || directory.join("wallpaper-restore.json").exists()
         || directory.join("terminal-appearance-restore.json").exists();
     let mut report = Report::default();

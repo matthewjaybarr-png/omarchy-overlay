@@ -32,12 +32,12 @@ public static class RecoverTest {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main",null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr hwnd);
   public static IntPtr Apps() { return FindWindow("OmarchyOverlay.Applications",null); }
  public static IntPtr Help() { return FindWindow("OmarchyOverlay.Help",null); }
@@ -115,7 +115,9 @@ function Check([string]$name,[bool]$ok,$detail=''){$results.Add(@{name=$name;pas
 function Bounds($hwnd){$r=[RecoverTest+RECT]::new();[void][RecoverTest]::GetWindowRect($hwnd,[ref]$r);return "$($r.l),$($r.t),$($r.r),$($r.b)"}
 function Click($hwnd,[int]$id){[void][RecoverTest]::PostMessage($hwnd,0x111,[IntPtr]$id,[IntPtr]::Zero);Pump}
 # 0.17 turns tiling on at start by default (K7); these tests expect a paused start unless they set start_tiling themselves.
-function Seed-Paused([string]$folder){$path=Join-Path $folder 'keyspace-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
+function Seed-Paused([string]$folder){$path=Join-Path $folder 'overlay-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
+# The default bar has a system tray; hidden mode waits up to 4 s for its warm-up before hiding.
+function Wait-Hidden{$until=[DateTime]::UtcNow.AddSeconds(8);while([RecoverTest]::IsWindowVisible($bar) -and [DateTime]::UtcNow -lt $until){Pump 200}}
 function Start-App([string]$folder){
     Seed-Paused $folder
     $process=Start-Process (Join-Path $folder 'OmarchyOverlay.exe') -PassThru
@@ -126,7 +128,7 @@ function Start-App([string]$folder){
     Pump 700;return $process
 }
 function Stop-App($process){[void][RecoverTest]::PostMessage($controllerWindow,0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
-function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'keyspace-profile.json')|ConvertFrom-Json}
+function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 
 function State {
  $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops'
@@ -158,10 +160,11 @@ try {
  Check 'No pending visibility recovery to disturb' (-not (Test-Path $journal))
  $owner=0;[void][RecoverTest]::GetWindowThreadProcessId($bar,[ref]$owner)
  $folder=Join-Path $root ('taskbar-modes-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory $folder|Out-Null;Copy-Item "$root\OmarchyOverlay.exe" "$folder\OmarchyOverlay.exe"
- $profile=@{format='keyspace-profile';version=1;id='taskbar-modes-test';settings=@{taskbar_mode='hidden';show_top_bar=$true}}
- [IO.File]::WriteAllText("$folder\keyspace-profile.json",($profile|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))
+ $profile=@{format='overlay-profile';version=1;id='taskbar-modes-test';settings=@{taskbar_mode='hidden';show_top_bar=$true}}
+ [IO.File]::WriteAllText("$folder\overlay-profile.json",($profile|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))
  $app=Start-App $folder
- Check 'Keep hidden hides the native taskbar while Explorer runs' (-not [RecoverTest]::IsWindowVisible($bar) -and $null -ne (Get-Process -Id $owner -ErrorAction SilentlyContinue))
+ Wait-Hidden
+ Check 'Keep hidden hides the native taskbar while Explorer runs' (-not [RecoverTest]::IsWindowVisible($bar) -and $null -ne (Get-Process -Id $owner -ErrorAction SilentlyContinue)) "bar $bar visible $([RecoverTest]::IsWindowVisible($bar))"
  Check 'Keep hidden creates a local recovery record' (Test-Path $journal)
  Check 'Taskbar visibility change has an ownership marker' ([RecoverTest]::GetProp($bar,'OmarchyOverlay.TaskbarVisibilityOwner.v1') -ne [IntPtr]::Zero)
  [Windows.Forms.Cursor]::Position=[Drawing.Point]::new(600,([Windows.Forms.Screen]::PrimaryScreen.Bounds.Bottom-1))
@@ -175,7 +178,7 @@ try {
  Mode 61
  Check 'Auto-hide remains a separate native mode' ([RecoverTest]::IsWindowVisible($bar) -and [RecoverTest]::Taskbar() -eq 1 -and (Read-Profile $folder).settings.taskbar_mode -eq 'auto-hide')
  $reloaded=Read-Profile $folder;$reloaded.settings.taskbar_mode='hidden'
- [IO.File]::WriteAllText("$folder\keyspace-profile.json",($reloaded|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))
+ [IO.File]::WriteAllText("$folder\overlay-profile.json",($reloaded|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))
  Click $controllerWindow 3;Click ([RecoverTest]::Settings()) 68;Click ([RecoverTest]::Profiles()) 83;Pump 800
  Check 'Reloading a Keep hidden profile applies its taskbar choice' (-not [RecoverTest]::IsWindowVisible($bar))
  Click $controllerWindow 7
@@ -190,13 +193,13 @@ try {
  $until=[DateTime]::UtcNow.AddSeconds(3);do{Pump 100}while([RecoverTest]::IsWindowVisible($bar) -and [DateTime]::UtcNow -lt $until)
  Check 'Shell re-show events are handled without stopping Explorer' (-not [RecoverTest]::IsWindowVisible($bar))
  Click $controllerWindow 6
- Check 'Hiding Keyspace bar restores access to the Windows taskbar' ([RecoverTest]::IsWindowVisible($bar))
+ Check 'Hiding Omarchy Overlay bar restores access to the Windows taskbar' ([RecoverTest]::IsWindowVisible($bar))
  Click $controllerWindow 6
- Check 'Showing Keyspace bar reapplies its Keep hidden choice' (-not [RecoverTest]::IsWindowVisible($bar))
+ Check 'Showing Omarchy Overlay bar reapplies its Keep hidden choice' (-not [RecoverTest]::IsWindowVisible($bar))
  Stop-App $app;$app=$null
  Check 'Normal exit restores original taskbar visibility and preference' ([RecoverTest]::IsWindowVisible($bar) -eq $originalVisible -and [RecoverTest]::Taskbar() -eq $originalTaskbar)
  Check 'Normal exit removes only its own visibility marker' ([RecoverTest]::GetProp($bar,'OmarchyOverlay.TaskbarVisibilityOwner.v1') -eq [IntPtr]::Zero)
- $app=Start-App $folder;Check 'Saved Keep hidden mode survives restart' (-not [RecoverTest]::IsWindowVisible($bar))
+ $app=Start-App $folder;Wait-Hidden;Check 'Saved Keep hidden mode survives restart' (-not [RecoverTest]::IsWindowVisible($bar))
  $app.Kill();[void]$app.WaitForExit(5000);$app=$null
  $until=[DateTime]::UtcNow.AddSeconds(12);do{Pump 200}while((Test-Path $journal) -and [DateTime]::UtcNow -lt $until)
  Check 'Recovery guard restores the taskbar after controller termination' ([RecoverTest]::IsWindowVisible($bar) -eq $originalVisible -and [RecoverTest]::Taskbar() -eq $originalTaskbar)

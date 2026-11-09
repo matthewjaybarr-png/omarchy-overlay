@@ -15,16 +15,16 @@ public static class RecoverTest {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main",null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Settings() { return FindWindow("OmarchyOverlay.Settings",null); }
   public static IntPtr Profiles() { return FindWindow("OmarchyOverlay.Profiles",null); }
   public static IntPtr Bar() { return FindWindow("OmarchyOverlay.TopBar",null); }
-  public static IntPtr Dialog() { return FindWindow("#32770","Keyspace"); }
+  public static IntPtr Dialog() { return FindWindow("#32770","Omarchy Overlay"); }
   public static IntPtr FileDialog(bool save) { return FindWindow("#32770",save?"Export Omarchy Overlay profile":"Import Omarchy Overlay profile"); }
   [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr value);
   [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr hwnd,int id);
@@ -75,17 +75,17 @@ function Check([string]$name,[bool]$ok,$detail=''){$results.Add(@{name=$name;pas
 function Bounds($hwnd){$r=[RecoverTest+RECT]::new();[void][RecoverTest]::GetWindowRect($hwnd,[ref]$r);return "$($r.l),$($r.t),$($r.r),$($r.b)"}
 function Click($hwnd,[int]$id){[void][RecoverTest]::PostMessage($hwnd,0x111,[IntPtr]$id,[IntPtr]::Zero);Pump}
 # 0.17 turns tiling on at start by default (K7); these tests expect a paused start unless they set start_tiling themselves.
-function Seed-Paused([string]$folder){$path=Join-Path $folder 'keyspace-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
+function Seed-Paused([string]$folder){$path=Join-Path $folder 'overlay-profile.json';if(-not (Test-Path $path)){return};$p=[IO.File]::ReadAllText($path)|ConvertFrom-Json;if($null -eq $p.settings){$p|Add-Member settings ([pscustomobject]@{})};if($null -ne $p.settings.PSObject.Properties['start_tiling']){return};$p.settings|Add-Member start_tiling $false;[IO.File]::WriteAllText($path,($p|ConvertTo-Json -Depth 20),[Text.UTF8Encoding]::new($false))}
 function Start-App([string]$folder){
     Seed-Paused $folder
-    $process=Start-Process (Join-Path $folder 'keyspace.exe') -PassThru
+    $process=Start-Process (Join-Path $folder 'OmarchyOverlay.exe') -PassThru
     $deadline=[DateTime]::UtcNow.AddSeconds(20)
     do{Pump 100;$hwnd=[RecoverTest]::MainWindow();$owner=0;[void][RecoverTest]::GetWindowThreadProcessId($hwnd,[ref]$owner)}while(($hwnd -eq [IntPtr]::Zero -or $owner -ne $process.Id)-and [DateTime]::UtcNow -lt $deadline -and -not $process.HasExited)
     if($hwnd -eq [IntPtr]::Zero -or $owner -ne $process.Id){throw 'Controller did not start.'}
     Pump 700;return $process
 }
 function Stop-App($process){[void][RecoverTest]::PostMessage([RecoverTest]::MainWindow(),0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
-function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'keyspace-profile.json')|ConvertFrom-Json}
+function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 
 Add-Type @'
 using System;using System.Runtime.InteropServices;
@@ -97,11 +97,11 @@ try {
  [void][RecoverTest]::SetProcessDpiAwarenessContext([IntPtr](-4))
  $principal=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
  Check 'Removal helper runs as a limited user' (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
- Check 'No existing Keyspace controller to disturb' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
+ Check 'No existing Omarchy Overlay controller to disturb' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
  Check 'No existing per-user Rainmeter record to overwrite' (-not (Test-Path $key))
  $folder=Join-Path $root ('removal-helper-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory $folder|Out-Null
- Copy-Item (Join-Path $root 'keyspace.exe') (Join-Path $folder 'keyspace.exe')
- [IO.File]::WriteAllText((Join-Path $folder 'keyspace-profile.json'),'{"format":"keyspace-profile","version":1,"id":"removal-helper-test","settings":{}}')
+ Copy-Item (Join-Path $root 'OmarchyOverlay.exe') (Join-Path $folder 'OmarchyOverlay.exe')
+ [IO.File]::WriteAllText((Join-Path $folder 'overlay-profile.json'),'{"format":"overlay-profile","version":1,"id":"removal-helper-test","settings":{}}')
  $fixture=Join-Path $folder 'uninst.exe'
  Add-Type -ReferencedAssemblies System.Windows.Forms -OutputAssembly $fixture -OutputType WindowsApplication -TypeDefinition @'
 using System;using System.IO;using System.Windows.Forms;
@@ -124,7 +124,7 @@ public static class RemovalFixture {
  Check 'Removal button is visible inside the Settings window' ([RecoverTest]::IsWindowVisible($button) -and $br.b -lt $r.b -and $br.t -gt $r.t)
  [void][RecoverTest]::SetForegroundWindow($settings);Pump
  $bitmap=[Drawing.Bitmap]::new(($r.r-$r.l),($r.b-$r.t));$graphics=[Drawing.Graphics]::FromImage($bitmap)
- try{$graphics.CopyFromScreen($r.l,$r.t,0,0,$bitmap.Size);$bitmap.Save((Join-Path $root 'keyspace-rainmeter-helper.png'),[Drawing.Imaging.ImageFormat]::Png)}finally{$graphics.Dispose();$bitmap.Dispose()}
+ try{$graphics.CopyFromScreen($r.l,$r.t,0,0,$bitmap.Size);$bitmap.Save((Join-Path $root 'overlay-rainmeter-helper.png'),[Drawing.Imaging.ImageFormat]::Png)}finally{$graphics.Dispose();$bitmap.Dispose()}
 
  [void][RecoverTest]::PostMessage($settings,0x111,[IntPtr]70,[IntPtr]::Zero);Pump
  $dialog=[RemovalDialog]::FindWindow('#32770','Remove Rainmeter')
@@ -144,7 +144,7 @@ public static class RemovalFixture {
  Check 'Missing uninstaller produces the Installed apps fallback prompt' ($dialog -ne [IntPtr]::Zero)
  [void][RecoverTest]::PostMessage($dialog,0x111,[IntPtr]2,[IntPtr]::Zero);Pump
  Stop-App $app;$app=$null
- Check 'Keyspace exits normally after helper use' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
+ Check 'Omarchy Overlay exits normally after helper use' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
 } catch {$results.Add(@{name='Removal helper harness';passed=$false;detail=$_.Exception.ToString()});throw}
 finally {
  if($null -ne $app -and -not $app.HasExited){

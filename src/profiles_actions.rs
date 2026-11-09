@@ -30,10 +30,6 @@ impl App {
     unsafe fn activate_preferences(&mut self, mut config: Config) {
         // The always-float list lives in config\always-float.json, not in the profile.
         config.always_float = std::mem::take(&mut self.config.always_float);
-        if config.force_mastercam_ignore() {
-            log("Imported profile had another Mastercam rule; set back to Ignore (always).");
-            self.show_feedback("Mastercam rule set back to Ignore (always)");
-        }
         if self.active {
             self.toggle();
         } else {

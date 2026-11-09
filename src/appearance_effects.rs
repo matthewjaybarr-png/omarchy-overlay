@@ -161,13 +161,92 @@ pub(super) unsafe fn restore_wallpaper(directory: &Path) -> Result<(), String> {
         Err("Wallpaper was changed externally; recovery was preserved without replacing it.".into())
     }
 }
-pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
-    let mut errors = vec![];
-    if let Err(e) = windows_personalization::restore(directory) {
-        errors.push(e)
+/// The theme's background images (user theme folders only), sorted by name.
+pub(super) fn backgrounds(theme_name: &str) -> Vec<PathBuf> {
+    let Some(dir) = crate::theme_files::resolve(theme_name).and_then(|t| t.backgrounds) else {
+        return vec![];
+    };
+    let mut list: Vec<PathBuf> = fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            p.extension().and_then(|e| e.to_str()).is_some_and(|e| {
+                ["jpg", "jpeg", "png", "bmp"].contains(&e.to_ascii_lowercase().as_str())
+            })
+        })
+        .collect();
+    list.sort();
+    list
+}
+/// The worker's settings broadcast also reaches this thread's windows, so waiting here must keep
+/// answering sent messages (PeekMessage delivers them) or exit and restore would deadlock.
+fn pump() {
+    unsafe {
+        let mut msg = std::mem::zeroed();
+        PeekMessageW(&mut msg, null_mut(), 0, 0, PM_NOREMOVE);
     }
+}
+/// Runs a UI-thread change to Windows colors or the wallpaper: drops a queued theme apply and
+/// waits for a running one, so the two never interleave their recovery journals.
+pub(super) fn with_effects<T>(change: impl FnOnce() -> T) -> T {
+    crate::effects_gate::exclusive(pump, change)
+}
+/// Applies the theme's Windows dark/light, accent and first background, like omarchy-theme-set,
+/// off the UI thread: each settings broadcast takes ~100 ms, plus 200 ms per hung window.
+pub(super) fn apply_theme_effects(directory: PathBuf, theme_name: String, dark: bool, accent: u32) {
+    let generation = crate::effects_gate::claim();
+    std::thread::spawn(move || {
+        let _guard = crate::effects_gate::lock();
+        if !crate::effects_gate::current(generation) {
+            return;
+        }
+        unsafe {
+            let results = [
+                windows_personalization::apply(&directory, dark),
+                windows_accent::apply(&directory, accent),
+                cycle_unlocked(&directory, &theme_name, true).map(|_| ()),
+            ];
+            for e in results.into_iter().filter_map(Result::err) {
+                log(&e)
+            }
+        }
+    });
+}
+/// Sets the theme's next background through the journaled wallpaper path. Ok(false)
+/// when the theme has none.
+pub(super) unsafe fn cycle_background(directory: &Path, theme_name: &str, first: bool) -> Result<bool, String> {
+    let _guard = crate::effects_gate::lock_pumping(pump);
+    cycle_unlocked(directory, theme_name, first)
+}
+unsafe fn cycle_unlocked(directory: &Path, theme_name: &str, first: bool) -> Result<bool, String> {
+    let list = backgrounds(theme_name);
+    let current = if first { None } else { wallpaper().ok().map(PathBuf::from) };
+    match crate::theme_files::next_background(&list, current.as_deref()) {
+        Some(next) => apply_wallpaper(directory, &next).map(|()| true),
+        None => Ok(false),
+    }
+}
+pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
+    crate::effects_gate::claim();
+    let _guard = crate::effects_gate::lock_pumping(pump);
+    let mut errors = vec![];
+    // Wallpaper first: Explorer handles the color broadcast below after this call returns and would
+    // otherwise put back the wallpaper it had cached.
     if let Err(error) = restore_wallpaper(directory) {
         errors.push(error);
+    }
+    // One settings broadcast for every color value: each can take ~0.5 s with slow windows.
+    let colors = windows_personalization::pending(directory) || windows_accent::pending(directory);
+    if let Err(e) = windows_personalization::restore_quiet(directory) {
+        errors.push(e)
+    }
+    if let Err(e) = windows_accent::restore(directory) {
+        errors.push(e)
+    }
+    if colors {
+        windows_accent::notify();
     }
     if let Err(error) = restore_terminal(directory) {
         errors.push(error);
@@ -225,3 +304,4 @@ fn write_text_atomic(path: &Path, text: &str) -> Result<(), String> {
     }
     result.map_err(|e: std::io::Error| e.to_string())
 }
+

@@ -37,7 +37,7 @@ do {
     Start-Sleep -Milliseconds 250
     $window = [Preview]::Controls()
 } while ($window -eq [IntPtr]::Zero -and [DateTime]::UtcNow -lt $deadline)
-if ($window -eq [IntPtr]::Zero) { throw 'Keyspace controls did not open.' }
+if ($window -eq [IntPtr]::Zero) { throw 'Omarchy Overlay controls did not open.' }
 [void][Preview]::SetForegroundWindow($window)
 Start-Sleep -Milliseconds 1200
 $r = [Preview+RECT]::new()
@@ -46,7 +46,7 @@ $bitmap = [System.Drawing.Bitmap]::new(($r.right-$r.left), ($r.bottom-$r.top))
 $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
 try {
     $graphics.CopyFromScreen($r.left,$r.top,0,0,$bitmap.Size)
-    $bitmap.Save((Join-Path $root 'keyspace-controls.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+    $bitmap.Save((Join-Path $root 'overlay-controls.png'), [System.Drawing.Imaging.ImageFormat]::Png)
 } finally {
     $graphics.Dispose()
     $bitmap.Dispose()
@@ -59,7 +59,7 @@ if ($bar -ne [IntPtr]::Zero) {
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
     try {
         $graphics.CopyFromScreen($r.left,$r.top,0,0,$bitmap.Size)
-        $bitmap.Save((Join-Path $root 'keyspace-topbar.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+        $bitmap.Save((Join-Path $root 'overlay-topbar.png'), [System.Drawing.Imaging.ImageFormat]::Png)
     } finally { $graphics.Dispose(); $bitmap.Dispose() }
 }
 [void][Preview]::PostMessage($window,0x0111,[IntPtr]8,[IntPtr]::Zero)
@@ -72,7 +72,7 @@ if ($appearance -ne [IntPtr]::Zero) {
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
     try {
         $graphics.CopyFromScreen($r.left,$r.top,0,0,$bitmap.Size)
-        $bitmap.Save((Join-Path $root 'keyspace-appearance.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+        $bitmap.Save((Join-Path $root 'overlay-appearance.png'), [System.Drawing.Imaging.ImageFormat]::Png)
     } finally { $graphics.Dispose(); $bitmap.Dispose() }
 }
 [void][Preview]::PostMessage($window,0x0111,[IntPtr]3,[IntPtr]::Zero)
@@ -91,7 +91,7 @@ if($settings -ne [IntPtr]::Zero) {
     $graphics=[System.Drawing.Graphics]::FromImage($bitmap)
     try {
         $graphics.CopyFromScreen($r.left,$r.top,0,0,$bitmap.Size)
-        $bitmap.Save((Join-Path $root 'keyspace-settings.png'),[System.Drawing.Imaging.ImageFormat]::Png)
+        $bitmap.Save((Join-Path $root 'overlay-settings.png'),[System.Drawing.Imaging.ImageFormat]::Png)
     } finally {$graphics.Dispose();$bitmap.Dispose()}
 }
 "Ready: desktop shortcut created, Omarchy Overlay paused, Settings open."

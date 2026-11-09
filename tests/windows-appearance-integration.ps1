@@ -10,7 +10,7 @@ $originalTaskbar = $null
 $configTouched = $false
 $configPath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'OmarchyOverlay\config.json'
 $originalConfig = if (Test-Path $configPath) { [IO.File]::ReadAllText($configPath) } else { $null }
-$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-mb-keyspace.json')
+$upgradeBackupPath=[IO.Path]::ChangeExtension($configPath,'pre-0.10.json')
 $originalUpgradeBackup=if(Test-Path $upgradeBackupPath){[IO.File]::ReadAllBytes($upgradeBackupPath)}else{$null}
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -51,12 +51,12 @@ public static class Desktop {
  public static string Item(IntPtr h,int i){var text=new StringBuilder(4096);ReadText(h,0x189,(IntPtr)i,text);return text.ToString();}
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main", null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
   public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
-  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
-  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
-  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
-  public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+  [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+  public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+  [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+  public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
   public static IntPtr Launcher() { return FindWindow("OmarchyOverlay.Launcher", null); }
   public static IntPtr Bar() { return FindWindow("OmarchyOverlay.TopBar", null); }
   public static IntPtr Appearance() { return FindWindow("OmarchyOverlay.Appearance", null); }
@@ -250,9 +250,10 @@ try {
  Click $options 1205
  Check 'Readability action restores solid surfaces and an opaque bar' ((Get-Content $configPath -Raw|ConvertFrom-Json).window_backdrop -eq 'solid' -and [Desktop]::Frame($options,38) -eq 1 -and -not [Desktop]::Layered([Desktop]::Bar()))
  Capture $options 'appearance-options-solid.png'
- $appearance=[Desktop]::Appearance();Choose $appearance 30 4;Click $appearance (30+(1 -shl 16));Wait-Desktop 300
- Check 'Solid Paper surface uses its readable light palette' ([Desktop]::Pixel($options) -eq 0xeaf2f5)
- Capture $options 'appearance-options-paper.png'
+ $appearance=[Desktop]::Appearance();$combo=[Desktop]::GetDlgItem($appearance,30);$latte=[Desktop]::SendText($combo,0x0158,[IntPtr](-1),'Catppuccin Latte').ToInt32();Check 'Theme list offers Catppuccin Latte' ($latte -ge 0);Choose $appearance 30 $latte;Click $appearance (30+(1 -shl 16));Wait-Desktop 300
+ $pixel=[Desktop]::Pixel($options)
+ Check 'Solid Catppuccin Latte surface uses its readable light palette' ($pixel -eq 0xf5f1ef) ('0x{0:x6}' -f $pixel)
+ Capture $options 'appearance-options-latte.png'
  Choose $appearance 30 1;Click $appearance (30+(1 -shl 16));Wait-Desktop 300
 
  # Observe real SetWindowPos transitions, then verify the Windows reduced-motion choice.
@@ -274,11 +275,11 @@ try {
  Click $profiles 828;$options=Wait-Panel 'OmarchyOverlay.AppearanceOptions';Click $options 1208
  # Opt the known fixture rule into frame colors for recovery verification.
  Click $options 1207;$apps=Wait-Panel 'OmarchyOverlay.AppRules';Select-Fixture $apps;Choose $apps 1009 2;Choose $apps 1012 2;Click $apps 1010;Wait-Desktop 900
- # Freeze Keyspace first: its frame poll would otherwise re-apply the rule before the kill lands.
+ # Freeze Omarchy Overlay first: its frame poll would otherwise re-apply the rule before the kill lands.
  [void][Desktop]::NtSuspendProcess($app.Handle);[Desktop]::SetFrame($windows[0],38,4)
  $app.Kill();[void]$app.WaitForExit(5000);$app=$null
  $until=[DateTime]::UtcNow.AddSeconds(12);do{Wait-Desktop 200}while(((Test-Path "$local\window-theme-restore.json") -or (Test-Path "$local\windows-colors-restore.json")) -and [DateTime]::UtcNow -lt $until)
- Check 'Recovery preserves a frame attribute changed outside Keyspace' ([Desktop]::Frame($windows[0],38) -eq 4)
+ Check 'Recovery preserves a frame attribute changed outside Omarchy Overlay' ([Desktop]::Frame($windows[0],38) -eq 4)
  Check 'Recovery restores the other original frame attributes' (@(@(20)|Where-Object {[Desktop]::Frame($windows[0],$_) -ne $framesBefore[0][$_]}).Count -eq 0)
  Check 'Recovery restores Windows light/dark preferences after termination' ((Colors) -eq $colorsBefore)
  Check 'Successful frame and color recovery clears the journals' (-not (Test-Path "$local\window-theme-restore.json") -and -not (Test-Path "$local\windows-colors-restore.json"))

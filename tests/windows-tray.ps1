@@ -19,12 +19,12 @@ public static class TrayProbe {
  [DllImport("user32.dll")]public static extern void SetProcessDpiAwarenessContext(IntPtr c);
  public static IntPtr MainWindow(){return FindWindow("OmarchyOverlay.Main",null);}
  public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
- // 0.16 opens the Keyspace menu at startup; the 0.15 dashboard stays hidden until asked for.
+ // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
  public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
- [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToKeyspace(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
- public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToKeyspace(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
- [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowKeyspaceWindow(IntPtr hwnd, int command);
- public static bool ShowDashboard(IntPtr main) { ShowKeyspaceWindow(main, 1); return IsWindowVisible(main); }
+ [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
+ public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
+ [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
+ public static bool ShowDashboard(IntPtr main) { ShowAppWindow(main, 1); return IsWindowVisible(main); }
  public static IntPtr Bar(){return FindWindow("OmarchyOverlay.TopBar",null);}
  [DllImport("user32.dll",CharSet=CharSet.Unicode,EntryPoint="FindWindowExW")] static extern IntPtr TbFindEx(IntPtr p,IntPtr a,string c,string t);
  [DllImport("user32.dll",EntryPoint="GetWindowThreadProcessId")] static extern uint TbPid(IntPtr h,out uint pid);
@@ -46,7 +46,7 @@ function Wait-Journal([bool]$exists){$until=[DateTime]::UtcNow.AddSeconds(4);do{
 function Start-App([string]$mode){
  $profile.settings.taskbar_mode=$mode
  if($null -eq $profile.settings.PSObject.Properties['start_tiling']){$profile.settings|Add-Member start_tiling $false}  # K7 default is on; this suite expects a paused start
- $profile|ConvertTo-Json -Depth 20|Set-Content -Encoding UTF8 "$folder\keyspace-profile.json"
+ $profile|ConvertTo-Json -Depth 20|Set-Content -Encoding UTF8 "$folder\overlay-profile.json"
  $script:app=Start-Process "$folder\OmarchyOverlay.exe" -PassThru
  $until=[DateTime]::UtcNow.AddSeconds(12)
  do{Pump 150}while(-not [TrayProbe]::IsWindowVisible([TrayProbe]::Bar()) -and [DateTime]::UtcNow -lt $until)
@@ -74,8 +74,8 @@ $app=$null;$icon=[Windows.Forms.NotifyIcon]::new();$menu=[Windows.Forms.ContextM
 try{
  Check 'Native tray test runs without administrator privileges' (-not ([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
  Check 'No existing controller to disturb' ([TrayProbe]::MainWindow() -eq [IntPtr]::Zero)
- [void]$menu.Items.Add('Keyspace original tray fixture menu')
- $icon.Text='Keyspace tray integration fixture';$icon.Icon=[Drawing.SystemIcons]::Information;$icon.ContextMenuStrip=$menu
+ [void]$menu.Items.Add('Omarchy Overlay original tray fixture menu')
+ $icon.Text='Omarchy Overlay tray integration fixture';$icon.Icon=[Drawing.SystemIcons]::Information;$icon.ContextMenuStrip=$menu
  $icon.add_MouseClick({param($sender,$eventArgs) if($eventArgs.Button -eq [Windows.Forms.MouseButtons]::Left){$script:leftClicks++}})
  $icon.Visible=$true;Pump 500
  foreach($mode in @('visible','auto-hide','hidden')){
@@ -90,7 +90,7 @@ try{
   if($mode -eq 'hidden'){Check 'Keep hidden stays hidden while popup is open' (-not [TrayProbe]::IsWindowVisible($bar))}
   $panel=[Windows.Automation.AutomationElement]::FromHandle($popup)
   $items=$panel.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition)
-  $fixture=@($items|Where-Object{$_.Current.Name -like '*Keyspace tray integration fixture*'})
+  $fixture=@($items|Where-Object{$_.Current.Name -like '*Omarchy Overlay tray integration fixture*'})
   Check "$mode original fixture icon remains available" ($fixture.Count -eq 1)
   $r=$fixture[0].Current.BoundingRectangle
   [void][TrayProbe]::SetCursorPos([int]($r.Left+$r.Width/2),[int]($r.Top+$r.Height/2))
@@ -117,7 +117,7 @@ try{
   Check "$mode reopened popup placement completes before interaction" (Wait-Journal $true)
   Pump 350
   $panel=[Windows.Automation.AutomationElement]::FromHandle([TrayProbe]::Popup())
-  $fixture=@($panel.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition)|Where-Object{$_.Current.Name -like '*Keyspace tray integration fixture*'})
+  $fixture=@($panel.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition)|Where-Object{$_.Current.Name -like '*Omarchy Overlay tray integration fixture*'})
   $r=$fixture[0].Current.BoundingRectangle;$before=$script:leftClicks
   [void][TrayProbe]::SetCursorPos([int]($r.Left+$r.Width/2),[int]($r.Top+$r.Height/2));[TrayProbe]::mouse_event(2,0,0,0,[UIntPtr]::Zero);[TrayProbe]::mouse_event(4,0,0,0,[UIntPtr]::Zero);Pump 600
   Check "$mode left-click reaches original app callback" ($script:leftClicks -eq $before+1)

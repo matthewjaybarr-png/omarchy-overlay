@@ -1,5 +1,5 @@
 # Feasibility test, not a production tray implementation. Run as the signed-in
-# normal user with Keyspace paused and taskbar Keep hidden disabled. The probe
+# normal user with Omarchy Overlay paused and taskbar Keep hidden disabled. The probe
 # caches Explorer's overflow InvokePattern while visible, hides the taskbar,
 # exercises a disposable real tray icon, then restores its own changes.
 $ErrorActionPreference='Stop'
@@ -32,9 +32,9 @@ $originalPopup=$null;$popup=[IntPtr]::Zero
 $script:leftClicks=0
 $icon=[Windows.Forms.NotifyIcon]::new();$menu=[Windows.Forms.ContextMenuStrip]::new()
 try {
- [void]$menu.Items.Add('Keyspace tray probe menu')
+ [void]$menu.Items.Add('Omarchy Overlay tray probe menu')
  $icon.add_MouseClick({param($sender,$eventArgs) if($eventArgs.Button -eq [Windows.Forms.MouseButtons]::Left){$script:leftClicks++}})
- $icon.Text='Keyspace tray probe';$icon.Icon=[Drawing.SystemIcons]::Information;$icon.ContextMenuStrip=$menu;$icon.Visible=$true
+ $icon.Text='Omarchy Overlay tray probe';$icon.Icon=[Drawing.SystemIcons]::Information;$icon.ContextMenuStrip=$menu;$icon.Visible=$true
  [TrayProbe]::Key(0x1b);[void][TrayProbe]::ShowWindowAsync($bar,4);[TrayProbe]::FocusTray();Pump 1400
  $element=[Windows.Automation.AutomationElement]::FromHandle($bar)
  $all=$element.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition)
@@ -53,10 +53,10 @@ try {
  $area=[Windows.Forms.Screen]::PrimaryScreen.WorkingArea
  [void][TrayProbe]::SetWindowPos($popup,[IntPtr]::Zero,[int]($area.Right-$originalPopup.Width-20),[int]($area.Top+8),0,0,0x15);Pump 500
  $position=$panel.Current.BoundingRectangle
- Check 'Native popup can sit directly beneath the Keyspace bar' ([Math]::Abs($position.Top-($area.Top+8)) -lt 3)
+ Check 'Native popup can sit directly beneath the Omarchy Overlay bar' ([Math]::Abs($position.Top-($area.Top+8)) -lt 3)
  $items=$panel.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition)
  $rows.Add(@{name='Observed native icons';passed=$true;detail=@($items|ForEach-Object{$_.Current.Name})})
- $fixture=@($items|Where-Object{$_.Current.Name -like '*Keyspace tray probe*'})
+ $fixture=@($items|Where-Object{$_.Current.Name -like '*Omarchy Overlay tray probe*'})
  Check 'The original application icon appears in the native popup' ($fixture.Count -eq 1)
  $r=$fixture[0].Current.BoundingRectangle
  [void][TrayProbe]::SetCursorPos([int]($r.Left+$r.Width/2),[int]($r.Top+$r.Height/2))

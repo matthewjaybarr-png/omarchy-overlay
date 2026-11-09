@@ -127,7 +127,7 @@ impl App {
     unsafe fn run_builtin(&mut self, name: &str) {
         match name {
             "reload-config" => self.reload_config(),
-            "restart" => self.restart_keyspace(),
+            "restart" => self.restart_overlay(),
             "exit" => PostQuitMessage(0),
             "pause-keys" => {
                 self.keys_paused = !self.keys_paused;
@@ -194,11 +194,18 @@ impl App {
             }
             "move-to-desktop" => crate::desktops::task_view(),
             "apply-windows-theme" => {
-                let result = windows_personalization::apply(&self.directory, theme::current().dark);
+                let result = appearance_effects::with_effects(|| windows_personalization::apply(&self.directory, theme::current().dark));
                 self.show_feedback(&match result {
                     Ok(()) => "Windows light or dark mode now follows the theme. Restore puts it back.".into(),
                     Err(error) => error,
                 });
+            }
+            "next-background" => {
+                match appearance_effects::cycle_background(&self.directory, &self.config.theme, false) {
+                    Ok(true) => {}
+                    Ok(false) => self.show_feedback("This theme has no backgrounds folder."),
+                    Err(error) => self.show_feedback(&error),
+                }
             }
             "restore-windows-appearance" => match appearance_effects::restore(&self.directory) {
                 Ok(()) => self.show_feedback("Original Windows appearance restored."),
@@ -224,7 +231,7 @@ impl App {
                 shell(&folder, "");
             }
             "releases-folder" => message(
-                "Omarchy Overlay releases are kept in the ARCHIVED VERSIONS folder on the coding work drive. \
+                "Omarchy Overlay releases are the zips you downloaded. \
                  Each zip has SHA256SUMS.txt beside it. Omarchy Overlay never downloads or installs updates.",
             ),
             "restore-desktop" => {
@@ -270,7 +277,7 @@ impl App {
     }
 
     /// Starts a new copy of Omarchy Overlay that waits for this one to restore and exit.
-    unsafe fn restart_keyspace(&mut self) {
+    unsafe fn restart_overlay(&mut self) {
         let Ok(exe) = std::env::current_exe() else {
             message("Omarchy Overlay could not find its own program file.");
             return;
@@ -284,7 +291,8 @@ impl App {
             }
             arguments.push_str(&format!(" \"{argument}\""));
         }
-        if shell_in(&exe, &arguments, exe.parent()) {
+        // Direct, not shell_in: an elevated install must restart elevated, not as a user app.
+        if shell_direct(&exe, &arguments, exe.parent()) {
             PostQuitMessage(0);
         } else {
             message("Omarchy Overlay could not start a new copy of itself.");

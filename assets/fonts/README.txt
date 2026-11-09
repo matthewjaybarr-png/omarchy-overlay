@@ -5,9 +5,9 @@ under the SIL Open Font License 1.1 in OFL.txt.
   JetBrainsMonoNLNerdFont-*.ttf  menu text since 0.17 ("JetBrains Mono NL", no ligatures)
   JetBrainsMonoNerdFont-*.ttf    the menu icons, and the older "JetBrainsMono Nerd Font" choice
 
-Orbit loads these files for its own windows only (AddFontResourceEx with
+Omarchy Overlay loads these files for its own windows only (AddFontResourceEx with
 FR_PRIVATE). They are not installed, other programs cannot see them, and they
-are released when it exits. MBOrbitSetup.exe copies this whole folder into
-%LOCALAPPDATA%\OmarchyOverlay\fonts. Without the folder, a JetBrains Mono Nerd
+are released when it exits. The Admin installer copies this whole folder
+into its install folder's fonts folder. Without the folder, a JetBrains Mono Nerd
 Font installed in Windows is used; with neither, menus use Segoe UI with plain
-letters instead of icons. keyspace.log says which at every start.
+letters instead of icons. omarchy-overlay.log says which at every start.

@@ -54,7 +54,7 @@ impl App {
         SetDCBrushColor(
             item.hDC,
             if selected {
-                palette.accent
+                crate::material::selection(palette.border, palette.surface, palette.accent)
             } else {
                 palette.surface
             },
@@ -95,7 +95,7 @@ impl App {
         SetTextColor(
             item.hDC,
             if selected {
-                palette.background
+                palette.accent
             } else {
                 palette.text
             },

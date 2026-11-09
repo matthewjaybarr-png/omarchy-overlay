@@ -31,10 +31,10 @@ pub(super) unsafe fn entries() -> Vec<Entry> {
         (13, "Layout grid"),
         (14, "Layout dwindle"),
         (15, "Layout scrolling — Niri-inspired"),
-        (20, "Theme Jade"),
+        (20, "Theme Everforest"),
         (21, "Theme Tokyo Night"),
         (22, "Theme Nord"),
-        (23, "Theme Paper"),
+        (23, "Theme Flexoki Light"),
         (24, "Theme Alpenglow Night"),
         (25, "Appearance profiles"),
         (26, "Theme Neon Ridge"),
@@ -129,8 +129,7 @@ impl App {
                     25 => self.open_level(overlay::Level::Page("profiles"), true),
                     26 => self.apply_theme("neon-ridge"),
                     20..=24 => self.apply_theme(
-                        ["jade", "tokyo-night", "nord", "paper", "alpenglow-night"]
-                            [(id - 20) as usize],
+                        crate::appearance_profiles::COMMAND_THEMES[(id - 20) as usize],
                     ),
                     30 => self.move_direction(target, -1, 0),
                     31 => self.move_direction(target, 1, 0),

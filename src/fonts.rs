@@ -98,7 +98,7 @@ pub(super) unsafe fn unload() {
 }
 /// The GDI name to draw `family` with. Unknown fonts fall back to Segoe UI and are
 /// logged once; the profile keeps the name, so it works again if the font comes back.
-fn face(family: &str) -> String {
+pub(super) fn face(family: &str) -> String {
     let (face, missing) = font_names::text_face(family, &has);
     if missing && WARNED.with(|w| w.borrow_mut().insert(family.to_string())) {
         log(&format!(

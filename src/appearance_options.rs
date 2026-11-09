@@ -244,11 +244,11 @@ pub(super) unsafe fn command(app: &mut App, id: usize) {
                 Ok("Per-app choices are in Apps and global defaults.".into())
             }
             1208 => {
-                windows_personalization::apply(&app.directory, theme::current().dark)?;
+                appearance_effects::with_effects(|| windows_personalization::apply(&app.directory, theme::current().dark))?;
                 Ok("Windows light/dark mode now follows this palette. Its original preference is saved for restore and exit.".into())
             }
             1209 => {
-                windows_personalization::restore(&app.directory)?;
+                appearance_effects::with_effects(|| windows_personalization::restore(&app.directory))?;
                 Ok("Restored the Windows color preference. Frame choices remain controlled by their global/app settings.".into())
             }
             1212 => {
