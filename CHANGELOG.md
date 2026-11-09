@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+- **Appearance > Top bar > Icons or text** switches the whole bar between icons,
+  icons and text, and text, or sets each item on its own. Each module under
+  **Bar items** has the same choice.
+- **Restore defaults** on **Bar items** puts the default layout back.
+  **Reset the top bar** and **Setup > Reset all settings** reset from the menu, after
+  asking; a full reset keeps saved profiles and backs up the old settings.
+  **Restore defaults** in the bar and module windows now applies at once.
+- Security: the installed Admin edition no longer looks for an `OVERLAY SETTINGS`
+  folder above `%ProgramFiles%`, where any user could create one. Its settings and
+  config files are in `%LOCALAPPDATA%\OmarchyOverlay`, editable without admin rights.
+- The Admin installer updates in place: it detects the installed version, updates an
+  older one (asking before a downgrade), stages and verifies the new files before
+  swapping them in, rolls back if anything fails, removes files a release no longer
+  ships, waits for the old copy and its recovery guard to exit, and deletes files
+  still in use at the next restart. The tray offers **Update the installed copy**,
+  `--quiet` installs and uninstalls without messages, the exit code reaches
+  `INSTALL.cmd`, only one installer runs at a time, and the Apps entry has the size,
+  install date and a quiet uninstall command. Uninstall retries removing the folder.
+- Restart keeps arguments that end in a backslash.
+- The About box describes the installed edition correctly; the release zips include
+  the licence; CI runs the tests, Windows clippy and the package self-test.
+
 ## 0.2.0
 
 - Every Omarchy theme is built in, Neon Ridge first, replacing the old

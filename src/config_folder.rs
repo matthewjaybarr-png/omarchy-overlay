@@ -35,9 +35,13 @@ pub(super) fn folder() -> PathBuf {
     if let Some(settings) = profile::settings() {
         return settings.join("config");
     }
-    std::env::current_exe()
-        .ok()
-        .and_then(|exe| exe.parent().map(|d| d.join("config")))
+    let exe = std::env::current_exe().ok();
+    // The Admin install's own folder needs administrator rights to change, so its config
+    // files live with the user's settings instead, where they can be edited.
+    if exe.as_deref().is_some_and(crate::install::is_installed) {
+        return data_directory().join("config");
+    }
+    exe.and_then(|exe| exe.parent().map(|d| d.join("config")))
         .unwrap_or_else(|| PathBuf::from("config"))
 }
 

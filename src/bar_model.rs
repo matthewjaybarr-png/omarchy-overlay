@@ -788,3 +788,122 @@ mod expansion_tests {
         assert!(!loaded.section(0).is_empty());
     }
 }
+
+/// One look for the whole bar, chosen from the menu's "Icons or text" page.
+impl DisplayMode {
+    pub const ALL: [DisplayMode; 3] = [DisplayMode::Icon, DisplayMode::IconText, DisplayMode::Text];
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Icon => "Icon only",
+            Self::IconText => "Icon and text",
+            Self::Text => "Text only",
+        }
+    }
+    /// The next mode, so Enter on an item steps icon → icon and text → text → icon.
+    pub fn next(self) -> Self {
+        match self {
+            Self::Icon => Self::IconText,
+            Self::IconText => Self::Text,
+            Self::Text => Self::Icon,
+        }
+    }
+}
+impl Module {
+    /// The module with this `name()`, for items that have an icon/text mode.
+    pub fn from_key(key: &str) -> Option<Module> {
+        DISPLAY_MODULES.iter().map(|&(m, _)| m).find(|m| m.name() == key)
+    }
+}
+impl BarConfig {
+    /// What `set_all_display(mode)` gives one module. Icons keep Omarchy's look: the
+    /// clock and the window title stay text, because an icon alone says nothing there.
+    fn styled(mode: DisplayMode, module: Module) -> DisplayMode {
+        match (mode, module) {
+            (DisplayMode::Icon, Module::Clock | Module::Title) => DisplayMode::Text,
+            (DisplayMode::IconText, Module::Title) => DisplayMode::Text,
+            (mode, _) => mode,
+        }
+    }
+    /// Shows every bar item as icons, icons and text, or text.
+    pub fn set_all_display(&mut self, mode: DisplayMode) {
+        self.module_display = DISPLAY_MODULES
+            .iter()
+            .map(|&(m, _)| (m, Self::styled(mode, m)))
+            .collect();
+    }
+    /// The whole-bar style in use, or None when items were set one by one.
+    pub fn all_display(&self) -> Option<DisplayMode> {
+        DisplayMode::ALL.into_iter().find(|&mode| {
+            DISPLAY_MODULES
+                .iter()
+                .all(|&(m, _)| self.display(m) == Self::styled(mode, m))
+        })
+    }
+    /// Steps one item to its next display mode.
+    pub fn cycle_display(&mut self, module: Module) {
+        if module != Module::Divider {
+            let next = self.display(module).next();
+            self.module_display.insert(module, next);
+        }
+    }
+    /// Puts the default modules back in their default places, keeping every other bar choice.
+    pub fn reset_layout(&mut self) {
+        let d = BarConfig::default();
+        self.left = d.left;
+        self.center = d.center;
+        self.right = d.right;
+        self.split_task_modules = d.split_task_modules;
+        self.task_buttons = d.task_buttons;
+    }
+}
+
+#[cfg(test)]
+mod style_tests {
+    use super::*;
+    #[test]
+    fn whole_bar_styles_round_trip_and_icons_match_the_defaults() {
+        let mut c = BarConfig::default();
+        assert_eq!(c.all_display(), Some(DisplayMode::Icon));
+        for mode in DisplayMode::ALL {
+            c.set_all_display(mode);
+            c.validate().unwrap();
+            assert_eq!(c.all_display(), Some(mode), "{mode:?}");
+        }
+        c.set_all_display(DisplayMode::Icon);
+        let d = BarConfig::default();
+        assert!(DISPLAY_MODULES.iter().all(|&(m, _)| c.display(m) == d.display(m)));
+        c.set_all_display(DisplayMode::Text);
+        assert!(DISPLAY_MODULES.iter().all(|&(m, _)| !c.display(m).icon()));
+    }
+    #[test]
+    fn one_item_cycles_and_the_bar_reports_a_mixed_style() {
+        let mut c = BarConfig::default();
+        c.cycle_display(Module::Sound);
+        assert_eq!(c.display(Module::Sound), DisplayMode::IconText);
+        assert_eq!(c.all_display(), None);
+        c.cycle_display(Module::Sound);
+        c.cycle_display(Module::Sound);
+        assert_eq!(c.display(Module::Sound), DisplayMode::Icon);
+        assert_eq!(c.all_display(), Some(DisplayMode::Icon));
+        c.cycle_display(Module::Divider);
+        c.validate().unwrap();
+    }
+    #[test]
+    fn every_styled_module_is_found_by_its_name() {
+        for (m, _) in DISPLAY_MODULES {
+            assert_eq!(Module::from_key(m.name()), Some(m));
+        }
+        assert_eq!(Module::from_key("divider"), None);
+    }
+    #[test]
+    fn layout_reset_keeps_look_and_clock() {
+        let mut c = BarConfig { left: vec![], center: vec![], right: vec![Module::Clock], task_buttons: 7, clock_format: "24h".into(), ..Default::default() };
+        c.set_all_display(DisplayMode::Text);
+        c.reset_layout();
+        let d = BarConfig::default();
+        assert_eq!((c.left.clone(), c.center.clone(), c.right.clone()), (d.left, d.center, d.right));
+        assert_eq!(c.task_buttons, d.task_buttons);
+        assert_eq!(c.all_display(), Some(DisplayMode::Text));
+        assert_eq!(c.clock_format, "24h");
+    }
+}

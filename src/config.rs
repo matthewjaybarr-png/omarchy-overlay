@@ -227,6 +227,15 @@ impl Config {
 }
 
 impl Config {
+    /// Every setting back to its default. Saved profiles stay, so a reset is never the
+    /// way to lose them, and the always-float list stays because it lives in its own file.
+    pub fn reset_keeping_profiles(&self) -> Config {
+        Config {
+            appearance_profiles: self.appearance_profiles.clone(),
+            always_float: self.always_float.clone(),
+            ..Config::default()
+        }
+    }
     pub fn policy(&self, exe: &str, title: &str, class: &str) -> crate::rules::Policy {
         if self.always_float.matches(exe, title, class).is_some() {
             return crate::rules::Policy {
@@ -267,6 +276,22 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn reset_restores_defaults_but_keeps_saved_profiles() {
+        let mut c = Config {
+            theme: "gruvbox".into(),
+            gap: 20,
+            ..Config::default()
+        };
+        c.bar.set_all_display(crate::bar_model::DisplayMode::Text);
+        c.appearance_profiles = crate::appearance_profiles::builtins()[..1].to_vec();
+        let reset = c.reset_keeping_profiles();
+        let d = Config::default();
+        assert_eq!((reset.theme.as_str(), reset.gap), (d.theme.as_str(), d.gap));
+        assert_eq!(reset.bar.all_display(), Some(crate::bar_model::DisplayMode::Icon));
+        assert_eq!(reset.appearance_profiles.len(), 1);
+        reset.validate().unwrap();
+    }
     #[test]
     fn walker_menu_font_by_default() {
         let c = Config::default();

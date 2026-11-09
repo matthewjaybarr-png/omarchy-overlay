@@ -27,6 +27,8 @@ mod font_names;
 #[cfg(any(windows, test))]
 mod install;
 #[cfg(any(windows, test))]
+mod install_files;
+#[cfg(any(windows, test))]
 mod launch_unelevated;
 #[cfg(any(windows, test))]
 mod layout;
@@ -44,8 +46,6 @@ mod picker;
 mod portable_apps;
 #[cfg(any(windows, test))]
 mod profile;
-#[cfg(test)]
-mod rainmeter;
 #[cfg(any(windows, test))]
 mod rules;
 #[cfg(any(windows, test))]

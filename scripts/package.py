@@ -26,6 +26,9 @@ Run INSTALL.cmd and accept the administrator prompt. It installs to
 %ProgramFiles%\\OmarchyOverlay and starts elevated at sign-in, so its keys also
 work in apps running as administrator. Apps you start from it open without
 administrator rights.
+To update, run INSTALL.cmd from the newer release: it closes the running copy,
+replaces the installed version and keeps your settings. If anything fails, the
+installed copy is left as it was. INSTALL.cmd --quiet installs without messages.
 Uninstall from Settings > Apps or the tray menu; it restores the desktop first.
 Settings and logs are kept in %LOCALAPPDATA%\\OmarchyOverlay.
 If the desktop is ever left changed, run RECOVER.cmd.
@@ -43,6 +46,7 @@ def build(exe: Path, out: Path) -> list[Path]:
         with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as z:
             z.write(exe, 'OmarchyOverlay.exe')
             z.write(ROOT / 'RECOVER.cmd', 'RECOVER.cmd')
+            z.write(ROOT / 'LICENSE', 'LICENSE.txt')
             readme = README[edition].format(version=version).replace('\n', '\r\n')
             z.writestr('README.txt', readme)
             for folder, prefix in ((ROOT / 'assets/fonts', 'fonts'),
@@ -67,7 +71,7 @@ def selftest() -> None:
         assert standard.name == f'OmarchyOverlay-{version}-standard.zip', standard.name
         assert admin.name == f'OmarchyOverlay-{version}-admin.zip', admin.name
         names = {z: set(zipfile.ZipFile(z).namelist()) for z in (standard, admin)}
-        common = {'OmarchyOverlay.exe', 'RECOVER.cmd', 'README.txt',
+        common = {'OmarchyOverlay.exe', 'RECOVER.cmd', 'README.txt', 'LICENSE.txt',
                   'fonts/JetBrainsMonoNerdFont-Regular.ttf', 'config/examples/binds.conf'}
         assert common <= names[standard], common - names[standard]
         assert common <= names[admin], common - names[admin]

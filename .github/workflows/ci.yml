@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the Windows target and llvm-rc
+        run: |
+          rustup target add x86_64-pc-windows-msvc
+          rustup component add clippy
+          sudo apt-get update
+          sudo apt-get install -y llvm
+      - name: Unit tests
+        run: cargo test
+      - name: Clippy (Windows)
+        run: cargo clippy --target x86_64-pc-windows-msvc -- -D warnings
+      - name: Package self-test
+        run: python3 scripts/package.py --selftest

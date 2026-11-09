@@ -23,6 +23,12 @@ pub(super) fn question(command: &Command) -> Option<&'static str> {
             Some("Shut down the PC now? Unsaved work in open apps may be lost.")
         }
         Command::Builtin("exit") => Some("Restore every window and exit Omarchy Overlay?"),
+        Command::Builtin("reset-bar") => {
+            Some("Reset the top bar? Its items, icons, height, clock and opacity go back to the defaults.")
+        }
+        Command::Builtin("reset-settings") => Some(
+            "Reset all settings to defaults? Saved profiles and config files are kept, and a backup is saved first.",
+        ),
         _ => None,
     }
 }
@@ -259,6 +265,22 @@ impl App {
                 "Omarchy Overlay releases are the zips you downloaded. \
                  Each zip has SHA256SUMS.txt beside it. Omarchy Overlay never downloads or installs updates.",
             ),
+            "reset-bar" => {
+                let mut c = self.config.clone();
+                let d = Config::default();
+                c.bar = d.bar;
+                c.show_top_bar = d.show_top_bar;
+                c.bar_opacity = d.bar_opacity;
+                if self.commit(c) {
+                    self.show_feedback("The top bar is back to its defaults.");
+                }
+            }
+            "reset-settings" => match self.reset_settings() {
+                Ok(()) => self.show_feedback(
+                    "All settings are back to their defaults. A backup is in profile-backup.json.",
+                ),
+                Err(error) => message(&format!("Reset failed: {error}")),
+            },
             "restore-desktop" => {
                 self.restore();
                 if self.saved.is_empty() {
@@ -314,7 +336,8 @@ impl App {
                 rest.next();
                 continue;
             }
-            arguments.push_str(&format!(" \"{argument}\""));
+            arguments.push(' ');
+            arguments.push_str(&crate::launch_unelevated::quote(&argument));
         }
         // Direct, not shell_in: an elevated install must restart elevated, not as a user app.
         if shell_direct(&exe, &arguments, exe.parent()) {

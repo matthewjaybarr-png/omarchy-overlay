@@ -408,10 +408,21 @@ unsafe fn close_running() -> bool {
     closed
 }
 
-/// `--install [--user DOMAIN\name]` and `--uninstall [--remove-settings]` (Admin edition).
+/// `--install [--user DOMAIN\name] [--yes] [--quiet]` and
+/// `--uninstall [--remove-settings] [--quiet]` (Admin edition).
+/// `--quiet` shows no message boxes (and answers yes); the exit code says how it went:
+/// 0 done, 1 failed, 2 cancelled or the administrator prompt was refused.
 unsafe fn install_command(arguments: &[String], directory: &Path) -> i32 {
     let installing = arguments[0] == "--install";
-    let remove_settings = arguments.iter().any(|a| a == "--remove-settings");
+    let has = |flag: &str| arguments.iter().any(|a| a == flag);
+    let quiet = has("--quiet");
+    let remove_settings = has("--remove-settings");
+    let say = |text: &str| {
+        log(&format!("Installer: {}", text.replace("\r\n", " ")));
+        if !quiet {
+            message(text);
+        }
+    };
     let user = arguments
         .iter()
         .position(|a| a == "--user")
@@ -421,46 +432,106 @@ unsafe fn install_command(arguments: &[String], directory: &Path) -> i32 {
             let get = |name| std::env::var(name).unwrap_or_default();
             format!("{}\\{}", get("USERDOMAIN"), get("USERNAME"))
         });
+    let this = env!("CARGO_PKG_VERSION");
+    let plan = crate::install::current_plan();
+    if installing && !quiet && !has("--yes") {
+        // Asked before the administrator prompt, so saying no changes nothing.
+        if let Some(question) = crate::install_files::question(&plan, this) {
+            let answer = MessageBoxW(
+                null_mut(),
+                wide(&question).as_ptr(),
+                wide(NAME).as_ptr(),
+                MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
+            );
+            if answer != IDYES {
+                return 2;
+            }
+        }
+    }
     if !crate::launch_unelevated::process_elevated() {
         // The task must run as the signed-in user, so pass that name to the elevated copy.
-        let relaunch = if installing {
-            format!("--install --user \"{user}\"")
+        let mut relaunch = if installing {
+            format!("--install --yes --user {}", crate::launch_unelevated::quote(&user))
         } else if remove_settings {
             "--uninstall --remove-settings".into()
         } else {
             "--uninstall".into()
         };
-        return if crate::install::elevate(&relaunch) { 0 } else { 1 };
+        if quiet {
+            relaunch.push_str(" --quiet");
+        }
+        return match crate::install::elevate(&relaunch) {
+            Some(code) => code as i32,
+            None => {
+                if !quiet {
+                    message("Omarchy Overlay needs administrator rights to install or uninstall. Nothing was changed.");
+                }
+                2
+            }
+        };
     }
+    // One installer at a time, across every signed-in user.
+    let installer = CreateMutexW(null(), 1, wide("Global\\OmarchyOverlay.Installer").as_ptr());
+    if installer.is_null() || GetLastError() == ERROR_ALREADY_EXISTS {
+        if !installer.is_null() {
+            CloseHandle(installer);
+        }
+        say("Another Omarchy Overlay install or uninstall is running. Try again when it has finished.");
+        return 1;
+    }
+    let result = install_locked(installing, &plan, &user, remove_settings, directory, &say);
+    ReleaseMutex(installer);
+    CloseHandle(installer);
+    result
+}
+
+unsafe fn install_locked(
+    installing: bool,
+    plan: &crate::install_files::Plan,
+    user: &str,
+    remove_settings: bool,
+    directory: &Path,
+    say: &dyn Fn(&str),
+) -> i32 {
+    log(&format!(
+        "Installer: {} {} ({plan:?}) for {user}",
+        if installing { "install" } else { "uninstall" },
+        env!("CARGO_PKG_VERSION")
+    ));
     if !close_running() {
-        message("Omarchy Overlay did not exit. Close it and try again.");
+        say("Omarchy Overlay did not exit. Close it and try again. Nothing was changed.");
         return 1;
     }
     let lock = match recovery::Lock::acquire() {
         Ok(lock) => lock,
         Err(error) => {
-            message(&error);
+            say(&error);
             return 1;
         }
     };
     // The started copy takes this lock at startup, so release it before starting the task or
     // waiting on a message box; held, the new copy gives up after 10 seconds.
     if installing {
-        let installed = crate::install::install(&user);
+        let installed = crate::install::install(user);
         drop(lock);
         return match installed {
-            Ok(dir) => {
+            Ok(report) => {
                 if let Err(error) = crate::install::start_task() {
-                    message(&error);
+                    log(&format!("Installer: could not start the logon task: {error}"));
                 }
-                message(&format!(
-                    "Omarchy Overlay is installed in {} and starts when {user} signs in.\r\nRemove it from Settings > Apps or the tray menu.",
-                    dir.display()
+                say(&crate::install_files::success_message(
+                    plan,
+                    env!("CARGO_PKG_VERSION"),
+                    &crate::install::install_dir(),
+                    user,
+                    !report.pending_delete.is_empty(),
                 ));
                 0
             }
             Err(error) => {
-                message(&format!("Install failed: {error}"));
+                say(&format!(
+                    "Install failed: {error}\r\n\r\nThe installed copy, if there was one, was left as it was. If another signed-in user is running Omarchy Overlay, close it there and try again."
+                ));
                 1
             }
         };
@@ -468,7 +539,9 @@ unsafe fn install_command(arguments: &[String], directory: &Path) -> i32 {
     let mut errors = recovery::recover(directory).errors;
     errors.extend(crate::install::remove(remove_settings.then_some(directory)));
     drop(lock);
-    message(&if errors.is_empty() {
+    // The installed copy's recovery guard can outlive it by a moment.
+    crate::install::wait_for_programs_in(&crate::install::install_dir(), 10_000);
+    say(&if errors.is_empty() {
         "Omarchy Overlay is uninstalled and the desktop is restored.".to_string()
     } else {
         format!("Uninstall finished with problems:\r\n{}", errors.join("\r\n"))
@@ -687,12 +760,15 @@ unsafe fn about(owner: HWND) {
             "Settings folder (shared by every version):\r\n{}",
             folder.display()
         ),
-        None => "Settings: not using a OVERLAY SETTINGS folder.".to_string(),
+        None => format!("Settings and config files:\r\n{}", data_directory().display()),
     };
     let program = std::env::current_exe()
         .map(|p| p.display().to_string())
         .unwrap_or_default();
-    let tail = if ON_STICK.load(std::sync::atomic::Ordering::Relaxed) {
+    let installed = std::env::current_exe().is_ok_and(|exe| crate::install::is_installed(&exe));
+    let tail = if installed {
+        "Installed for this PC; starts when you sign in. Remove it from Settings > Apps."
+    } else if ON_STICK.load(std::sync::atomic::Ordering::Relaxed) {
         "Runs from its folder on the stick; nothing is installed.\r\nUse \"Exit before removing the stick\" before pulling the drive."
     } else {
         "Runs from its folder; nothing is installed."
@@ -700,7 +776,7 @@ unsafe fn about(owner: HWND) {
     let text =
         wide(&format!(
             concat!("Omarchy Overlay ", env!("CARGO_PKG_VERSION"),
-        "\r\nPersonal portable Windows desktop prototype.\r\n\r\nProgram: {}\r\n{}\r\n\r\n{}"),
+        "\r\nKeyboard-first tiling window manager for Windows 11.\r\n\r\nProgram: {}\r\n{}\r\n\r\n{}"),
             program, settings, tail
         ));
     let caption = wide("About Omarchy Overlay");
@@ -848,7 +924,7 @@ pub fn run() {
             ) == 2
         });
         ON_STICK.store(stick, std::sync::atomic::Ordering::Relaxed);
-        let mut active_profile = match profile::find(&executable, &directory, explicit) {
+        let mut active_profile = match profile::find_for(&executable, &directory, explicit, crate::install::is_installed(&executable)) {
             profile::Found::Use(active) => active,
             profile::Found::Missing { folder, source } => {
                 let (text, buttons) = match &source {
@@ -2960,6 +3036,14 @@ impl App {
             crate::install::admin_marker(&exe),
             crate::install::is_installed(&exe),
         );
+        let install_label = if install_items.0 {
+            crate::install_files::tray_label(
+                crate::install::installed_version().as_deref(),
+                env!("CARGO_PKG_VERSION"),
+            )
+        } else {
+            String::new()
+        };
         let menu = CreatePopupMenu();
         for (id, label) in [
             (
@@ -2979,10 +3063,10 @@ impl App {
                     "Pause Omarchy Overlay keys"
                 },
             ),
-            (6, "Open the 0.15 settings window"),
+            (6, "Open the settings window"),
             (5, "About Omarchy Overlay"),
             (0, ""),
-            (8, "Install (admin)…"),
+            (8, install_label.as_str()),
             (9, "Uninstall…"),
             (7, "Exit before removing the stick"),
             (4, "Restore desktop and exit"),
@@ -3261,8 +3345,12 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                     if bar_settings::choice_command(hwnd, id, notification) {
                         return Some(0);
                     }
+                    if id == 212 {
+                        // Defaults apply at once, like Restore defaults in the menu.
+                        bar_settings::fill(hwnd, &crate::bar_model::BarConfig::default());
+                    }
                     match id {
-                        211 => match bar_settings::read(hwnd, &app.config.bar) {
+                        211 | 212 => match bar_settings::read(hwnd, &app.config.bar) {
                             Ok(config) => {
                                 app.config.bar = config;
                                 app.save_config();
@@ -3275,9 +3363,6 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                             }
                             Err(error) => message(&error),
                         },
-                        212 => {
-                            bar_settings::fill(hwnd, &crate::bar_model::BarConfig::default());
-                        }
                         213 => crate::desktops::task_view(),
                         215 => app.show_workspace_layouts(),
                         223 => {
@@ -3328,7 +3413,13 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                             app.save_config();
                             bar::settings(&app.config.bar);
                         }
-                        452 => module_settings::fill(hwnd, &crate::bar_model::BarConfig::default()),
+                        452 => {
+                            // Defaults apply at once, like Restore defaults in the menu.
+                            module_settings::fill(hwnd, &crate::bar_model::BarConfig::default());
+                            module_settings::apply(hwnd, &mut app.config.bar);
+                            app.save_config();
+                            bar::settings(&app.config.bar);
+                        }
                         453 => {
                             ShowWindow(hwnd, SW_HIDE);
                         }

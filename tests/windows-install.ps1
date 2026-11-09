@@ -1,7 +1,7 @@
 $ErrorActionPreference='Stop'
 # Admin edition: run INSTALL.cmd from the unzipped Admin release with the full admin token, check the
 # install, that bound keys reach the app over an elevated window, that the terminal starts
-# unelevated, then uninstall and check nothing is left. Runs with --elevated (RunLevel Highest).
+# unelevated, update over an older version, then uninstall and check nothing is left. Runs with --elevated (RunLevel Highest).
 $root=Split-Path -Parent $MyInvocation.MyCommand.Path
 $admin=Join-Path $root 'admin'
 $dir=Join-Path $env:ProgramFiles 'OmarchyOverlay'
@@ -166,6 +166,25 @@ try{
  Check 'Restart from the menu starts a new installed copy' ($restarted.Count -gt 0 -and -not (Get-Process -Id $old -ErrorAction SilentlyContinue)) "new $($restarted.Count) old alive $([bool](Get-Process -Id $old -ErrorAction SilentlyContinue))"
  $elevation=[Edition]::Elevation($restarted[0].Id)
  Check 'Restarted installed copy is still elevated' ($elevation -eq 1) "TokenElevation $elevation"
+ $until=[DateTime]::UtcNow.AddSeconds(10);do{Pump 200}while([Edition]::MainWindow() -eq [IntPtr]::Zero -and [DateTime]::UtcNow -lt $until)
+ Pump 1500;[void][Edition]::PostMessage([Edition]::Overlay(),0x100,[IntPtr]0x1b,[IntPtr]::Zero);Pump 500
+
+ # Update over an older install: pretend 0.0.1 is installed with a font this version no longer
+ # ships. INSTALL.cmd must close the running copy, swap the files, drop the font and restart it.
+ $before=@(Installed-App|ForEach-Object Id)
+ Set-ItemProperty $key DisplayVersion '0.0.1'
+ $stale=Join-Path $dir 'fonts\Retired.ttf';[IO.File]::WriteAllText($stale,'old')
+ Add-Content -Encoding ASCII (Join-Path $dir 'install-manifest.txt') 'fonts/Retired.ttf'
+ $text=Run-Boxed $env:ComSpec ('/c "'+(Join-Path $admin 'INSTALL.cmd')+'"') -Hold 5
+ Check 'INSTALL.cmd over an older version reports the update' ($text -like 'Omarchy Overlay is installed in*updated from 0.0.1 to*') $text
+ Check 'Update closed the old copy' (-not ($before|Where-Object{Get-Process -Id $_ -ErrorAction SilentlyContinue}))
+ Check 'Update removed the font the new version no longer ships' (-not (Test-Path $stale))
+ $leftover=@(Get-ChildItem $dir -Recurse -File|Where-Object{$_.Name -like '*.install-*'}|ForEach-Object Name)
+ Check 'Update left no staged or old files' ($leftover.Count -eq 0) ($leftover -join ', ')
+ $values=Get-ItemProperty $key
+ Check 'Apps entry shows the new version, size and quiet uninstall' ($values.DisplayVersion -ne '0.0.1' -and $values.EstimatedSize -gt 0 -and $values.QuietUninstallString -like '*--uninstall --quiet') "$($values.DisplayVersion) $($values.EstimatedSize)"
+ $until=[DateTime]::UtcNow.AddSeconds(15);do{Pump 300;$updated=@(Installed-App|Where-Object{$before -notcontains $_.Id})}while($updated.Count -eq 0 -and [DateTime]::UtcNow -lt $until)
+ Check 'Updated copy is running elevated' ($updated.Count -gt 0 -and [Edition]::Elevation($updated[0].Id) -eq 1)
  $until=[DateTime]::UtcNow.AddSeconds(10);do{Pump 200}while([Edition]::MainWindow() -eq [IntPtr]::Zero -and [DateTime]::UtcNow -lt $until)
  Pump 1500;[void][Edition]::PostMessage([Edition]::Overlay(),0x100,[IntPtr]0x1b,[IntPtr]::Zero);Pump 500
 

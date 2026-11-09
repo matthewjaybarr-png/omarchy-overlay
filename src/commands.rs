@@ -56,6 +56,11 @@ pub const BUILTINS: &[(&str, &str)] = &[
         "restore-desktop",
         "Restore every window to its original place",
     ),
+    ("reset-bar", "Reset the top bar to its defaults"),
+    (
+        "reset-settings",
+        "Reset all settings to defaults (saved profiles are kept)",
+    ),
 ];
 
 /// Small settings pages. Each is drawn as a list inside the menu.
@@ -86,6 +91,7 @@ pub const PAGES: &[(&str, &str)] = &[
     ),
     ("bar", "Top bar"),
     ("bar-items", "Bar items"),
+    ("bar-style", "Icons or text"),
     ("bar-left", "Left section"),
     ("bar-center", "Center section"),
     ("bar-right", "Right section"),

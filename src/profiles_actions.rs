@@ -27,6 +27,15 @@ impl App {
             &self.config,
         )
     }
+    /// Every setting back to its default, from the menu. Saved profiles stay, and the
+    /// current settings are backed up first so the reset can be taken back by importing it.
+    pub(super) unsafe fn reset_settings(&mut self) -> Result<(), String> {
+        self.backup_preferences()?;
+        let config = self.config.reset_keeping_profiles();
+        profile::save(&self.profile, &self.directory, &config)?;
+        self.activate_preferences(config);
+        Ok(())
+    }
     unsafe fn activate_preferences(&mut self, mut config: Config) {
         // The always-float list lives in config\always-float.json, not in the profile.
         config.always_float = std::mem::take(&mut self.config.always_float);
