@@ -1,6 +1,6 @@
 [package]
 name = "omarchy-overlay"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Portable keyboard-first window management for Windows 11"
 license = "MIT"

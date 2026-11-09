@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (in progress)
+## 0.2.0
 
 - Every Omarchy theme is built in, Neon Ridge first, replacing the old
   hand-written palettes. A theme you add under `config\themes\` as a
