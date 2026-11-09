@@ -13,6 +13,45 @@ pub(super) unsafe fn draw(
     color: u32,
     status: &str,
 ) {
+    if let Some(glyph) = crate::bar_model::omarchy_glyph(module, active, status) {
+        let font = CreateFontW(
+            -size,
+            0,
+            0,
+            0,
+            FW_NORMAL as i32,
+            0,
+            0,
+            0,
+            DEFAULT_CHARSET as u32,
+            OUT_DEFAULT_PRECIS as u32,
+            CLIP_DEFAULT_PRECIS as u32,
+            CLEARTYPE_QUALITY as u32,
+            DEFAULT_PITCH as u32,
+            wide(&fonts::face(fonts::ICON_FAMILY)).as_ptr(),
+        );
+        let old_font = SelectObject(dc, font);
+        let mut buf = [0u16; 2];
+        let text = glyph.encode_utf16(&mut buf);
+        let mut r = RECT {
+            left: x - size / 2,
+            top: y - size / 2,
+            right: x + size + size / 2,
+            bottom: y + size + size / 2,
+        };
+        SetTextColor(dc, color);
+        SetBkMode(dc, TRANSPARENT as i32);
+        DrawTextW(
+            dc,
+            text.as_ptr(),
+            text.len() as i32,
+            &mut r,
+            DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP,
+        );
+        SelectObject(dc, old_font);
+        DeleteObject(font);
+        return;
+    }
     let pen = CreatePen(PS_SOLID, (size / 12).max(1), color);
     let old_pen = SelectObject(dc, pen);
     let old_brush = SelectObject(dc, GetStockObject(HOLLOW_BRUSH));

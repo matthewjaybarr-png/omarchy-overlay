@@ -9,6 +9,9 @@
 - Unknown keys in a `colors.toml` are ignored instead of rejecting the file.
 - Omarchy look by default: Waybar-style bar, square 2 px borders in the theme's
   active and inactive colors, and Walker-style menus in JetBrainsMono Nerd Font.
+- New bars show icons for every item except the clock (and window title), using
+  Omarchy's own bar glyphs for tray, sound, network, battery, tiling,
+  notifications, clipboard and capture. Saved profiles keep their labels.
 - The theme sets the Windows accent color and its first background at start
   and when chosen; `next-background` cycles the theme's
   backgrounds. Both are restored on exit and after a crash.

@@ -171,7 +171,8 @@ impl Default for BarConfigData {
             spacing: c.spacing,
             task_buttons: c.task_buttons,
             split_task_modules: false,
-            module_display: c.module_display,
+            // Profiles saved before icon defaults keep their text labels.
+            module_display: BTreeMap::new(),
             clock_format: c.clock_format,
             workspace_labels: c.workspace_labels,
             left: c.left,
@@ -220,6 +221,62 @@ impl TryFrom<BarConfigData> for BarConfig {
         Ok(result)
     }
 }
+/// Omarchy's own bar glyph (JetBrainsMono Nerd Font) for a module, given its status text.
+/// None keeps the drawn line icon; Omarchy's logo lives in its own font, which is not shipped.
+pub fn omarchy_glyph(module: Module, active: bool, status: &str) -> Option<char> {
+    let battery = |rest: &str, charging: bool| {
+        let percent: usize = rest.strip_suffix('%')?.parse().ok()?;
+        let i = (percent / 10).min(9);
+        let icons = if charging {
+            [
+                '\u{f089c}',
+                '\u{f0086}',
+                '\u{f0087}',
+                '\u{f0088}',
+                '\u{f089d}',
+                '\u{f0089}',
+                '\u{f089e}',
+                '\u{f008a}',
+                '\u{f008b}',
+                '\u{f0085}',
+            ]
+        } else {
+            [
+                '\u{f007a}',
+                '\u{f007b}',
+                '\u{f007c}',
+                '\u{f007d}',
+                '\u{f007e}',
+                '\u{f007f}',
+                '\u{f0080}',
+                '\u{f0081}',
+                '\u{f0082}',
+                '\u{f0079}',
+            ]
+        };
+        Some(icons[i])
+    };
+    match module {
+        Module::SystemTray => Some('\u{f053}'),
+        Module::Sound if status.starts_with("MUTE") => Some('\u{f0581}'),
+        Module::Sound => Some('\u{f028}'),
+        Module::Network if status.starts_with("WI-FI") => Some('\u{f0928}'),
+        Module::Network if status.starts_with("ETH") => Some('\u{f0200}'),
+        Module::Network => Some('\u{f092e}'),
+        Module::Power => {
+            let value = status.lines().next().unwrap_or("");
+            match value.strip_prefix('+') {
+                Some(rest) => battery(rest, true),
+                None => battery(value, false),
+            }
+        }
+        Module::Tiling => Some(if active { '\u{f14fb}' } else { '\u{f0536}' }),
+        Module::Notifications => Some('\u{f009a}'),
+        Module::Clipboard => Some('\u{f014c}'),
+        Module::Capture => Some('\u{f0ec2}'),
+        _ => None,
+    }
+}
 impl Default for BarConfig {
     fn default() -> Self {
         use Module::*;
@@ -230,7 +287,12 @@ impl Default for BarConfig {
             spacing: 6,
             task_buttons: 2,
             split_task_modules: true,
-            module_display: BTreeMap::new(),
+            // Omarchy's bar is icons except the clock; the window title only makes sense as text.
+            module_display: DISPLAY_MODULES
+                .iter()
+                .filter(|(m, _)| !matches!(m, Clock | Title))
+                .map(|&(m, _)| (m, DisplayMode::Icon))
+                .collect(),
             clock_format: "day-time".into(),
             workspace_labels: vec!["1".into(), "2".into(), "3".into(), "4".into()],
             // Omarchy's Waybar: logo menu and workspaces, clock, tray and status icons.
@@ -384,7 +446,10 @@ mod tests {
         assert_eq!(c.left, vec![Menu, Workspaces]);
         assert_eq!(c.center, vec![Clock]);
         assert_eq!(c.right, vec![SystemTray, Sound, Network, Power]);
-        assert_eq!((c.font_family.as_str(), c.font_size), ("JetBrainsMono Nerd Font", 14));
+        assert_eq!(
+            (c.font_family.as_str(), c.font_size),
+            ("JetBrainsMono Nerd Font", 14)
+        );
         assert_eq!(c.clock_format, "day-time");
         assert!(c.validate().is_ok());
     }
@@ -398,6 +463,45 @@ mod tests {
             icon: false,
             tooltip: String::new(),
         }
+    }
+    #[test]
+    fn new_bars_default_to_icons_except_clock_and_title() {
+        let c = BarConfig::default();
+        assert_eq!(c.display(Module::Clock), DisplayMode::Text);
+        assert_eq!(c.display(Module::Title), DisplayMode::Text);
+        for m in [
+            Module::Menu,
+            Module::Workspaces,
+            Module::SystemTray,
+            Module::Sound,
+            Module::Network,
+            Module::Power,
+            Module::Tasks,
+        ] {
+            assert_eq!(c.display(m), DisplayMode::Icon, "{m:?}");
+        }
+        assert!(c.validate().is_ok());
+    }
+    #[test]
+    fn omarchy_glyphs_follow_status() {
+        assert_eq!(
+            omarchy_glyph(Module::Sound, false, "MUTE\nClick"),
+            Some('\u{f0581}')
+        );
+        assert_eq!(
+            omarchy_glyph(Module::Network, false, "ETH\n"),
+            Some('\u{f0200}')
+        );
+        assert_eq!(
+            omarchy_glyph(Module::Power, false, "57%"),
+            Some('\u{f007f}')
+        );
+        assert_eq!(
+            omarchy_glyph(Module::Power, false, "+100%"),
+            Some('\u{f0085}')
+        );
+        assert_eq!(omarchy_glyph(Module::Power, false, "AC"), None);
+        assert_eq!(omarchy_glyph(Module::Menu, false, ""), None);
     }
     #[test]
     fn old_profiles_keep_text_and_native_task_icons() {

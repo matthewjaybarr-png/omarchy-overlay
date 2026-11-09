@@ -66,7 +66,7 @@ pub(super) unsafe fn create(font: HFONT, brush: HBRUSH) -> HWND {
     }
     for (id, label, x, width) in [
         (451, "Apply appearance", 24, 210),
-        (452, "Restore text defaults", 250, 230),
+        (452, "Restore defaults", 250, 230),
         (453, "Close", 496, 174),
     ] {
         child(

@@ -235,7 +235,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Check 'Module choices survive restarting Omarchy Overlay' ([Desktop]::SendMessage([Desktop]::GetDlgItem($modules,403),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 2)
  Click $modules 452;Click $modules 451
  $saved=Get-Content -Raw $configPath|ConvertFrom-Json
- Check 'Restore defaults keeps native app icons with text' ($saved.bar.module_display.menu -eq 'text' -and $saved.bar.module_display.tasks -eq 'icon-text')
+ Check 'Restore defaults sets icons except the clock' ($saved.bar.module_display.menu -eq 'icon' -and $saved.bar.module_display.tasks -eq 'icon' -and $saved.bar.module_display.clock -eq 'text')
 } catch{$results.Add(@{name='Module/picker harness';passed=$false;detail=$_.Exception.ToString()})}
 finally{
  if($null -ne $app -and -not $app.HasExited){[void][Desktop]::PostMessage([Desktop]::MainWindow(),0x312,[IntPtr]105,[IntPtr]::Zero);Wait-Desktop 1500}
