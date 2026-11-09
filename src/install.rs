@@ -253,6 +253,11 @@ mod tests {
         }
     }
     #[test]
+    fn manifest_version_follows_the_package_version() {
+        let expected = format!("version=\"{}.0\"", env!("CARGO_PKG_VERSION"));
+        assert!(include_str!("../app.manifest").contains(&expected), "app.manifest needs {expected}");
+    }
+    #[test]
     fn apps_entry_values() {
         let dir = Path::new(r"C:\Program Files\OmarchyOverlay");
         let values = uninstall_values(dir, "0.2.0");

@@ -79,7 +79,9 @@
         { "label": "Bar height", "icon": "F065", "command": "page bar-height" },
         { "label": "Bar opacity", "icon": "F00B5", "command": "page bar-opacity" },
         { "label": "Clock", "icon": "F017", "command": "page clock" },
-        { "label": "Bar items", "icon": "F03A", "command": "page bar-items" }
+        { "label": "Bar items", "icon": "F03A", "command": "page bar-items" },
+        { "label": "Icons or text", "icon": "F1DE", "command": "page bar-style" },
+        { "label": "Reset the top bar", "icon": "F0E2", "command": "reset-bar" }
       ]
     },
     {
@@ -118,7 +120,8 @@
         { "label": "Startup apps", "icon": "F0E7", "command": "settings startupapps" },
         { "label": "Tiling", "icon": "F00A", "command": "menu tiling" },
         { "label": "Saved profiles", "icon": "F0C0", "command": "page profiles" },
-        { "label": "Config folder", "icon": "F07B", "command": "config-folder" }
+        { "label": "Config folder", "icon": "F07B", "command": "config-folder" },
+        { "label": "Reset all settings", "icon": "F0E2", "command": "reset-settings" }
       ]
     },
     {

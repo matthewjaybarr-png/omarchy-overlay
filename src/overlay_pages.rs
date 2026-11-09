@@ -111,6 +111,11 @@ fn index_of<T: PartialEq>(list: &[(T, String)], value: T) -> String {
         .unwrap_or(0)
         .to_string()
 }
+fn display_mode(label: &str) -> Option<crate::bar_model::DisplayMode> {
+    crate::bar_model::DisplayMode::ALL
+        .into_iter()
+        .find(|m| m.label() == label)
+}
 fn on_off(page: &'static str, on: bool, on_label: &str, off_label: &str) -> Vec<Row> {
     vec![
         Row::new(OPTION, on_label, Act::Choose(page, "on".into())).checked(on),
@@ -202,6 +207,8 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
         "start-tiling" => c.start_tiling = d.start_tiling,
         "bar" => c.show_top_bar = d.show_top_bar,
         "clock" => c.bar.clock_format = d.bar.clock_format,
+        "bar-style" => c.bar.module_display = d.bar.module_display,
+        "bar-items" => c.bar.reset_layout(),
         "bar-height" => {
             c.bar.height = d.bar.height;
             c.bar.font_size = d.bar.font_size;
@@ -765,11 +772,20 @@ impl App {
                 match self.config.bar.section(s).get(i) {
                     None => vec![info("That module is no longer in this section.")],
                     Some(m) => {
-                        let mut rows = vec![
-                            info(format!("{}: {}", m.title(), m.description())),
+                        let mut rows = vec![info(format!("{}: {}", m.title(), m.description()))];
+                        if *m != crate::bar_model::Module::Divider {
+                            let current = self.config.bar.display(*m);
+                            for mode in crate::bar_model::DisplayMode::ALL {
+                                rows.push(
+                                    Row::new(OPTION, format!("Show as: {}", mode.label().to_lowercase()), Act::Choose("bar-display", mode.label().into()))
+                                        .checked(current == mode),
+                                );
+                            }
+                        }
+                        rows.extend([
                             Row::new(SUBMENU, "Move up", Act::Choose("bar-move", "up".into())),
                             Row::new(SUBMENU, "Move down", Act::Choose("bar-move", "down".into())),
-                        ];
+                        ]);
                         for (t, page) in BAR_SECTIONS.iter().enumerate() {
                             if t != s {
                                 rows.push(Row::new(SUBMENU, format!("Move to the {}", page_title(page).to_lowercase()), Act::Choose("bar-move", t.to_string())));
@@ -991,6 +1007,38 @@ impl App {
             "bar" => {
                 let mut rows = on_off("bar", self.config.show_top_bar, "Show the top bar", "Hide the top bar");
                 rows.extend(self.menu_view("bar").rows.into_iter().skip(1));
+                rows
+            }
+            "bar-style" => {
+                use crate::bar_model::DisplayMode;
+                let bar = &self.config.bar;
+                let all = bar.all_display();
+                let mut rows: Vec<Row> = [
+                    (DisplayMode::Icon, "Icons", "Omarchy's look; the clock and window title stay text"),
+                    (DisplayMode::IconText, "Icons and text", "an icon beside each name"),
+                    (DisplayMode::Text, "Text", "names only, no icons"),
+                ]
+                .into_iter()
+                .map(|(mode, label, detail)| {
+                    Row::new(OPTION, label, Act::Choose("bar-style", mode.label().into()))
+                        .checked(all == Some(mode))
+                        .detail(detail)
+                })
+                .collect();
+                if all.is_none() {
+                    rows.push(info("Items are set one by one. Choose a style above to set them all."));
+                }
+                rows.push(info("Or set each item on the bar. Enter steps icon, icon and text, text."));
+                let mut shown = vec![];
+                for m in (0..3).flat_map(|s| bar.section(s).iter().copied()) {
+                    if m != crate::bar_model::Module::Divider && !shown.contains(&m) {
+                        shown.push(m);
+                        rows.push(
+                            Row::new(GRID, m.title(), Act::Choose("bar-style-item", m.name().into()))
+                                .detail(bar.display(m).label()),
+                        );
+                    }
+                }
                 rows
             }
             "clock" => crate::bar_model::CLOCK_FORMATS
@@ -2096,6 +2144,25 @@ impl App {
             "start-tiling" => c.start_tiling = value == "on",
             "bar" => c.show_top_bar = value == "on",
             "clock" => c.bar.clock_format = value.into(),
+            "bar-style" => {
+                let Some(mode) = display_mode(value) else {
+                    return false;
+                };
+                c.bar.set_all_display(mode);
+            }
+            "bar-style-item" => {
+                let Some(module) = crate::bar_model::Module::from_key(value) else {
+                    return false;
+                };
+                c.bar.cycle_display(module);
+            }
+            "bar-display" => {
+                let (s, i) = self.bar_pick;
+                let (Some(&module), Some(mode)) = (self.config.bar.section(s).get(i), display_mode(value)) else {
+                    return false;
+                };
+                c.bar.module_display.insert(module, mode);
+            }
             "keymap" => c.keymap = value.into(),
             "tap-super" => c.tap_super = value.into(),
             "modifiers" => c.modifiers = value.into(),

@@ -687,12 +687,15 @@ unsafe fn about(owner: HWND) {
             "Settings folder (shared by every version):\r\n{}",
             folder.display()
         ),
-        None => "Settings: not using a OVERLAY SETTINGS folder.".to_string(),
+        None => format!("Settings and config files:\r\n{}", data_directory().display()),
     };
     let program = std::env::current_exe()
         .map(|p| p.display().to_string())
         .unwrap_or_default();
-    let tail = if ON_STICK.load(std::sync::atomic::Ordering::Relaxed) {
+    let installed = std::env::current_exe().is_ok_and(|exe| crate::install::is_installed(&exe));
+    let tail = if installed {
+        "Installed for this PC; starts when you sign in. Remove it from Settings > Apps."
+    } else if ON_STICK.load(std::sync::atomic::Ordering::Relaxed) {
         "Runs from its folder on the stick; nothing is installed.\r\nUse \"Exit before removing the stick\" before pulling the drive."
     } else {
         "Runs from its folder; nothing is installed."
@@ -700,7 +703,7 @@ unsafe fn about(owner: HWND) {
     let text =
         wide(&format!(
             concat!("Omarchy Overlay ", env!("CARGO_PKG_VERSION"),
-        "\r\nPersonal portable Windows desktop prototype.\r\n\r\nProgram: {}\r\n{}\r\n\r\n{}"),
+        "\r\nKeyboard-first tiling window manager for Windows 11.\r\n\r\nProgram: {}\r\n{}\r\n\r\n{}"),
             program, settings, tail
         ));
     let caption = wide("About Omarchy Overlay");
@@ -848,7 +851,7 @@ pub fn run() {
             ) == 2
         });
         ON_STICK.store(stick, std::sync::atomic::Ordering::Relaxed);
-        let mut active_profile = match profile::find(&executable, &directory, explicit) {
+        let mut active_profile = match profile::find_for(&executable, &directory, explicit, crate::install::is_installed(&executable)) {
             profile::Found::Use(active) => active,
             profile::Found::Missing { folder, source } => {
                 let (text, buttons) = match &source {
@@ -3261,8 +3264,12 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                     if bar_settings::choice_command(hwnd, id, notification) {
                         return Some(0);
                     }
+                    if id == 212 {
+                        // Defaults apply at once, like Restore defaults in the menu.
+                        bar_settings::fill(hwnd, &crate::bar_model::BarConfig::default());
+                    }
                     match id {
-                        211 => match bar_settings::read(hwnd, &app.config.bar) {
+                        211 | 212 => match bar_settings::read(hwnd, &app.config.bar) {
                             Ok(config) => {
                                 app.config.bar = config;
                                 app.save_config();
@@ -3275,9 +3282,6 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                             }
                             Err(error) => message(&error),
                         },
-                        212 => {
-                            bar_settings::fill(hwnd, &crate::bar_model::BarConfig::default());
-                        }
                         213 => crate::desktops::task_view(),
                         215 => app.show_workspace_layouts(),
                         223 => {
@@ -3328,7 +3332,13 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                             app.save_config();
                             bar::settings(&app.config.bar);
                         }
-                        452 => module_settings::fill(hwnd, &crate::bar_model::BarConfig::default()),
+                        452 => {
+                            // Defaults apply at once, like Restore defaults in the menu.
+                            module_settings::fill(hwnd, &crate::bar_model::BarConfig::default());
+                            module_settings::apply(hwnd, &mut app.config.bar);
+                            app.save_config();
+                            bar::settings(&app.config.bar);
+                        }
                         453 => {
                             ShowWindow(hwnd, SW_HIDE);
                         }

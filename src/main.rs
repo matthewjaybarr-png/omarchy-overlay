@@ -44,8 +44,6 @@ mod picker;
 mod portable_apps;
 #[cfg(any(windows, test))]
 mod profile;
-#[cfg(test)]
-mod rainmeter;
 #[cfg(any(windows, test))]
 mod rules;
 #[cfg(any(windows, test))]

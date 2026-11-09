@@ -51,7 +51,9 @@ The Admin release has an `edition-admin` file beside the exe, which adds
 
 Apps you start from it still open without administrator rights.
 **Uninstall…** in the tray (or Settings > Apps) restores the desktop and removes all
-of it. Settings in `%LOCALAPPDATA%\OmarchyOverlay` are kept unless you run
+of it. The installed copy keeps its settings and config files in
+`%LOCALAPPDATA%\OmarchyOverlay` and never uses an `OVERLAY SETTINGS` folder.
+They are kept unless you run
 `OmarchyOverlay.exe --uninstall --remove-settings`. From a prompt:
 `OmarchyOverlay.exe --install` or `OmarchyOverlay.exe --uninstall`.
 
@@ -100,6 +102,23 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
 Every Windows setting this changes is recorded first and restored on exit, from
 the recovery menu, and after a crash.
 
+### Changing the bar, and going back to defaults
+
+- **Appearance > Top bar > Icons or text** shows the whole bar as icons (Omarchy's
+  look, with the clock and window title as text), icons and text, or text. Below
+  those, each item on the bar is listed; Enter steps it between icon, icon and
+  text, and text. Choosing an item under **Bar items** offers the same choice.
+- Every settings page ends with **Undo changes** and **Restore defaults**.
+  **Bar items** restores the default layout and **Icons or text** the default icons.
+- **Appearance > Top bar > Reset the top bar** puts the whole bar back: items,
+  icons, height, clock and opacity.
+- **Setup > Reset all settings** puts every setting back to its default. Saved
+  profiles and your config files are kept, and the old settings are saved first as
+  `profile-backup.json` in `%LOCALAPPDATA%\OmarchyOverlay`.
+
+If you keep your own `config\menu.json`, add these entries to it from
+`config\examples\menu.json`.
+
 ### Apply theme to Windows
 
 Choose **Appearance > Apply theme to Windows**. Each line shows the current
@@ -138,7 +157,9 @@ open the site in Chrome, then **⋮ > Cast, save and share > Install page as app
 
 ## Config files
 
-Omarchy Overlay reads these files from the `config` folder beside `MBOmarchy Overlay.exe`.
+Omarchy Overlay reads these files from the `config` folder beside `OmarchyOverlay.exe`
+(the installed Admin edition uses `%LOCALAPPDATA%\OmarchyOverlay\config`, so you can
+edit them without administrator rights).
 Every file is optional. Omarchy Overlay writes only `config\examples` (refreshed at each
 start) and never changes your copies. To change a file, copy it from
 `config\examples` into `config`, edit it in Notepad, then choose **Update >
@@ -281,8 +302,10 @@ Used in binds.conf and menu.json.
 | `config-folder` | Open the config folder |
 | `releases-folder` | Show where Omarchy Overlay releases are kept |
 | `restore-desktop` | Restore every window to its original place |
+| `reset-bar` | Reset the top bar to its defaults (asks first) |
+| `reset-settings` | Reset all settings to defaults; saved profiles are kept (asks first) |
 | `menu <id>` | Opens that list of menu.json, for example `menu system` |
-| `page <id>` | Opens a settings page: `theme`, `font`, `background`, `gaps`, `main-size`, `layout`, `columns`, `opacity`, `inactive-opacity`, `materials`, `animations`, `focus-outline`, `osd`, `app-rules`, `default-rule`, `add-rule`, `always-float`, `always-float-add`, `bar`, `bar-items`, `clock`, `bar-height`, `bar-opacity`, `workspace-layouts`, `keyboard`, `conflicts`, `keymap`, `tap-super`, `taskbar`, `profiles`, `windows-theme`, `windows-checklist`, `webapps`, `install-webapp`, `remove-apps`, `custom-apps`, `version`, `terminal-colors`, `config-errors` |
+| `page <id>` | Opens a settings page: `theme`, `font`, `background`, `gaps`, `main-size`, `layout`, `columns`, `opacity`, `inactive-opacity`, `materials`, `animations`, `focus-outline`, `osd`, `app-rules`, `default-rule`, `add-rule`, `always-float`, `always-float-add`, `bar`, `bar-items`, `bar-style`, `clock`, `bar-height`, `bar-opacity`, `workspace-layouts`, `keyboard`, `conflicts`, `keymap`, `tap-super`, `taskbar`, `profiles`, `windows-theme`, `windows-checklist`, `webapps`, `install-webapp`, `remove-apps`, `custom-apps`, `version`, `terminal-colors`, `config-errors` |
 | `app <role>` | Starts or shows an app: `terminal`, `browser`, `browser-private`, `files` (the file manager Windows opens folders with), `explorer` (File Explorer itself, at This PC), `email`, `new-email`, `calendar`, `teams` |
 | `webapp <name>` | Brings a web app from webapps.json forward |
 | `workspace <1-9>` | Switches Windows desktop |

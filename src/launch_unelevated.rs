@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 const FLAG: &str = "--shell-open";
 
 /// One argument quoted so the Windows command-line parser gives it back unchanged.
-fn quote(text: &str) -> String {
+pub fn quote(text: &str) -> String {
     let mut out = String::from('"');
     let mut slashes = 0;
     for c in text.chars() {
@@ -223,5 +223,9 @@ mod tests {
             );
         }
         assert_eq!(parse_helper_args(&["--recover".into()]), None);
+        // Restart forwards its own arguments this way; a trailing backslash must survive.
+        for argument in [r"D:\cfg\", r#"a "b" c"#, ""] {
+            assert_eq!(split(&quote(argument)), [argument]);
+        }
     }
 }

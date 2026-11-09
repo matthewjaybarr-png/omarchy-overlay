@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- **Appearance > Top bar > Icons or text** switches the whole bar between icons,
+  icons and text, and text, or sets each item on its own. Each module under
+  **Bar items** has the same choice.
+- **Restore defaults** on **Bar items** puts the default layout back.
+  **Reset the top bar** and **Setup > Reset all settings** reset from the menu, after
+  asking; a full reset keeps saved profiles and backs up the old settings.
+  **Restore defaults** in the bar and module windows now applies at once.
+- Security: the installed Admin edition no longer looks for an `OVERLAY SETTINGS`
+  folder above `%ProgramFiles%`, where any user could create one. Its settings and
+  config files are in `%LOCALAPPDATA%\OmarchyOverlay`, editable without admin rights.
+- Restart keeps arguments that end in a backslash.
+- The About box describes the installed edition correctly; the release zips include
+  the licence; CI runs the tests, Windows clippy and the package self-test.
+
 ## 0.2.0
 
 - Every Omarchy theme is built in, Neon Ridge first, replacing the old

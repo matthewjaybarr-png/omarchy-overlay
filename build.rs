@@ -37,7 +37,7 @@ BEGIN
    VALUE "OriginalFilename", "OmarchyOverlay.exe\0"
    VALUE "ProductName", "Omarchy Overlay\0"
    VALUE "ProductVersion", "{version}\0"
-   VALUE "Comments", "Personal portable desktop prototype\0"
+   VALUE "Comments", "Keyboard-first tiling window manager for Windows 11\0"
   END
  END
  BLOCK "VarFileInfo"

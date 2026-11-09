@@ -162,7 +162,7 @@ pub(super) unsafe fn create(font: HFONT, brush: HBRUSH) -> HWND {
     child(hwnd,"STATIC","Choose a preset or select a desktop and set its name. These labels do not create\r\nWindows desktops. Desktop switching still affects all monitors together.",0,0,24,446,748,42);
     for (id, label, x, w) in [
         (211, "Apply bar settings", 24, 220),
-        (212, "Omarchy-style defaults", 260, 240),
+        (212, "Restore defaults", 260, 240),
         (213, "Windows Task View", 516, 256),
     ] {
         child(
