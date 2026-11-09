@@ -177,8 +177,8 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Click $main 14;$settings=[ModulesTest]::Find('OmarchyOverlay.BarSettings');Click $settings 214
  $modules=[ModulesTest]::Find('OmarchyOverlay.ModuleSettings')
  Check 'Module appearance editor opens from Bar settings' ([Desktop]::IsWindowVisible($modules))
- Check 'Legacy menu remains text-only' ([Desktop]::SendMessage([Desktop]::GetDlgItem($modules,403),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 0)
- Check 'Legacy app buttons retain icons and text' ([Desktop]::SendMessage([Desktop]::GetDlgItem($modules,407),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 1)
+ Check 'Config without bar settings gets the icon menu' ([Desktop]::SendMessage([Desktop]::GetDlgItem($modules,403),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 2)
+ Check 'Config without bar settings gets icon-only app buttons' ([Desktop]::SendMessage([Desktop]::GetDlgItem($modules,407),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 2)
  Choose $modules 403 2;Choose $modules 402 1;Choose $modules 410 1;Choose $modules 409 0;Choose $modules 407 2;Click $modules 451
  $saved=Get-Content -Raw $configPath|ConvertFrom-Json
  Check 'Independent module display choices save' ($saved.bar.module_display.menu -eq 'icon' -and $saved.bar.module_display.sound -eq 'icon-text' -and $saved.bar.module_display.clock -eq 'text' -and $saved.bar.module_display.tasks -eq 'icon')
