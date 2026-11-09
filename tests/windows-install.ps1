@@ -134,6 +134,17 @@ try{
  Check 'Super+K over an elevated window opens Keybindings' ([Edition]::IsWindowVisible([Edition]::Overlay()))
  [void][Edition]::PostMessage([Edition]::Overlay(),0x100,[IntPtr]0x1b,[IntPtr]::Zero);Pump 600
  Check 'Elevated window is back in focus' ([Edition]::Focus($form.Handle))
+ # Universal copy and paste: Super+A, Super+C, then Super+V into an empty box.
+ $box=[Windows.Forms.TextBox]::new();$box.SetBounds(10,10,400,24);$box.Text='omarchy-copy-check';$form.Controls.Add($box)
+ $paste=[Windows.Forms.TextBox]::new();$paste.SetBounds(10,50,400,24);$form.Controls.Add($paste)
+ [Windows.Forms.Clipboard]::Clear();[void]$box.Focus();Pump 300
+ Real-Keys 'KEY_LEFTMETA KEY_A';Real-Keys 'KEY_LEFTMETA KEY_C'
+ $clip=[Windows.Forms.Clipboard]::GetText()
+ Check 'Super+A then Super+C copies the text' ($clip -eq 'omarchy-copy-check') $clip
+ [void]$paste.Focus();Pump 300
+ Real-Keys 'KEY_LEFTMETA KEY_V'
+ Check 'Super+V pastes it' ($paste.Text -eq 'omarchy-copy-check') $paste.Text
+ Check 'Elevated window is in focus before Super+Return' ([Edition]::Focus($form.Handle))
  $names='WindowsTerminal','wt','cmd','OpenConsole'
  $before=@(Get-Process $names -ErrorAction SilentlyContinue|ForEach-Object Id)
  Real-Keys 'KEY_LEFTMETA KEY_ENTER' # Super+Return: terminal
@@ -147,7 +158,7 @@ try{
  $form.Close();$form=$null
 
  # Menu > Update > Process > Restart: the new copy must stay elevated.
- Real-Keys 'KEY_LEFTMETA KEY_LEFTALT KEY_SPACE'
+ Real-Keys 'KEY_LEFTMETA KEY_SPACE'
  $until=[DateTime]::UtcNow.AddSeconds(5);do{Pump 150}while(-not [Edition]::IsWindowVisible([Edition]::Overlay()) -and [DateTime]::UtcNow -lt $until)
  foreach($label in 'Update','Process','Restart Omarchy'){foreach($c in $label.ToCharArray()){[void][Edition]::PostMessage([Edition]::Overlay(),0x102,[IntPtr][int]$c,[IntPtr]::Zero)};Pump 300;[void][Edition]::PostMessage([Edition]::Overlay(),0x100,[IntPtr]0x0d,[IntPtr]::Zero);Pump 600}
  $old=$app.Id

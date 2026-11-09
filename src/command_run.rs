@@ -181,6 +181,31 @@ impl App {
             "clipboard" => self.queue_system_action(0),
             "emoji" => self.queue_system_action(5),
             "capture" => self.queue_system_action(1),
+            "copy" | "paste" | "cut" | "select-all" => {
+                // Like Omarchy, terminals copy and paste with Ctrl+Shift so Ctrl+C still interrupts.
+                let terminal = process_name(GetForegroundWindow()).eq_ignore_ascii_case("WindowsTerminal.exe");
+                self.queue_system_action(match (name, terminal) {
+                    ("copy", true) => 11,
+                    ("paste", true) => 12,
+                    ("copy", _) => 7,
+                    ("paste", _) => 8,
+                    ("cut", _) => 9,
+                    _ => 10,
+                });
+            }
+            "minimize-window" => {
+                let window = GetForegroundWindow();
+                if !window.is_null() {
+                    ShowWindow(window, SW_MINIMIZE);
+                }
+            }
+            "former-desktop" => {
+                if crate::desktops::select_former() {
+                    bar::poll();
+                } else {
+                    self.show_feedback("No former workspace yet.");
+                }
+            }
             "next-desktop" | "previous-desktop" => {
                 let moved = match crate::desktops::snapshot() {
                     Some(s) if s.ids.len() > 1 && name == "previous-desktop" => {

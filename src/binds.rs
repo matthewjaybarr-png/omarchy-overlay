@@ -201,26 +201,43 @@ mod tests {
                 .find(|b| b.key == key)
                 .map(|b| b.command.clone())
         };
-        assert_eq!(find("Super+Space"), Some(Command::Builtin("apps")));
-        assert_eq!(find("Super+Alt+Space"), Some(Command::Builtin("menu")));
+        assert_eq!(find("Super+Space"), Some(Command::Builtin("menu")));
+        assert_eq!(find("Super+Alt+Space"), Some(Command::Builtin("apps")));
         assert_eq!(find("Super+K"), Some(Command::Builtin("keybinds")));
-        assert_eq!(find("Super+A"), Some(Command::WebApp("ChatGPT".into())));
+        // Omarchy's universal clipboard and window keys.
+        assert_eq!(find("Super+C"), Some(Command::Builtin("copy")));
+        assert_eq!(find("Super+V"), Some(Command::Builtin("paste")));
+        assert_eq!(find("Super+X"), Some(Command::Builtin("cut")));
+        assert_eq!(find("Super+A"), Some(Command::Builtin("select-all")));
+        assert_eq!(find("Super+M"), Some(Command::Builtin("minimize-window")));
+        assert_eq!(find("Super+Ctrl+Tab"), Some(Command::Builtin("former-desktop")));
+        assert_eq!(find("Super+Shift+Space"), Some(Command::Builtin("toggle-bar")));
+        assert_eq!(find("Super+Ctrl+Space"), Some(Command::Page("background")));
+        assert!(matches!(find("Super+W"), Some(Command::Action(_))));
+        assert_eq!(find("Super+W"), find("Super+Q"));
         assert_eq!(
             find("Super+Shift+A"),
-            Some(Command::WebApp("Claude".into()))
+            Some(Command::WebApp("ChatGPT".into()))
         );
+        assert_eq!(find("Super+Shift+S"), Some(Command::WebApp("Google Maps".into())));
         assert_eq!(find("Super+3"), Some(Command::Workspace(3)));
-        assert_eq!(find("Super+E"), Some(Command::App("files")));
-        assert_eq!(find("Super+Alt+W"), Some(Command::Builtin("window-panel")));
         assert_eq!(find("Super+Ctrl+O"), Some(Command::Menu("toggle".into())));
         assert_eq!(find("Super+Ctrl+Alt+D"), Some(Command::App("calendar")));
+        // Personal keys that are not Omarchy's are gone; Super+E is Windows' Explorer again.
+        for key in ["Super+E", "Super+Z", "Super+B", "Super+Alt+W", "Super+Shift+V"] {
+            assert_eq!(find(key), None, "{key}");
+        }
         assert!(matches!(find("Super+Backspace"), Some(Command::Action(_))));
         // Windows keeps Super+Ctrl+D (New desktop): workspaces are Windows desktops.
         assert_eq!(find("Super+Ctrl+D"), None);
-        // Opacity toggles stay with the user's AutoHotkey script until they remove them there.
+        // Opacity toggles are off by default.
         assert_eq!(find("Super+Alt+T"), None);
+        let apps = crate::webapps::defaults();
         for bind in &binds {
             assert!(bind.key.modifiers & SUPER != 0, "{}", bind.key.label());
+            if let Command::WebApp(name) = &bind.command {
+                assert!(apps.iter().any(|a| a.name == *name), "webapps.json lacks {name}");
+            }
         }
     }
     #[test]

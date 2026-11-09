@@ -63,10 +63,18 @@ of it. Settings in `%LOCALAPPDATA%\OmarchyOverlay` are kept unless you run
   Ctrl + Alt + Delete and Ctrl-only keys. Plain Alt keys work, with a warning in
   the log, because they take the shortcut from the focused program.
 - No app is special: every app, including CAD tools, follows its app rule.
-- **Super + Alt + W** opens the Selected window panel for the window you were
-  in: float or tile, opacity, maximize, main window, next monitor, scratchpad,
-  the full app rule, always float and close. **Super + Backspace** toggles that
-  window to 90% opacity.
+- The default keys are stock Omarchy's: **Super + Space** opens the menu,
+  **Super + Alt + Space** the apps, **Super + W** or **Super + Q** closes a
+  window, **Super + M** minimizes it, **Super + Ctrl + Tab** goes back to the
+  former workspace and **Super + K** lists every key.
+- **Universal clipboard:** **Super + C / V / X / A** copy, paste, cut and select
+  all in any app, as on Omarchy. In Windows Terminal, copy and paste send
+  Ctrl + Shift + C / V so Ctrl + C still stops a command. Windows uses Super + C,
+  V, X and A itself, so these need the Admin edition, which can take Super keys.
+- Omarchy keys with no Windows meaning (groups, tmux, media and webcam keys) are
+  left out. Omarchy's Super + L layout key is on **Super + Shift + L**, because
+  Super + L stays with Windows' lock.
+- **Super + Backspace** toggles the focused window to 90% opacity.
 - **Super + Ctrl + D** stays with Windows (New desktop), because new Omarchy Overlay
   workspaces are Windows desktops.
 - After an Omarchy Overlay Super key, releasing Super does not open Start.
@@ -86,7 +94,7 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
 - Walker-style launcher and menus: centred, square, 2 px accent border, an 84%
   opaque background and the selected row filled with the theme's border color.
 - The theme sets the Windows accent color and its first background, at start
-  and whenever you choose one. **Super+Ctrl+Space** moves to the next background in the theme's
+  and whenever you choose one. **Super+Ctrl+Space** opens the background switcher for the theme's
   `backgrounds` folder.
 
 Every Windows setting this changes is recorded first and restored on exit, from
@@ -120,7 +128,10 @@ stay where Windows opens them.
 
 ### Web apps
 
-**Super + A** brings ChatGPT forward and **Super + Shift + A** Claude. If no
+Omarchy's web app keys work the same way: **Super + Shift + A** ChatGPT,
+**Super + Shift + Alt + A** Grok, **Super + Shift + G** WhatsApp (Signal has no
+web app), **Super + Shift + Y** YouTube, **Super + Shift + P** Google Photos,
+**Super + Shift + S** Google Maps and **Super + Shift + X** X. If no
 window is open, Omarchy Overlay starts the app from Chrome's **Chrome Apps** Start-menu
 folder; if that shortcut is missing it offers to open the site. To make the app:
 open the site in Chrome, then **⋮ > Cast, save and share > Install page as app**.
@@ -151,7 +162,7 @@ Keys are written `Super+Shift+A`; modifiers are Super, Ctrl, Alt and Shift.
 ```text
 Super+Return, Terminal, app terminal
 Super+Shift+E, Email, app email
-Super+A, ChatGPT, webapp ChatGPT
+Super+Shift+A, ChatGPT, webapp ChatGPT
 Super+1, Switch to workspace 1, workspace 1
 ```
 
@@ -253,10 +264,13 @@ Used in binds.conf and menu.json.
 | `task-view` | Windows Task View |
 | `notifications` | Windows notifications |
 | `quick-settings` | Windows Quick Settings |
+| `copy`, `paste`, `cut`, `select-all` | Universal clipboard: Ctrl + C, V, X or A once Super is released |
 | `clipboard` | Windows clipboard history |
 | `emoji` | Windows emoji panel |
 | `capture` | Screenshot or screen recording (Snipping Tool) |
 | `next-desktop` | Next workspace |
+| `former-desktop` | Former workspace |
+| `minimize-window` | Minimize the focused window |
 | `previous-desktop` | Previous workspace |
 | `move-to-desktop` | Move a window to another workspace (Task View) |
 | `apply-windows-theme` | Apply the theme to Windows |

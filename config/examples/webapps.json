@@ -11,6 +11,48 @@
       "url": "https://claude.ai",
       "shortcut": "Claude",
       "window_title": "Claude"
+    },
+    {
+      "name": "Grok",
+      "url": "https://grok.com",
+      "shortcut": "Grok",
+      "window_title": "Grok"
+    },
+    {
+      "name": "WhatsApp",
+      "url": "https://web.whatsapp.com",
+      "shortcut": "WhatsApp",
+      "window_title": "WhatsApp"
+    },
+    {
+      "name": "Google Maps",
+      "url": "https://maps.google.com",
+      "shortcut": "Google Maps",
+      "window_title": "Google Maps"
+    },
+    {
+      "name": "YouTube",
+      "url": "https://youtube.com",
+      "shortcut": "YouTube",
+      "window_title": "YouTube"
+    },
+    {
+      "name": "Google Photos",
+      "url": "https://photos.google.com",
+      "shortcut": "Google Photos",
+      "window_title": "Google Photos"
+    },
+    {
+      "name": "X",
+      "url": "https://x.com",
+      "shortcut": "X",
+      "window_title": "X"
+    },
+    {
+      "name": "X Post",
+      "url": "https://x.com/compose/post",
+      "shortcut": "X Post",
+      "window_title": "X Post"
     }
   ]
 }

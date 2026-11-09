@@ -10,7 +10,7 @@
 - Omarchy look by default: Waybar-style bar, square 2 px borders in the theme's
   active and inactive colors, and Walker-style menus in JetBrainsMono Nerd Font.
 - The theme sets the Windows accent color and its first background at start
-  and when chosen; `next-background` (Super+Ctrl+Space) cycles the theme's
+  and when chosen; `next-background` cycles the theme's
   backgrounds. Both are restored on exit and after a crash.
 - Two editions from one exe. **Standard** is portable and never asks for
   administrator rights. **Admin** adds **Install (admin)…** to the tray (or
@@ -21,6 +21,15 @@
 - No app is special-cased any more, plain Alt binds are allowed with a warning,
   and profiles are no longer looked up only on removable drives.
 - `scripts/package.py` builds the Standard and Admin release zips.
+- The built-in keys now follow stock Omarchy: Super+Space is the menu and
+  Super+Alt+Space the apps; Super+W or Super+Q closes, Super+M minimizes,
+  Super+Ctrl+Tab returns to the former workspace, Super+Shift+Space toggles the
+  bar and Super+Ctrl+Space opens the background switcher. New universal
+  clipboard commands (`copy`, `paste`, `cut`, `select-all`) sit on
+  Super+C/V/X/A, with Ctrl+Shift+C/V in Windows Terminal. Omarchy's web apps
+  (ChatGPT, Grok, WhatsApp, YouTube, Google Photos, Google Maps, X) get their
+  usual Super+Shift keys. Personal extras such as Super+Z, Super+B and Super+E
+  are gone. An existing `binds.conf` is kept as it is.
 
 ## 0.1.0
 

@@ -8,7 +8,7 @@ struct Backup {
 }
 pub(super) unsafe fn apply(app: &mut App) -> Result<String, String> {
     let choices = &[
-        ("launcher", "Win+Space"),
+        ("launcher", "Win+Alt+Space"),
         ("terminal", "Win+Enter"),
         ("float", "Win+T"),
         ("help", "Win+K"),

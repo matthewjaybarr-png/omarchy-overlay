@@ -26,7 +26,13 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("clipboard", "Windows clipboard history"),
     ("emoji", "Windows emoji panel"),
     ("capture", "Screenshot or screen recording (Snipping Tool)"),
+    ("copy", "Universal copy"),
+    ("paste", "Universal paste"),
+    ("cut", "Universal cut"),
+    ("select-all", "Select all"),
+    ("minimize-window", "Minimize the focused window"),
     ("next-desktop", "Next workspace"),
+    ("former-desktop", "Former workspace"),
     ("previous-desktop", "Previous workspace"),
     (
         "move-to-desktop",

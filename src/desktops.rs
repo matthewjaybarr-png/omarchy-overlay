@@ -58,6 +58,8 @@ mod native {
         snapshot: Option<Snapshot>,
         pending: Option<Pending>,
         settle_until: Option<Instant>,
+        /// The desktop shown before the current one, however the switch happened.
+        former: Option<[u8; 16]>,
     }
     thread_local! {static DESKTOPS:RefCell<Controller>=RefCell::new(Controller::default());}
     unsafe fn binary(key: &str, value: &str) -> Option<Vec<u8>> {
@@ -174,6 +176,13 @@ mod native {
             4 => chord(&[VK_LWIN, b'N' as u16]),
             5 => chord(&[VK_LWIN, VK_OEM_PERIOD]),
             6 => chord(&[VK_LWIN, VK_TAB]),
+            // Universal clipboard, sent once Super is up so it does not merge into the chord.
+            7 => chord(&[VK_CONTROL, b'C' as u16]),
+            8 => chord(&[VK_CONTROL, b'V' as u16]),
+            9 => chord(&[VK_CONTROL, b'X' as u16]),
+            10 => chord(&[VK_CONTROL, b'A' as u16]),
+            11 => chord(&[VK_CONTROL, VK_SHIFT, b'C' as u16]),
+            12 => chord(&[VK_CONTROL, VK_SHIFT, b'V' as u16]),
             _ => true,
         }
     }
@@ -211,6 +220,15 @@ mod native {
             true
         })
     }
+    pub unsafe fn select_former() -> bool {
+        let Some(former) = DESKTOPS.with(|c| c.borrow().former) else {
+            return false;
+        };
+        match read().and_then(|s| s.ids.iter().position(|id| *id == former)) {
+            Some(index) => select(index),
+            None => false,
+        }
+    }
     pub unsafe fn cycle_next() -> bool {
         // Read actual Explorer state for each invocation. Never guess the desktop,
         // create desktops or queue extra transitions during an in-flight switch.
@@ -237,8 +255,10 @@ mod native {
         DESKTOPS.with(|cell| {
             let mut controller = cell.borrow_mut();
             let observed = read();
-            if controller.snapshot.as_ref().map(|s|s.ids[s.current]) != observed.as_ref().map(|s|s.ids[s.current]) {
+            let before = controller.snapshot.as_ref().map(|s|s.ids[s.current]);
+            if before != observed.as_ref().map(|s|s.ids[s.current]) {
                 controller.settle_until = Some(Instant::now()+Duration::from_millis(1100));
+                if before.is_some() && observed.is_some() { controller.former = before; }
             }
             controller.snapshot = observed;
             let snapshot = controller.snapshot.clone();
