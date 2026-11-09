@@ -29,7 +29,10 @@ pub fn task_settings_script() -> String {
     )
 }
 
-pub fn uninstall_values(dir: &Path, version: &str) -> Vec<(&'static str, String)> {
+/// Apps entry values stored as numbers.
+pub const DWORD_VALUES: [&str; 3] = ["NoModify", "NoRepair", "EstimatedSize"];
+
+pub fn uninstall_values(dir: &Path, version: &str, size_kib: u64, date: &str) -> Vec<(&'static str, String)> {
     // Built as text so the Windows separator is used on every build host.
     let exe = format!("{}\\OmarchyOverlay.exe", dir.display());
     vec![
@@ -38,6 +41,9 @@ pub fn uninstall_values(dir: &Path, version: &str) -> Vec<(&'static str, String)
         ("InstallLocation", dir.display().to_string()),
         ("DisplayIcon", exe.clone()),
         ("UninstallString", format!("\"{exe}\" --uninstall")),
+        ("QuietUninstallString", format!("\"{exe}\" --uninstall --quiet")),
+        ("InstallDate", date.into()),
+        ("EstimatedSize", size_kib.min(u64::from(u32::MAX)).to_string()),
         ("NoModify", "1".into()),
         ("NoRepair", "1".into()),
     ]
@@ -94,50 +100,180 @@ fn run(program: &str, args: &[String]) -> Result<(), String> {
     }
 }
 
-/// Relaunches this exe elevated with `arguments`; false when the prompt was refused.
+/// Relaunches this exe elevated with `arguments` and waits for it. The exit code of the
+/// elevated copy, or None when the prompt was refused or could not be shown.
 #[cfg(windows)]
-pub unsafe fn elevate(arguments: &str) -> bool {
-    use windows_sys::Win32::UI::Shell::ShellExecuteW;
+pub unsafe fn elevate(arguments: &str) -> Option<u32> {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{GetExitCodeProcess, WaitForSingleObject, INFINITE};
+    use windows_sys::Win32::UI::Shell::{ShellExecuteExW, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW};
     use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
-    let wide = |s: &str| s.encode_utf16().chain([0]).collect::<Vec<u16>>();
-    let Ok(exe) = std::env::current_exe() else {
-        return false;
-    };
-    ShellExecuteW(
-        std::ptr::null_mut(),
-        wide("runas").as_ptr(),
-        wide(&exe.to_string_lossy()).as_ptr(),
-        wide(arguments).as_ptr(),
-        std::ptr::null(),
-        SW_SHOWNORMAL,
-    ) as isize
-        > 32
+    let exe = std::env::current_exe().ok()?;
+    let (verb, file, parameters) = (wide("runas"), wide(&exe.to_string_lossy()), wide(arguments));
+    let mut info: SHELLEXECUTEINFOW = std::mem::zeroed();
+    info.cbSize = size_of::<SHELLEXECUTEINFOW>() as u32;
+    info.fMask = SEE_MASK_NOCLOSEPROCESS;
+    info.lpVerb = verb.as_ptr();
+    info.lpFile = file.as_ptr();
+    info.lpParameters = parameters.as_ptr();
+    info.nShow = SW_SHOWNORMAL;
+    if ShellExecuteExW(&mut info) == 0 || info.hProcess.is_null() {
+        return None;
+    }
+    WaitForSingleObject(info.hProcess, INFINITE);
+    let mut code = 1;
+    GetExitCodeProcess(info.hProcess, &mut code);
+    CloseHandle(info.hProcess);
+    Some(code)
 }
 
-/// Copies the program and registers the logon task, shortcut and Apps entry. Needs admin.
 #[cfg(windows)]
-pub fn install(user: &str) -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let source = exe.parent().ok_or("No program folder.")?;
-    let dir = install_dir();
-    if !is_installed(&exe) {
-        std::fs::create_dir_all(dir.join("fonts")).map_err(|e| e.to_string())?;
-        let copy = |from: &Path, to: &Path| {
-            std::fs::copy(from, to)
-                .map(drop)
-                .map_err(|e| format!("Could not copy {}: {e}", from.display()))
-        };
-        copy(&exe, &dir.join("OmarchyOverlay.exe"))?;
-        if source.join("RECOVER.cmd").is_file() {
-            copy(&source.join("RECOVER.cmd"), &dir.join("RECOVER.cmd"))?;
-        }
-        if let Ok(fonts) = std::fs::read_dir(source.join("fonts")) {
-            for font in fonts.flatten().filter(|f| f.path().is_file()) {
-                copy(&font.path(), &dir.join("fonts").join(font.file_name()))?;
+fn wide(text: &str) -> Vec<u16> {
+    text.encode_utf16().chain([0]).collect()
+}
+
+/// A text value of the Apps entry; readable without administrator rights.
+#[cfg(windows)]
+fn apps_entry(name: &str) -> Option<String> {
+    use windows_sys::Win32::System::Registry::{RegGetValueW, HKEY_LOCAL_MACHINE, RRF_RT_REG_SZ};
+    let key = wide(UNINSTALL_KEY.trim_start_matches(r"HKLM\"));
+    let name = wide(name);
+    let mut text = [0u16; 1024];
+    let mut bytes = (text.len() * 2) as u32;
+    let status = unsafe {
+        RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            key.as_ptr(),
+            name.as_ptr(),
+            RRF_RT_REG_SZ,
+            std::ptr::null_mut(),
+            text.as_mut_ptr() as _,
+            &mut bytes,
+        )
+    };
+    if status != 0 {
+        return None;
+    }
+    let len = (bytes as usize / 2).saturating_sub(1).min(text.len());
+    Some(String::from_utf16_lossy(&text[..len])).filter(|t| !t.trim().is_empty())
+}
+/// The installed version: the Apps entry's, or the install manifest's when the entry is gone.
+#[cfg(windows)]
+pub fn installed_version() -> Option<String> {
+    apps_entry("DisplayVersion").or_else(|| crate::install_files::manifest_version(&install_dir()))
+}
+/// What this copy's install would do now.
+#[cfg(windows)]
+pub fn current_plan() -> crate::install_files::Plan {
+    crate::install_files::plan(
+        installed_version().as_deref(),
+        install_dir().join(crate::install_files::EXE).is_file(),
+        env!("CARGO_PKG_VERSION"),
+    )
+}
+
+/// Waits up to `timeout_ms` for every program running from `dir` (other than this one, in
+/// any session: an old copy, its recovery guard) to exit. Returns how many still run.
+#[cfg(windows)]
+pub unsafe fn wait_for_programs_in(dir: &Path, timeout_ms: u32) -> usize {
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::*;
+    use windows_sys::Win32::System::Threading::*;
+    let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if snapshot == INVALID_HANDLE_VALUE {
+        return 0;
+    }
+    let mut running = vec![];
+    let mut entry: PROCESSENTRY32W = std::mem::zeroed();
+    entry.dwSize = size_of::<PROCESSENTRY32W>() as u32;
+    let own = GetCurrentProcessId();
+    let mut more = Process32FirstW(snapshot, &mut entry) != 0;
+    while more {
+        if entry.th32ProcessID != own {
+            let process = OpenProcess(
+                PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SYNCHRONIZE,
+                0,
+                entry.th32ProcessID,
+            );
+            if !process.is_null() {
+                let mut image = [0u16; 1024];
+                let mut len = image.len() as u32;
+                let ours = QueryFullProcessImageNameW(process, PROCESS_NAME_WIN32, image.as_mut_ptr(), &mut len) != 0
+                    && crate::install_files::in_folder(
+                        Path::new(&String::from_utf16_lossy(&image[..len as usize])),
+                        dir,
+                    );
+                if ours {
+                    running.push(process);
+                } else {
+                    CloseHandle(process);
+                }
             }
         }
+        more = Process32NextW(snapshot, &mut entry) != 0;
     }
-    let installed = dir.join("OmarchyOverlay.exe");
+    CloseHandle(snapshot);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms.into());
+    let mut left = 0;
+    for process in running {
+        let wait = deadline.saturating_duration_since(std::time::Instant::now()).as_millis() as u32;
+        if WaitForSingleObject(process, wait) != 0 {
+            left += 1;
+        }
+        CloseHandle(process);
+    }
+    left
+}
+
+/// Has Windows delete a file that is still in use at the next restart.
+#[cfg(windows)]
+fn delete_at_restart(path: &Path) {
+    use windows_sys::Win32::Storage::FileSystem::{MoveFileExW, MOVEFILE_DELAY_UNTIL_REBOOT};
+    unsafe {
+        MoveFileExW(wide(&path.to_string_lossy()).as_ptr(), std::ptr::null(), MOVEFILE_DELAY_UNTIL_REBOOT);
+    }
+}
+
+/// Today as `YYYYMMDD`, the Apps entry's install date.
+#[cfg(windows)]
+fn today() -> String {
+    let mut time = unsafe { std::mem::zeroed() };
+    unsafe { windows_sys::Win32::System::SystemInformation::GetLocalTime(&mut time) };
+    format!("{:04}{:02}{:02}", time.wYear, time.wMonth, time.wDay)
+}
+
+/// Copies the program (replacing an older or newer copy as a whole, see install_files),
+/// then registers the logon task, shortcut and Apps entry. Needs admin. Returns the old
+/// files Windows will delete at the next restart, if any were still in use.
+#[cfg(windows)]
+pub fn install(user: &str) -> Result<crate::install_files::Replaced, String> {
+    use crate::install_files as files;
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dir = install_dir();
+    let previous_location = apps_entry("InstallLocation");
+    let items = files::release_files(&exe);
+    let mut report = files::Replaced::default();
+    if is_installed(&exe) {
+        // Repair from the installed copy: the files are already these.
+        files::clear_leftovers(&dir);
+    } else {
+        // The old copy was asked to exit; its recovery guard follows it within moments.
+        let still_running = unsafe { wait_for_programs_in(&dir, 10_000) };
+        if still_running > 0 {
+            crate::windows::log(&format!(
+                "Install: {still_running} program(s) from {} still running; replacing their files aside.",
+                dir.display()
+            ));
+        }
+        report = files::replace_files(&dir, &items, env!("CARGO_PKG_VERSION"))?;
+        for path in &report.pending_delete {
+            delete_at_restart(path);
+        }
+        for removed in &report.stale_removed {
+            crate::windows::log(&format!("Install: removed {removed}, which this version no longer ships."));
+        }
+    }
+    let installed = dir.join(files::EXE);
     run("schtasks.exe", &schtasks_create_args(&installed, user))?;
     run(
         "powershell.exe",
@@ -159,14 +295,25 @@ pub fn install(user: &str) -> Result<PathBuf, String> {
             ),
         ],
     )?;
-    for (name, value) in uninstall_values(&dir, env!("CARGO_PKG_VERSION")) {
-        let kind = if name.starts_with("No") { "REG_DWORD" } else { "REG_SZ" };
+    let size = if is_installed(&exe) {
+        files::size_kib(&files::release_files(&installed))
+    } else {
+        files::size_kib(&items)
+    };
+    for (name, value) in uninstall_values(&dir, env!("CARGO_PKG_VERSION"), size, &today()) {
+        let kind = if DWORD_VALUES.contains(&name) { "REG_DWORD" } else { "REG_SZ" };
         run(
             "reg.exe",
             &["add", UNINSTALL_KEY, "/v", name, "/t", kind, "/d", &value, "/f"].map(String::from),
         )?;
     }
-    Ok(dir)
+    // An install recorded somewhere else (another Program Files) is now replaced by this one.
+    if let Some(old) = previous_location.map(PathBuf::from) {
+        if is_old_install(&old, &dir) {
+            let _ = std::fs::remove_dir_all(&old);
+        }
+    }
+    Ok(report)
 }
 
 /// Starts the installed copy through its logon task, elevated without a prompt.
@@ -195,18 +342,44 @@ pub fn remove(settings: Option<&Path>) -> Vec<String> {
     errors
 }
 
-/// Deletes the install folder a few seconds after this process exits (this exe may be in it).
+/// Deletes the install folder after this process exits (this exe may be in it). Removes
+/// what it can now, then retries the rest for 15 seconds from a detached command.
 #[cfg(windows)]
 pub fn remove_folder_after_exit() {
     use std::os::windows::process::CommandExt;
     let dir = install_dir();
-    if dir.exists() {
-        let _ = std::process::Command::new(system("cmd.exe"))
-            .raw_arg(format!("/c ping -n 3 127.0.0.1>nul & rmdir /s /q \"{}\"", dir.display()))
-            .current_dir(std::env::temp_dir())
-            .creation_flags(0x0800_0000 | 0x0000_0008) // CREATE_NO_WINDOW | DETACHED_PROCESS
-            .spawn();
+    if !dir.exists() {
+        return;
     }
+    let own = std::env::current_exe().ok();
+    for entry in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
+        let path = entry.path();
+        if Some(&path) == own.as_ref() {
+            continue;
+        }
+        let _ = if path.is_dir() { std::fs::remove_dir_all(&path) } else { std::fs::remove_file(&path) };
+    }
+    let _ = std::process::Command::new(system("cmd.exe"))
+        .raw_arg(remove_folder_command(&dir))
+        .current_dir(std::env::temp_dir())
+        .creation_flags(0x0800_0000 | 0x0000_0008) // CREATE_NO_WINDOW | DETACHED_PROCESS
+        .spawn();
+}
+
+/// The detached command that removes the install folder once nothing in it runs.
+pub fn remove_folder_command(dir: &Path) -> String {
+    let dir = dir.display();
+    format!("/c for /l %i in (1,1,15) do @if exist \"{dir}\" (ping -n 2 127.0.0.1>nul & rmdir /s /q \"{dir}\" 2>nul)")
+}
+
+/// An earlier install at `old` that this install to `dir` replaces: only a different
+/// folder named like ours that holds our program is ever removed.
+pub fn is_old_install(old: &Path, dir: &Path) -> bool {
+    !old.to_string_lossy().eq_ignore_ascii_case(&dir.to_string_lossy())
+        && old
+            .file_name()
+            .is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case(FOLDER))
+        && old.join(crate::install_files::EXE).is_file()
 }
 
 #[cfg(test)]
@@ -258,9 +431,31 @@ mod tests {
         assert!(include_str!("../app.manifest").contains(&expected), "app.manifest needs {expected}");
     }
     #[test]
+    fn only_a_separate_folder_holding_our_program_counts_as_an_old_install() {
+        let root = std::env::temp_dir().join(format!("overlay-old-install-{}", std::process::id()));
+        let old = root.join("Old Program Files").join(FOLDER);
+        let dir = root.join("Program Files").join(FOLDER);
+        std::fs::create_dir_all(&old).unwrap();
+        assert!(!is_old_install(&old, &dir), "no program in it");
+        std::fs::write(old.join(crate::install_files::EXE), "x").unwrap();
+        assert!(is_old_install(&old, &dir));
+        assert!(!is_old_install(&dir, &dir));
+        let other = root.join("Something");
+        std::fs::create_dir_all(&other).unwrap();
+        std::fs::write(other.join(crate::install_files::EXE), "x").unwrap();
+        assert!(!is_old_install(&other, &dir), "a folder with another name is never removed");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+    #[test]
+    fn folder_removal_retries_quietly() {
+        let command = remove_folder_command(Path::new(r"C:\Program Files\OmarchyOverlay"));
+        assert!(command.starts_with("/c for /l %i in (1,1,15)"), "{command}");
+        assert_eq!(command.matches(r#""C:\Program Files\OmarchyOverlay""#).count(), 2);
+    }
+    #[test]
     fn apps_entry_values() {
         let dir = Path::new(r"C:\Program Files\OmarchyOverlay");
-        let values = uninstall_values(dir, "0.2.0");
+        let values = uninstall_values(dir, "0.2.0", 12_345, "20261109");
         let get = |n: &str| values.iter().find(|(k, _)| *k == n).unwrap().1.clone();
         assert_eq!(get("DisplayName"), "Omarchy Overlay");
         assert_eq!(get("DisplayVersion"), "0.2.0");
@@ -271,5 +466,13 @@ mod tests {
             r#""C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe" --uninstall"#
         );
         assert_eq!((get("NoModify"), get("NoRepair")), ("1".into(), "1".into()));
+        assert_eq!(
+            get("QuietUninstallString"),
+            r#""C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe" --uninstall --quiet"#
+        );
+        assert_eq!((get("InstallDate"), get("EstimatedSize")), ("20261109".into(), "12345".into()));
+        for name in DWORD_VALUES {
+            assert!(get(name).parse::<u32>().is_ok(), "{name} must be a number");
+        }
     }
 }

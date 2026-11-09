@@ -27,6 +27,8 @@ mod font_names;
 #[cfg(any(windows, test))]
 mod install;
 #[cfg(any(windows, test))]
+mod install_files;
+#[cfg(any(windows, test))]
 mod launch_unelevated;
 #[cfg(any(windows, test))]
 mod layout;

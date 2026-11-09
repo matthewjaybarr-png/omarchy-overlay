@@ -26,6 +26,9 @@ Run INSTALL.cmd and accept the administrator prompt. It installs to
 %ProgramFiles%\\OmarchyOverlay and starts elevated at sign-in, so its keys also
 work in apps running as administrator. Apps you start from it open without
 administrator rights.
+To update, run INSTALL.cmd from the newer release: it closes the running copy,
+replaces the installed version and keeps your settings. If anything fails, the
+installed copy is left as it was. INSTALL.cmd --quiet installs without messages.
 Uninstall from Settings > Apps or the tray menu; it restores the desktop first.
 Settings and logs are kept in %LOCALAPPDATA%\\OmarchyOverlay.
 If the desktop is ever left changed, run RECOVER.cmd.

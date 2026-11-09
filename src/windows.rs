@@ -408,10 +408,21 @@ unsafe fn close_running() -> bool {
     closed
 }
 
-/// `--install [--user DOMAIN\name]` and `--uninstall [--remove-settings]` (Admin edition).
+/// `--install [--user DOMAIN\name] [--yes] [--quiet]` and
+/// `--uninstall [--remove-settings] [--quiet]` (Admin edition).
+/// `--quiet` shows no message boxes (and answers yes); the exit code says how it went:
+/// 0 done, 1 failed, 2 cancelled or the administrator prompt was refused.
 unsafe fn install_command(arguments: &[String], directory: &Path) -> i32 {
     let installing = arguments[0] == "--install";
-    let remove_settings = arguments.iter().any(|a| a == "--remove-settings");
+    let has = |flag: &str| arguments.iter().any(|a| a == flag);
+    let quiet = has("--quiet");
+    let remove_settings = has("--remove-settings");
+    let say = |text: &str| {
+        log(&format!("Installer: {}", text.replace("\r\n", " ")));
+        if !quiet {
+            message(text);
+        }
+    };
     let user = arguments
         .iter()
         .position(|a| a == "--user")
@@ -421,46 +432,106 @@ unsafe fn install_command(arguments: &[String], directory: &Path) -> i32 {
             let get = |name| std::env::var(name).unwrap_or_default();
             format!("{}\\{}", get("USERDOMAIN"), get("USERNAME"))
         });
+    let this = env!("CARGO_PKG_VERSION");
+    let plan = crate::install::current_plan();
+    if installing && !quiet && !has("--yes") {
+        // Asked before the administrator prompt, so saying no changes nothing.
+        if let Some(question) = crate::install_files::question(&plan, this) {
+            let answer = MessageBoxW(
+                null_mut(),
+                wide(&question).as_ptr(),
+                wide(NAME).as_ptr(),
+                MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
+            );
+            if answer != IDYES {
+                return 2;
+            }
+        }
+    }
     if !crate::launch_unelevated::process_elevated() {
         // The task must run as the signed-in user, so pass that name to the elevated copy.
-        let relaunch = if installing {
-            format!("--install --user \"{user}\"")
+        let mut relaunch = if installing {
+            format!("--install --yes --user {}", crate::launch_unelevated::quote(&user))
         } else if remove_settings {
             "--uninstall --remove-settings".into()
         } else {
             "--uninstall".into()
         };
-        return if crate::install::elevate(&relaunch) { 0 } else { 1 };
+        if quiet {
+            relaunch.push_str(" --quiet");
+        }
+        return match crate::install::elevate(&relaunch) {
+            Some(code) => code as i32,
+            None => {
+                if !quiet {
+                    message("Omarchy Overlay needs administrator rights to install or uninstall. Nothing was changed.");
+                }
+                2
+            }
+        };
     }
+    // One installer at a time, across every signed-in user.
+    let installer = CreateMutexW(null(), 1, wide("Global\\OmarchyOverlay.Installer").as_ptr());
+    if installer.is_null() || GetLastError() == ERROR_ALREADY_EXISTS {
+        if !installer.is_null() {
+            CloseHandle(installer);
+        }
+        say("Another Omarchy Overlay install or uninstall is running. Try again when it has finished.");
+        return 1;
+    }
+    let result = install_locked(installing, &plan, &user, remove_settings, directory, &say);
+    ReleaseMutex(installer);
+    CloseHandle(installer);
+    result
+}
+
+unsafe fn install_locked(
+    installing: bool,
+    plan: &crate::install_files::Plan,
+    user: &str,
+    remove_settings: bool,
+    directory: &Path,
+    say: &dyn Fn(&str),
+) -> i32 {
+    log(&format!(
+        "Installer: {} {} ({plan:?}) for {user}",
+        if installing { "install" } else { "uninstall" },
+        env!("CARGO_PKG_VERSION")
+    ));
     if !close_running() {
-        message("Omarchy Overlay did not exit. Close it and try again.");
+        say("Omarchy Overlay did not exit. Close it and try again. Nothing was changed.");
         return 1;
     }
     let lock = match recovery::Lock::acquire() {
         Ok(lock) => lock,
         Err(error) => {
-            message(&error);
+            say(&error);
             return 1;
         }
     };
     // The started copy takes this lock at startup, so release it before starting the task or
     // waiting on a message box; held, the new copy gives up after 10 seconds.
     if installing {
-        let installed = crate::install::install(&user);
+        let installed = crate::install::install(user);
         drop(lock);
         return match installed {
-            Ok(dir) => {
+            Ok(report) => {
                 if let Err(error) = crate::install::start_task() {
-                    message(&error);
+                    log(&format!("Installer: could not start the logon task: {error}"));
                 }
-                message(&format!(
-                    "Omarchy Overlay is installed in {} and starts when {user} signs in.\r\nRemove it from Settings > Apps or the tray menu.",
-                    dir.display()
+                say(&crate::install_files::success_message(
+                    plan,
+                    env!("CARGO_PKG_VERSION"),
+                    &crate::install::install_dir(),
+                    user,
+                    !report.pending_delete.is_empty(),
                 ));
                 0
             }
             Err(error) => {
-                message(&format!("Install failed: {error}"));
+                say(&format!(
+                    "Install failed: {error}\r\n\r\nThe installed copy, if there was one, was left as it was. If another signed-in user is running Omarchy Overlay, close it there and try again."
+                ));
                 1
             }
         };
@@ -468,7 +539,9 @@ unsafe fn install_command(arguments: &[String], directory: &Path) -> i32 {
     let mut errors = recovery::recover(directory).errors;
     errors.extend(crate::install::remove(remove_settings.then_some(directory)));
     drop(lock);
-    message(&if errors.is_empty() {
+    // The installed copy's recovery guard can outlive it by a moment.
+    crate::install::wait_for_programs_in(&crate::install::install_dir(), 10_000);
+    say(&if errors.is_empty() {
         "Omarchy Overlay is uninstalled and the desktop is restored.".to_string()
     } else {
         format!("Uninstall finished with problems:\r\n{}", errors.join("\r\n"))
@@ -2963,6 +3036,14 @@ impl App {
             crate::install::admin_marker(&exe),
             crate::install::is_installed(&exe),
         );
+        let install_label = if install_items.0 {
+            crate::install_files::tray_label(
+                crate::install::installed_version().as_deref(),
+                env!("CARGO_PKG_VERSION"),
+            )
+        } else {
+            String::new()
+        };
         let menu = CreatePopupMenu();
         for (id, label) in [
             (
@@ -2982,10 +3063,10 @@ impl App {
                     "Pause Omarchy Overlay keys"
                 },
             ),
-            (6, "Open the 0.15 settings window"),
+            (6, "Open the settings window"),
             (5, "About Omarchy Overlay"),
             (0, ""),
-            (8, "Install (admin)…"),
+            (8, install_label.as_str()),
             (9, "Uninstall…"),
             (7, "Exit before removing the stick"),
             (4, "Restore desktop and exit"),

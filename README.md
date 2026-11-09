@@ -50,6 +50,21 @@ The Admin release has an `edition-admin` file beside the exe, which adds
 - adds a Start menu shortcut that runs that task, and an entry in **Settings > Apps**.
 
 Apps you start from it still open without administrator rights.
+
+**Updating:** run `INSTALL.cmd` (or **Update the installed copy…** in the tray) from
+the newer release. The installer reads the installed version and:
+
+- updates an older version, or asks first before replacing a newer one;
+- closes the running copy, copies the new files beside the old ones and checks
+  them, then swaps them in. If anything fails, every file is put back and the
+  installed copy keeps working;
+- removes files the new version no longer ships, and has Windows delete old files
+  that were still in use at the next restart;
+- keeps your settings, task and shortcut, and starts the new version.
+
+Only one install or uninstall runs at a time. `--quiet` (for example
+`INSTALL.cmd --quiet`) shows no messages; the exit code is 0 when done, 1 when it
+failed and 2 when it was cancelled. Steps are written to the log.
 **Uninstall…** in the tray (or Settings > Apps) restores the desktop and removes all
 of it. The installed copy keeps its settings and config files in
 `%LOCALAPPDATA%\OmarchyOverlay` and never uses an `OVERLAY SETTINGS` folder.
