@@ -13,7 +13,9 @@ pub(super) unsafe fn draw(
     color: u32,
     status: &str,
 ) {
-    if let Some(glyph) = crate::bar_model::omarchy_glyph(module, active, status) {
+    // Without the Nerd Font (a bare exe) Segoe UI would draw empty boxes; keep the drawn icons.
+    let glyph = fonts::available().then(|| crate::bar_model::omarchy_glyph(module, active, status)).flatten();
+    if let Some(glyph) = glyph {
         let font = CreateFontW(
             -size,
             0,
