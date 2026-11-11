@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - Tokyo Night, Omarchy's default, is the theme of a new setup. Settings you already
   have keep their theme.
