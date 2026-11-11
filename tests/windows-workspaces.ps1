@@ -256,9 +256,12 @@ try {
  [RecoverTest]::NativeDesktop(0x25)
  Check 'External Windows desktop switch is observed' (Wait-Current ((State).ids[2]))
  Pump 700;Check 'Bar follows an external desktop switch' ([RecoverTest]::OnCurrent([RecoverTest]::Bar()))
- # MENU widens the left group; x=93 is inside the first workspace cell.
- $bar=[RecoverTest]::Bar();[void][RecoverTest]::PostMessage($bar,0x202,[IntPtr]::Zero,[IntPtr]([int](93*$dpi/96)+([int](12*$dpi/96) -shl 16)))
- Check 'Clicking workspace 1 selects the first actual Windows desktop' (Wait-Current ((State).ids[0]))
+ # The first workspace cell follows MENU, whose width follows the bar font, so walk right until it is
+ # hit instead of clicking a fixed x. A click that lands on MENU opens the menu; close it afterwards.
+ $bar=[RecoverTest]::Bar();$first=$false
+ foreach($x in 40..160|Where-Object{$_ % 8 -eq 0}){[void][RecoverTest]::PostMessage($bar,0x202,[IntPtr]::Zero,[IntPtr]([int]($x*$dpi/96)+([int](12*$dpi/96) -shl 16)));$until=[DateTime]::UtcNow.AddMilliseconds(1200);do{Pump 150;$first=(State).current -eq (State).ids[0]}while(-not $first -and [DateTime]::UtcNow -lt $until);if($first){break}}
+ [RecoverTest]::CloseMenu();Pump 300
+ Check 'Clicking workspace 1 selects the first actual Windows desktop' $first
  Pump 700;Capture ([RecoverTest]::Bar()) 'overlay-omarchy-bar.png'
  # Exercise the optional compact previous/next controls against observed desktop IDs.
  Click $controllerWindow 14;$panel=[RecoverTest]::BarSettings();Click $panel 214

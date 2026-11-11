@@ -102,7 +102,8 @@ impl Default for Config {
             terminal: "wt.exe".into(),
             show_top_bar: true,
             auto_hide_taskbar: true,
-            theme: "neon-ridge".into(),
+            // Omarchy's own default theme.
+            theme: "tokyo-night".into(),
             focus_outline: false,
             show_osd: true,
             appearance_profiles: vec![],
@@ -376,7 +377,7 @@ mod tests {
             mode: crate::rules::Mode::Tile,
             ..Default::default()
         });
-        assert_eq!(c.theme, "neon-ridge");
+        assert_eq!(c.theme, "tokyo-night");
         assert_eq!(
             c.policy("explorer.exe", "Copying", "OperationStatusWindow")
                 .mode,

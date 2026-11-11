@@ -872,6 +872,8 @@ impl App {
                     .and_then(|p| p.parent().map(|d| d.join("wallpapers")));
                 let mut folders = vec![self.profile_folder().join("wallpapers")];
                 folders.extend(exe_folder);
+                // Like Omarchy's background switcher: the current theme's own pictures.
+                folders.extend(appearance_effects::backgrounds_dir(&self.config.theme));
                 let current = self.config.appearance_wallpaper.clone();
                 let mut rows: Vec<Row> = wallpapers(&folders)
                     .into_iter()

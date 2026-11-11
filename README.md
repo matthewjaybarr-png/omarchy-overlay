@@ -112,7 +112,8 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
   opaque background and the selected row filled with the theme's border color.
 - The theme sets the Windows accent color and its first background, at start
   and whenever you choose one. **Super+Ctrl+Space** opens the background switcher for the theme's
-  `backgrounds` folder.
+  `backgrounds` folder. The Admin edition ships Omarchy's backgrounds for every theme in
+  `themes\<id>\backgrounds` beside the exe.
 
 Every Windows setting this changes is recorded first and restored on exit, from
 the recovery menu, and after a crash.
@@ -321,7 +322,7 @@ Used in binds.conf and menu.json.
 | `reset-settings` | Reset all settings to defaults; saved profiles are kept (asks first) |
 | `menu <id>` | Opens that list of menu.json, for example `menu system` |
 | `page <id>` | Opens a settings page: `theme`, `font`, `background`, `gaps`, `main-size`, `layout`, `columns`, `opacity`, `inactive-opacity`, `materials`, `animations`, `focus-outline`, `osd`, `app-rules`, `default-rule`, `add-rule`, `always-float`, `always-float-add`, `bar`, `bar-items`, `bar-style`, `clock`, `bar-height`, `bar-opacity`, `workspace-layouts`, `keyboard`, `conflicts`, `keymap`, `tap-super`, `taskbar`, `profiles`, `windows-theme`, `windows-checklist`, `webapps`, `install-webapp`, `remove-apps`, `custom-apps`, `version`, `terminal-colors`, `config-errors` |
-| `app <role>` | Starts or shows an app: `terminal`, `browser`, `browser-private`, `files` (the file manager Windows opens folders with), `explorer` (File Explorer itself, at This PC), `email`, `new-email`, `calendar`, `teams` |
+| `app <role>` | Starts or shows an app: `terminal`, `browser`, `browser-private`, `files` (the file manager Windows opens folders with), `explorer` (File Explorer itself, at This PC), `email`, `new-email`, `calendar`, `teams`, `editor`, `calculator`, `activity` (Task Manager), `music` |
 | `webapp <name>` | Brings a web app from webapps.json forward |
 | `workspace <1-9>` | Switches Windows desktop |
 | `move-to-workspace <1-9>` | Opens Task View to move the window |

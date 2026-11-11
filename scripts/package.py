@@ -2,6 +2,8 @@
 """Builds the Standard and Admin release zips from one release exe."""
 import argparse
 import hashlib
+import subprocess
+import sys
 import tempfile
 import tomllib
 import zipfile
@@ -9,6 +11,35 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_EXE = ROOT / 'target/x86_64-pc-windows-msvc/release/OmarchyOverlay.exe'
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import import_omarchy_themes as omarchy  # noqa: E402
+
+NOTICE = """The backgrounds of the stock Omarchy themes in these folders are from Omarchy
+(https://github.com/basecamp/omarchy), used under its MIT License,
+Copyright (c) David Heinemeier Hansson.
+"""
+
+
+def backgrounds(cache: Path) -> list[tuple[Path, str]]:
+    """Each allowed theme background as (jpg file, path in the zip). Windows cannot
+    show .webp wallpapers, so those are converted once into `cache`; videos are left out."""
+    found = []
+    for theme, folder in omarchy.themes().items():
+        folder = folder / 'backgrounds'
+        for image in sorted(folder.iterdir()) if folder.is_dir() else []:
+            kind = image.suffix.lower()
+            if kind not in ('.jpg', '.jpeg', '.png', '.webp') or omarchy.banned_wallpaper(theme, image.name):
+                continue
+            # The theme id in the name keeps pictures apart once copied to one wallpapers folder.
+            name = f'{theme}-{image.stem}' + ('.jpg' if kind == '.webp' else kind)
+            source = image
+            if kind == '.webp':
+                source = cache / name
+                if not source.exists() or source.stat().st_mtime < image.stat().st_mtime:
+                    cache.mkdir(parents=True, exist_ok=True)
+                    subprocess.run(['magick', str(image), '-quality', '90', str(source)], check=True)
+            found.append((source, f'themes/{theme}/backgrounds/{name}'))
+    return found
 
 
 README = {
@@ -37,7 +68,7 @@ Example config files are in config\\examples.
 }
 
 
-def build(exe: Path, out: Path) -> list[Path]:
+def build(exe: Path, out: Path, pictures: list[tuple[Path, str]] = ()) -> list[Path]:
     version = tomllib.loads((ROOT / 'Cargo.toml').read_text())['package']['version']
     out.mkdir(parents=True, exist_ok=True)
     zips = []
@@ -57,6 +88,10 @@ def build(exe: Path, out: Path) -> list[Path]:
             if edition == 'admin':
                 z.write(ROOT / 'packaging/INSTALL.cmd', 'INSTALL.cmd')
                 z.writestr('edition-admin', '')
+                if pictures:
+                    z.writestr('themes/NOTICE.txt', NOTICE.replace('\n', '\r\n'))
+                for source, name in pictures:
+                    z.write(source, name, zipfile.ZIP_STORED)
         zips.append(path)
     return zips
 
@@ -83,6 +118,10 @@ def selftest() -> None:
         readme = lambda z: zipfile.ZipFile(z).read('README.txt').decode()
         assert 'Standard' in readme(standard) and 'INSTALL.cmd' not in readme(standard)
         assert 'INSTALL.cmd' in readme(admin)
+        picture = temp / 'a.jpg'
+        picture.write_bytes(b'jpg')
+        _, admin = build(exe, temp / 'dist', [(picture, 'themes/nord/backgrounds/nord-a.jpg')])
+        assert {'themes/NOTICE.txt', 'themes/nord/backgrounds/nord-a.jpg'} <= set(zipfile.ZipFile(admin).namelist())
     print('package selftest passed')
 
 
@@ -91,11 +130,15 @@ def main() -> None:
     parser.add_argument('--exe', type=Path, default=DEFAULT_EXE)
     parser.add_argument('--out', type=Path, default=ROOT / 'dist')
     parser.add_argument('--selftest', action='store_true')
+    parser.add_argument('--no-backgrounds', action='store_true',
+                        help='leave the Omarchy theme backgrounds out of the Admin zip')
     args = parser.parse_args()
     if args.selftest:
         selftest()
         return
-    for path in build(args.exe, args.out):
+    pictures = [] if args.no_backgrounds else backgrounds(args.out / '.backgrounds')
+    print(len(pictures), 'theme backgrounds in the Admin zip')
+    for path in build(args.exe, args.out, pictures):
         print(path)
 
 

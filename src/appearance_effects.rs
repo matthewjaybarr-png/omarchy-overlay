@@ -161,9 +161,17 @@ pub(super) unsafe fn restore_wallpaper(directory: &Path) -> Result<(), String> {
         Err("Wallpaper was changed externally; recovery was preserved without replacing it.".into())
     }
 }
-/// The theme's background images (user theme folders only), sorted by name.
+/// The theme's backgrounds folder: the user's theme folder first, then the stock pictures a
+/// release ships beside the exe as `themes\<id>\backgrounds`.
+pub(super) fn backgrounds_dir(theme_name: &str) -> Option<PathBuf> {
+    crate::theme_files::resolve(theme_name).and_then(|t| t.backgrounds).or_else(|| {
+        let shipped = std::env::current_exe().ok()?.parent()?.join("themes").join(theme_name).join("backgrounds");
+        shipped.is_dir().then_some(shipped)
+    })
+}
+/// The theme's background images, sorted by name.
 pub(super) fn backgrounds(theme_name: &str) -> Vec<PathBuf> {
-    let Some(dir) = crate::theme_files::resolve(theme_name).and_then(|t| t.backgrounds) else {
+    let Some(dir) = backgrounds_dir(theme_name) else {
         return vec![];
     };
     let mut list: Vec<PathBuf> = fs::read_dir(dir)

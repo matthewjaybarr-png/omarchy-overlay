@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Tokyo Night, Omarchy's default, is the theme of a new setup. Settings you already
+  have keep their theme.
+- The Admin edition ships Omarchy's backgrounds for every theme; switching theme sets
+  its first background and the background switcher lists them.
+- More stock Omarchy keys: **Super+Shift+N** editor, **Super+Shift+Q** calculator,
+  **Super+Shift+M** music, **Super+Shift+T** Task Manager, **Super+Alt+F** full width.
 - **Appearance > Top bar > Icons or text** switches the whole bar between icons,
   icons and text, and text, or sets each item on its own. Each module under
   **Bar items** has the same choice.

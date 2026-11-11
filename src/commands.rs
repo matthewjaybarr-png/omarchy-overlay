@@ -135,6 +135,10 @@ pub const APPS: &[(&str, &str)] = &[
     ("new-email", "New email"),
     ("calendar", "Calendar"),
     ("teams", "Teams"),
+    ("editor", "Editor"),
+    ("calculator", "Calculator"),
+    ("activity", "Activity (Task Manager)"),
+    ("music", "Music"),
 ];
 
 pub const LAYOUTS: &[(&str, &str)] = &[
