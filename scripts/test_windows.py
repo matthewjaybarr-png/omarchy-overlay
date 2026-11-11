@@ -77,6 +77,10 @@ for name in names:
     print(vm('push', str(ROOT / 'tests' / ('windows-' + name + '.ps1')), script).strip(), flush=True)
     vm('ps', f'if(Test-Path {quote(report)}){{Remove-Item -LiteralPath {quote(report)}}};if(Test-Path {quote(args.guest + chr(92) + "keys-request.txt")}){{Remove-Item {quote(args.guest + chr(92) + "keys-request.txt")}}}')
     vm('ps', f"$tokens=$null;$errors=$null;[void][Management.Automation.Language.Parser]::ParseFile({quote(script)},[ref]$tokens,[ref]$errors);if($errors.Count){{throw ($errors|Out-String)}}")
+    # Suites that switch layout leave a per-desktop layout choice behind, which would override the
+    # layout the next suite sets. Assumes the test user's profile is C:\Users\<user>.
+    choices = rf"C:\Users\{os.environ.get('OVERLAY_VM_USER', 'tester')}\AppData\Local\OmarchyOverlay\workspace-layouts.json"
+    vm('ps', f'if(Test-Path -LiteralPath {quote(choices)}){{Remove-Item -LiteralPath {quote(choices)}}}')
     started = time.monotonic()
     task = vm('interactive', script, *(['--elevated'] if name == 'install' else [])).strip()
     print(task, flush=True)

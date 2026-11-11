@@ -413,6 +413,10 @@ impl App {
                 Some(task) => tasks::activate(&task, false),
                 None => shell(Path::new("ms-teams.exe"), "") || shell(Path::new("msteams:"), ""),
             },
+            "editor" => shell(Path::new("notepad.exe"), ""),
+            "calculator" => shell(Path::new("calc.exe"), ""),
+            "activity" => shell(Path::new("taskmgr.exe"), ""),
+            "music" => shell(Path::new("spotify:"), "") || shell(Path::new("mswindowsmusic:"), ""),
             _ => true,
         };
         if !opened {

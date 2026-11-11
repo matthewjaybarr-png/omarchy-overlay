@@ -17,6 +17,9 @@ pub const EXE: &str = "OmarchyOverlay.exe";
 pub const MANIFEST: &str = "install-manifest.txt";
 /// Files beside the exe in a release that the install copies when present.
 const EXTRAS: [&str; 3] = ["RECOVER.cmd", "README.txt", "LICENSE.txt"];
+/// Folders beside the exe that the install copies whole: fonts, and the stock theme
+/// backgrounds as `themes/<id>/backgrounds/<picture>`.
+const SUBFOLDERS: [&str; 2] = ["fonts", "themes"];
 const NEW: &str = ".install-new";
 const OLD: &str = ".install-old";
 
@@ -124,23 +127,33 @@ pub fn release_files(exe: &Path) -> Vec<Item> {
             });
         }
     }
-    let mut fonts: Vec<PathBuf> = fs::read_dir(folder.join("fonts"))
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.is_file())
-        .collect();
-    fonts.sort();
-    for font in fonts {
-        if let Some(name) = font.file_name().and_then(|n| n.to_str()) {
+    for sub in SUBFOLDERS {
+        for relative in files_under(&folder.join(sub)) {
             items.push(Item {
-                relative: format!("fonts/{name}"),
-                source: font.clone(),
+                source: target(&folder.join(sub), &relative),
+                relative: format!("{sub}/{relative}"),
             });
         }
     }
     items
+}
+
+/// Every file under `folder`, sorted, relative to it with `/` between folders.
+fn files_under(folder: &Path) -> Vec<String> {
+    let mut found = vec![];
+    let mut entries: Vec<PathBuf> = fs::read_dir(folder).into_iter().flatten().flatten().map(|e| e.path()).collect();
+    entries.sort();
+    for path in entries {
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        if path.is_dir() {
+            found.extend(files_under(&path).into_iter().map(|r| format!("{name}/{r}")));
+        } else {
+            found.push(name.to_string());
+        }
+    }
+    found
 }
 
 /// A manifest path is used only when it stays inside the install folder.
@@ -210,12 +223,15 @@ fn aside_name(path: &Path) -> PathBuf {
 /// Removes `.install-new` and `.install-old` files an interrupted run left. Files that are
 /// still in use stay and are tried again next time.
 pub fn clear_leftovers(dir: &Path) {
-    for folder in [dir.to_path_buf(), dir.join("fonts")] {
-        for entry in fs::read_dir(folder).into_iter().flatten().flatten() {
-            let name = entry.file_name().to_string_lossy().into_owned();
-            if (name.ends_with(NEW) || name.contains(OLD)) && entry.path().is_file() {
-                let _ = fs::remove_file(entry.path());
-            }
+    // Only the top level of the install folder and the folders the install owns.
+    let mut paths: Vec<PathBuf> = fs::read_dir(dir).into_iter().flatten().flatten().map(|e| e.path()).collect();
+    for sub in SUBFOLDERS {
+        paths.extend(files_under(&dir.join(sub)).iter().map(|r| target(&dir.join(sub), r)));
+    }
+    for path in paths {
+        let name = path.file_name().unwrap_or_default().to_string_lossy().into_owned();
+        if (name.ends_with(NEW) || name.contains(OLD)) && path.is_file() {
+            let _ = fs::remove_file(path);
         }
     }
 }
@@ -429,6 +445,20 @@ mod tests {
         assert_eq!(fs::read_to_string(dir.join(EXE)).unwrap(), "v1");
         assert_eq!(manifest_version(&dir).as_deref(), Some("0.2.0"));
         assert_eq!(read_manifest(&dir).len(), 5);
+    }
+    #[test]
+    fn theme_backgrounds_are_installed_with_their_folders() {
+        let exe = release("v1", &["a.ttf"]);
+        let backgrounds = exe.parent().unwrap().join("themes").join("nord").join("backgrounds");
+        fs::create_dir_all(&backgrounds).unwrap();
+        fs::write(backgrounds.join("nord-1.jpg"), "jpg").unwrap();
+        let dir = temp().join("OmarchyOverlay");
+        replace_files(&dir, &release_files(&exe), "0.3.0").unwrap();
+        assert_eq!(fs::read_to_string(dir.join("themes/nord/backgrounds/nord-1.jpg")).unwrap(), "jpg");
+        assert!(read_manifest(&dir).contains(&"themes/nord/backgrounds/nord-1.jpg".to_string()));
+        fs::write(dir.join("themes/nord/backgrounds/x.jpg.install-new"), "left").unwrap();
+        clear_leftovers(&dir);
+        assert!(!dir.join("themes/nord/backgrounds/x.jpg.install-new").exists());
     }
     #[test]
     fn update_replaces_files_removes_dropped_ones_and_keeps_others() {

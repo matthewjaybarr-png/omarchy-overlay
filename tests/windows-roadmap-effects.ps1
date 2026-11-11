@@ -239,10 +239,11 @@ try {
  Check 'Close shortcut sends a normal window-close request' (-not [Desktop]::IsWindow($close)) ("fixture=$close; foreground=$([Desktop]::GetForegroundWindow())")
  Click $main 8;Click ([Desktop]::Appearance()) 38;$appearance=Wait-Panel 'OmarchyOverlay.AppearanceProfiles'
  Check 'Appearance profiles panel opens' ([Desktop]::IsWindowVisible($appearance)) ("main=$main original=$([Desktop]::Appearance()) profiles=$appearance exited=$($app.HasExited)")
- [void][Desktop]::SendMessage([Desktop]::GetDlgItem($appearance,801),0x186,[IntPtr]1,[IntPtr]::Zero)
+ # Everforest: a built-in profile whose theme differs from the default, so applying it changes the settings.
+ [void][Desktop]::SendMessage([Desktop]::GetDlgItem($appearance,801),0x186,[IntPtr]2,[IntPtr]::Zero)
  Click $appearance (801+(1 -shl 16));Click $appearance 808
  $saved=Get-Content $configPath -Raw|ConvertFrom-Json
- Check 'Applying a profile coordinates palette, gaps and focus feedback' ($saved.theme -eq 'tokyo-night' -and $saved.gap -eq 8 -and $saved.focus_outline)
+ Check 'Applying a profile coordinates palette, gaps and focus feedback' ($saved.theme -eq 'everforest' -and $saved.gap -eq 8 -and $saved.focus_outline)
  Input-Text $appearance 802 'Work Tokyo';Click $appearance 809
  Check 'Named appearance profile saves with the portable preferences' ((Get-Content $configPath -Raw|ConvertFrom-Json).appearance_profiles[0].name -eq 'Work Tokyo')
  [void][Desktop]::PostMessage($appearance,0x10,[IntPtr]::Zero,[IntPtr]::Zero);[void][Desktop]::PostMessage([Desktop]::Appearance(),0x10,[IntPtr]::Zero,[IntPtr]::Zero);Wait-Desktop 400
