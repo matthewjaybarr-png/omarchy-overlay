@@ -15,8 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import import_omarchy_themes as omarchy  # noqa: E402
 
 NOTICE = """The backgrounds of the stock Omarchy themes in these folders are from Omarchy
-(https://github.com/basecamp/omarchy), used under its MIT License,
-Copyright (c) David Heinemeier Hansson.
+(https://github.com/basecamp/omarchy), used under its MIT License; see
+OMARCHY-LICENSE.txt in this folder.
 """
 
 
@@ -90,6 +90,7 @@ def build(exe: Path, out: Path, pictures: list[tuple[Path, str]] = ()) -> list[P
                 z.writestr('edition-admin', '')
                 if pictures:
                     z.writestr('themes/NOTICE.txt', NOTICE.replace('\n', '\r\n'))
+                    z.write(ROOT / 'packaging/OMARCHY-LICENSE.txt', 'themes/OMARCHY-LICENSE.txt')
                 for source, name in pictures:
                     z.write(source, name, zipfile.ZIP_STORED)
         zips.append(path)
@@ -121,7 +122,7 @@ def selftest() -> None:
         picture = temp / 'a.jpg'
         picture.write_bytes(b'jpg')
         _, admin = build(exe, temp / 'dist', [(picture, 'themes/nord/backgrounds/nord-a.jpg')])
-        assert {'themes/NOTICE.txt', 'themes/nord/backgrounds/nord-a.jpg'} <= set(zipfile.ZipFile(admin).namelist())
+        assert {'themes/NOTICE.txt', 'themes/OMARCHY-LICENSE.txt', 'themes/nord/backgrounds/nord-a.jpg'} <= set(zipfile.ZipFile(admin).namelist())
     print('package selftest passed')
 
 

@@ -6,7 +6,7 @@ A keyboard-first tiling window manager for Windows 11, inspired by the
 > **Not affiliated with Omarchy or its authors.** It's an independent project
 > that brings an Omarchy-style workflow to Windows.
 
-**Status: early.** This is version 0.2.0. It comes in two editions built from the
+**Status: early.** This is version 0.3.0. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
 Pick Standard on a PC where you are not an administrator, or to try it out. Pick
