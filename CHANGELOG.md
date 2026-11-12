@@ -7,6 +7,14 @@
 - The app picker is a grid like Omarchy's launcher: large app icons with their
   names, 7 across and 4 rows at a time, moved with the arrow keys.
 - The README shows screenshots of the menu, the app grid and the Tokyo Night look.
+- Workspaces are now Omarchy Overlay's own, ten of them, no longer Windows virtual
+  desktops. **Super+1** to **Super+0** show a workspace, **Super+Shift+number** moves
+  the focused window there and follows it, and **Super+Shift+Alt+number** moves it
+  and stays. Windows of the other workspaces wait off-screen; choosing one with
+  Alt+Tab or the taskbar shows its workspace. Exit, pause and crash recovery put
+  every window back.
+- **Super+O** pops a window out: it floats at 1300x900 in the middle of the screen,
+  on top of the tiles and on every workspace. Press it again to put the window back.
 
 ## 0.3.0
 
