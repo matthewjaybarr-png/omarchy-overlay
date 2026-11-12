@@ -1,5 +1,6 @@
-//! Native Windows desktop observation. Explorer data is read only and optional.
-//! Switching uses the documented Windows+Ctrl+Arrow shortcuts, never internal COM interfaces.
+//! Omarchy Overlay's own workspaces: which one is shown and which hold windows. The windows
+//! themselves are parked and brought back by `windows::workspaces`. Windows' virtual desktops are
+//! only read, so the overlay's own windows can follow the one in use.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Snapshot {
     pub ids: Vec<[u8; 16]>,
@@ -23,6 +24,23 @@ impl Snapshot {
             .then(|| (self.current + 1) % self.ids.len())
     }
 }
+/// Workspaces are numbered 1 to 10, as in Omarchy.
+pub const LIMIT: usize = 10;
+/// A stable id per workspace, so layout choices saved by workspace survive a restart.
+pub fn workspace_id(index: usize) -> [u8; 16] {
+    let mut id = *b"omarchy-ws-00000";
+    id[15] = index as u8 + 1;
+    id
+}
+/// The workspaces to show: Omarchy's five, plus any further one holding windows or in use.
+/// Bit n of `occupied` is workspace n + 1.
+pub fn shown(occupied: u16, current: usize) -> Snapshot {
+    let count = 5.max(16 - occupied.leading_zeros() as usize).max(current + 1);
+    Snapshot {
+        ids: (0..count).map(workspace_id).collect(),
+        current,
+    }
+}
 #[cfg(windows)]
 mod native {
     use super::*;
@@ -41,25 +59,17 @@ mod native {
     fn wide(s: &str) -> Vec<u16> {
         s.encode_utf16().chain(Some(0)).collect()
     }
-    use std::time::{Duration, Instant};
     use windows_sys::{
         core::GUID,
         Win32::System::{Com::*, Registry::*, RemoteDesktop::ProcessIdToSessionId},
     };
     const ROOT: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VirtualDesktops";
-    struct Pending {
-        target: [u8; 16],
-        sent_from: Option<[u8; 16]>,
-        sent_at: Instant,
-        deadline: Instant,
-    }
     #[derive(Default)]
     struct Controller {
-        snapshot: Option<Snapshot>,
-        pending: Option<Pending>,
-        settle_until: Option<Instant>,
-        /// The desktop shown before the current one, however the switch happened.
-        former: Option<[u8; 16]>,
+        current: usize,
+        /// The workspace shown before the current one.
+        former: Option<usize>,
+        occupied: u16,
     }
     thread_local! {static DESKTOPS:RefCell<Controller>=RefCell::new(Controller::default());}
     unsafe fn binary(key: &str, value: &str) -> Option<Vec<u8>> {
@@ -201,102 +211,46 @@ mod native {
             log("Task View shortcut could not be sent; release modifier keys and try again.");
         }
     }
+    /// Makes workspace `index` (from 0) the shown one; the next tiling pass moves the windows.
     pub unsafe fn select(index: usize) -> bool {
         DESKTOPS.with(|c| {
             let mut c = c.borrow_mut();
-            let Some(s) = read() else {
+            if index >= LIMIT {
                 return false;
-            };
-            let Some(&target) = s.ids.get(index) else {
-                return false;
-            };
-            c.pending = Some(Pending {
-                target,
-                sent_from: None,
-                sent_at: Instant::now(),
-                deadline: Instant::now() + Duration::from_secs(8),
-            });
-            c.snapshot = Some(s);
+            }
+            if c.current != index {
+                c.former = Some(c.current);
+                c.current = index;
+            }
             true
         })
     }
     pub unsafe fn select_former() -> bool {
-        let Some(former) = DESKTOPS.with(|c| c.borrow().former) else {
-            return false;
-        };
-        match read().and_then(|s| s.ids.iter().position(|id| *id == former)) {
-            Some(index) => select(index),
+        match DESKTOPS.with(|c| c.borrow().former) {
+            Some(former) => select(former),
             None => false,
         }
     }
     pub unsafe fn cycle_next() -> bool {
-        // Read actual Explorer state for each invocation. Never guess the desktop,
-        // create desktops or queue extra transitions during an in-flight switch.
-        let Some(observed) = read() else {
-            return false;
-        };
-        let in_flight = DESKTOPS.with(|c| {
-            c.borrow()
-                .pending
-                .as_ref()
-                .is_some_and(|pending| pending.target != observed.ids[observed.current])
-        });
-        if in_flight {
-            return false;
+        match snapshot().and_then(|s| s.next()) {
+            Some(next) => select(next),
+            None => false,
         }
-        // The tiling settle delay protects window geometry after a switch; it
-        // must not swallow another cycle once the target desktop is observed.
-        let Some(next) = observed.next() else {
-            return false;
-        };
-        select(next)
     }
     pub unsafe fn poll() -> Option<Snapshot> {
-        DESKTOPS.with(|cell| {
-            let mut controller = cell.borrow_mut();
-            let observed = read();
-            let before = controller.snapshot.as_ref().map(|s|s.ids[s.current]);
-            if before != observed.as_ref().map(|s|s.ids[s.current]) {
-                controller.settle_until = Some(Instant::now()+Duration::from_millis(1100));
-                if before.is_some() && observed.is_some() { controller.former = before; }
-            }
-            controller.snapshot = observed;
-            let snapshot = controller.snapshot.clone();
-            let Some(pending) = &mut controller.pending else { return snapshot; };
-            let mut done = true;
-            if let Some(observed) = &snapshot {
-                let current = observed.ids[observed.current];
-                if current != pending.target && Instant::now() <= pending.deadline {
-                    if let Some(target) = observed.ids.iter().position(|id| *id == pending.target) {
-                        done = false;
-                        if pending.sent_from != Some(current) {
-                            let direction = if target < observed.current { VK_LEFT } else { VK_RIGHT };
-                            if chord(&[VK_LWIN, VK_CONTROL, direction]) {
-                                pending.sent_from = Some(current);
-                                pending.sent_at = Instant::now();
-                            }
-                        } else if pending.sent_at.elapsed() > Duration::from_secs(2) {
-                            log("Windows desktop switch was not confirmed; stopped without guessing the current desktop.");
-                            done = true;
-                        }
-                    }
-                }
-            }
-            if done { controller.pending = None; }
-            snapshot
-        })
-    }
-    pub fn switching() -> bool {
-        DESKTOPS.with(|c| {
-            let c = c.borrow();
-            c.pending.is_some() || c.settle_until.is_some_and(|until| Instant::now() < until)
-        })
+        snapshot()
     }
     pub fn snapshot() -> Option<Snapshot> {
-        DESKTOPS.with(|c| c.borrow().snapshot.clone())
+        Some(DESKTOPS.with(|c| shown(c.borrow().occupied, c.borrow().current)))
+    }
+    pub fn current() -> usize {
+        DESKTOPS.with(|c| c.borrow().current)
+    }
+    pub fn set_occupied(occupied: u16) {
+        DESKTOPS.with(|c| c.borrow_mut().occupied = occupied)
     }
     // Public IVirtualDesktopManager is used only to move Omarchy Overlay's own windows to
-    // the selected desktop, so the bar follows native keyboard/Task View changes.
+    // the Windows desktop in use, so the bar follows native keyboard/Task View changes.
     #[repr(C)]
     struct Vtable {
         query: usize,
@@ -307,7 +261,7 @@ mod native {
         move_window: unsafe extern "system" fn(*mut c_void, HWND, *const GUID) -> i32,
     }
     pub unsafe fn follow(hwnd: HWND) {
-        let Some(s) = snapshot() else {
+        let Some(s) = read() else {
             return;
         };
         let bytes = s.ids[s.current];
@@ -357,6 +311,14 @@ mod tests {
         assert!(decode(&ids[..17], &a).is_none());
         assert!(decode(&[a, a].concat(), &a).is_none());
         assert!(decode(&[0; 16], &[0; 16]).is_none());
+    }
+    #[test]
+    fn five_workspaces_show_plus_any_further_one_in_use() {
+        assert_eq!(shown(0, 0).ids.len(), 5);
+        assert_eq!(shown(1 << 7, 0).ids.len(), 8);
+        let s = shown(0b11, 9);
+        assert_eq!((s.ids.len(), s.current), (10, 9));
+        assert_ne!(workspace_id(0), workspace_id(1));
     }
     #[test]
     fn cycling_wraps_only_across_observed_desktops() {

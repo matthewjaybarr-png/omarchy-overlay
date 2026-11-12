@@ -18,7 +18,7 @@ Admin on your own PC when its keys must also work in apps running as administrat
   layout inspired by Niri. You can resize windows by dragging their shared edges.
 - **Super keys:** an app picker, a command menu, a keybind list and window
   actions, defined in `config\binds.conf`.
-- **Top bar:** Windows virtual desktops as workspaces, the active app, a clock,
+- **Top bar:** ten workspaces of its own, the active app, a clock,
   a tray and modules.
 - **Themes:** every Omarchy theme (Neon Ridge, Tokyo Night, Catppuccin,
   Gruvbox, Nord and more) built in, plus Mica and
@@ -92,8 +92,12 @@ They are kept unless you run
   left out. Omarchy's Super + L layout key is on **Super + Shift + L**, because
   Super + L stays with Windows' lock.
 - **Super + Backspace** toggles the focused window to 90% opacity.
-- **Super + Ctrl + D** stays with Windows (New desktop), because new Omarchy Overlay
-  workspaces are Windows desktops.
+- **Workspaces:** **Super + 1** to **Super + 0** show workspaces 1 to 10 and
+  **Super + Shift + number** moves the focused window there. They are Omarchy
+  Overlay's own, not Windows virtual desktops: windows of the other workspaces wait
+  off-screen and still appear in Alt+Tab and on the taskbar, and choosing one shows
+  its workspace. All monitors switch together. Pausing or exiting puts every window
+  back.
 - After an Omarchy Overlay Super key, releasing Super does not open Start.
 - In the Standard edition, windows running as administrator do not pass keys to
   Omarchy Overlay; click an ordinary window first. The Admin edition has no such limit.
@@ -309,7 +313,7 @@ Used in binds.conf and menu.json.
 | `former-desktop` | Former workspace |
 | `minimize-window` | Minimize the focused window |
 | `previous-desktop` | Previous workspace |
-| `move-to-desktop` | Move a window to another workspace (Task View) |
+| `move-to-desktop` | Opens Windows Task View |
 | `apply-windows-theme` | Apply the theme to Windows |
 | `restore-windows-appearance` | Restore the original Windows appearance |
 | `update-profile` | Update the active profile from current settings |
@@ -324,8 +328,9 @@ Used in binds.conf and menu.json.
 | `page <id>` | Opens a settings page: `theme`, `font`, `background`, `gaps`, `main-size`, `layout`, `columns`, `opacity`, `inactive-opacity`, `materials`, `animations`, `focus-outline`, `osd`, `app-rules`, `default-rule`, `add-rule`, `always-float`, `always-float-add`, `bar`, `bar-items`, `bar-style`, `clock`, `bar-height`, `bar-opacity`, `workspace-layouts`, `keyboard`, `conflicts`, `keymap`, `tap-super`, `taskbar`, `profiles`, `windows-theme`, `windows-checklist`, `webapps`, `install-webapp`, `remove-apps`, `custom-apps`, `version`, `terminal-colors`, `config-errors` |
 | `app <role>` | Starts or shows an app: `terminal`, `browser`, `browser-private`, `files` (the file manager Windows opens folders with), `explorer` (File Explorer itself, at This PC), `email`, `new-email`, `calendar`, `teams`, `editor`, `calculator`, `activity` (Task Manager), `music` |
 | `webapp <name>` | Brings a web app from webapps.json forward |
-| `workspace <1-9>` | Switches Windows desktop |
-| `move-to-workspace <1-9>` | Opens Task View to move the window |
+| `workspace <1-10>` | Shows that workspace |
+| `move-to-workspace <1-10>` | Moves the focused window to that workspace and goes there |
+| `move-to-workspace-silent <1-10>` | Moves the focused window to that workspace and stays |
 | `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling` |
 | `theme <name>` | Switches theme, for example `theme neon-ridge` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |

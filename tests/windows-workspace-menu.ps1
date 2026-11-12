@@ -121,13 +121,12 @@ function Start-App([string]$folder){
 function Stop-App($process){[void][RecoverTest]::PostMessage($controllerWindow,0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
 function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 
+Add-Type 'using System;using System.Runtime.InteropServices;public static class WsProp{[DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern IntPtr GetPropW(IntPtr h,string n);}'
+# Omarchy Overlay's own workspaces: the controller window carries (shown workspace) | (count << 8).
 function State {
- $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops'
- $raw=Get-ItemProperty $key -ErrorAction SilentlyContinue
- $ids=@();if($null -ne $raw -and $null -ne $raw.VirtualDesktopIDs){$bytes=[byte[]]$raw.VirtualDesktopIDs;for($i=0;$i+16 -le $bytes.Length;$i+=16){$ids+=([Guid]::new([byte[]]$bytes[$i..($i+15)])).ToString()}}
- $current=$null
- foreach($path in @($key,('HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\'+[Diagnostics.Process]::GetCurrentProcess().SessionId+'\VirtualDesktops'))){$data=Get-ItemProperty $path -ErrorAction SilentlyContinue;if($null -ne $data -and $null -ne $data.CurrentVirtualDesktop){$id=([Guid]::new([byte[]]$data.CurrentVirtualDesktop)).ToString();if($ids -contains $id){$current=$id;break}}}
- return @{ids=$ids;current=$current}
+ $h=[RecoverTest]::MainWindow();$v=if($h -ne [IntPtr]::Zero){[WsProp]::GetPropW($h,'OmarchyOverlay.Workspace').ToInt64()}else{0}
+ $n=$v -shr 8;$ids=@();for($i=1;$i -le $n;$i++){$ids+="$i"}
+ return @{ids=$ids;current=$(if($v -ne 0){"$($v -band 255)"}else{$null})}
 }
 function Wait-Current([string]$id){$until=[DateTime]::UtcNow.AddSeconds(10);do{Pump 150;$state=State}while($state.current -ne $id -and [DateTime]::UtcNow -lt $until);return $state.current -eq $id}
 function Select-Desktop([int]$index){[RecoverTest]::Shortcut([byte](0x31+$index));return Wait-Current ((State).ids[$index])}
@@ -157,9 +156,6 @@ $choices=Join-Path $local 'workspace-layouts.json';$oldChoices=if(Test-Path $cho
 try {
  [void][RecoverTest]::SetProcessDpiAwarenessContext([IntPtr](-4))
  Check 'No controller to disturb' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
- $originalDesktop=(State).current
- if((State).ids.Count -lt 2){$before=State;[RecoverTest]::NativeDesktop(0x44);Pump 1400;foreach($id in (State).ids){if($id -notin $before.ids){$created.Add($id)}}}
- Native-Select $originalDesktop
  $folder=Join-Path $root ('workspace-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory -Force $folder|Out-Null
  Copy-Item "$root\OmarchyOverlay.exe" "$folder\OmarchyOverlay.exe"
  for($i=0;$i -lt 2;$i++){$f=[Windows.Forms.Form]::new();$f.Text="Layout preference fixture $i";$f.SetBounds(100+120*$i,180+60*$i,520,340);$f.Show();$forms+=,$f}
@@ -177,17 +173,21 @@ try {
  Menu-Key 0x08;Menu-Key 0x08;Menu-Key 0x08;Menu-Key 0x08;Menu-Key 0x08;Menu-Key 0x08;Menu-Key 0x08;Menu-Key 0x08
  Menu-Go 'Rows'
  $saved=Get-Content $choices -Raw|ConvertFrom-Json
- Check 'Workspace choice stores a native desktop identity and all-display scope' ($saved.entries[0].desktop.Length -eq 32 -and $saved.entries[0].monitor -eq '*' -and $saved.entries[0].layout -eq 'rows')
+ Check 'Workspace choice stores a workspace identity and all-display scope' ($saved.entries[0].desktop.Length -eq 32 -and $saved.entries[0].monitor -eq '*' -and $saved.entries[0].layout -eq 'rows')
  Menu-Key 0x1b;Pump 1400
  $a=[RecoverTest+RECT]::new();$b=[RecoverTest+RECT]::new();[void][RecoverTest]::GetWindowRect($forms[0].Handle,[ref]$a);[void][RecoverTest]::GetWindowRect($forms[1].Handle,[ref]$b)
  Check 'Saved workspace layout arranges its windows into rows' ([Math]::Abs($a.l-$b.l)-lt 4 -and [Math]::Abs($a.t-$b.t)-gt 100)
- $other=@((State).ids|Where-Object {$_ -ne $originalDesktop})[0];Native-Select $other
+  Check 'The second workspace is shown' (Select-Desktop 1);Pump 800
+  [void][RecoverTest]::GetWindowRect($forms[0].Handle,[ref]$a);[void][RecoverTest]::GetWindowRect($forms[1].Handle,[ref]$b)
+  Check 'Windows of the workspace left behind are parked off-screen' ($a.r -le 0 -and $b.r -le 0) "$($a.l),$($b.l)"
  for($i=2;$i -lt 4;$i++){$f=[Windows.Forms.Form]::new();$f.Text="Layout preference fixture $i";$f.SetBounds(150+60*$i,180+50*$i,520,340);$f.Show();$forms+=,$f};Pump 1500
  [void][RecoverTest]::GetWindowRect($forms[2].Handle,[ref]$a);[void][RecoverTest]::GetWindowRect($forms[3].Handle,[ref]$b)
- Check 'Another desktop keeps the global main-and-stack default' ([Math]::Abs($a.l-$b.l)-gt 100 -and [Math]::Abs($a.t-$b.t)-lt 4)
- Native-Select $originalDesktop
+ Check 'Another workspace keeps the global main-and-stack default' ([Math]::Abs($a.l-$b.l)-gt 100 -and [Math]::Abs($a.t-$b.t)-lt 4)
+  Check 'The first workspace is shown again' (Select-Desktop 0);Pump 1500
+  [void][RecoverTest]::GetWindowRect($forms[2].Handle,[ref]$a)
+  Check 'Windows of the second workspace are parked in turn' ($a.r -le 0) "$($a.l)"
  [void][RecoverTest]::GetWindowRect($forms[0].Handle,[ref]$a);[void][RecoverTest]::GetWindowRect($forms[1].Handle,[ref]$b)
- Check 'Returning to the original desktop reapplies its rows' ([Math]::Abs($a.l-$b.l)-lt 4 -and [Math]::Abs($a.t-$b.t)-gt 100)
+ Check 'Returning to the first workspace reapplies its rows' ([Math]::Abs($a.l-$b.l)-lt 4 -and [Math]::Abs($a.t-$b.t)-gt 100)
  Check 'Portable profile does not receive machine desktop or monitor identities' (-not ([IO.File]::ReadAllText("$folder\overlay-profile.json") -match 'workspace-layouts|"desktop"|"monitor"\s*:\s*"[^n]'))
  # 0.16: the primary shortcut opens the Omarchy Overlay menu; the 0.15 command search opens from the dashboard.
  [RecoverTest]::Shortcut(0x20);$overlayDeadline=[DateTime]::UtcNow.AddSeconds(5)
@@ -230,8 +230,6 @@ try {
 finally {
  if($null -ne $app -and -not $app.HasExited){Stop-App $app}
  foreach($f in $forms){$f.Close();$f.Dispose()}
- foreach($id in $created){Native-Select $id;[RecoverTest]::NativeDesktop(0x73);Pump 1000}
- if($null -ne $originalDesktop){Native-Select $originalDesktop}
  if($null -ne $oldChoices){[IO.File]::WriteAllBytes($choices,$oldChoices)}elseif(Test-Path $choices){Remove-Item -LiteralPath $choices}
  $results|ConvertTo-Json -Depth 8|Set-Content -Encoding UTF8 (Join-Path $root 'workspace-menu-result.json')
 }
