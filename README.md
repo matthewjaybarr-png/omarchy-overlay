@@ -6,6 +6,20 @@ A keyboard-first tiling window manager for Windows 11, inspired by the
 > **Not affiliated with Omarchy or its authors.** It's an independent project
 > that brings an Omarchy-style workflow to Windows.
 
+![The Omarchy Overlay menu over the Tokyo Night background, with the top bar](docs/screenshots/desktop.jpg)
+
+*Out of the box: Tokyo Night, Omarchy's default theme, with its first background,
+the top bar and the menu (**Super + Space**).*
+
+![Two terminals and Notepad tiled side by side under the top bar](docs/screenshots/tiling.jpg)
+
+*Tiling in the default main-stack layout, with gaps and the 2 px border on the
+focused window.*
+
+![The app grid: a search box over a grid of app icons](docs/screenshots/apps.png)
+
+*The app grid (**Super + Alt + Space**): type to filter, arrow keys move in the grid.*
+
 **Status: early.** This is version 0.3.0. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
@@ -16,7 +30,7 @@ Admin on your own PC when its keys must also work in apps running as administrat
 
 - **Tiles windows:** main-stack, columns, rows, grid, dwindle and a scrolling
   layout inspired by Niri. You can resize windows by dragging their shared edges.
-- **Super keys:** an app picker, a command menu, a keybind list and window
+- **Super keys:** an app grid, a command menu, a keybind list and window
   actions, defined in `config\binds.conf`.
 - **Top bar:** Windows virtual desktops as workspaces, the active app, a clock,
   a tray and modules.
@@ -33,8 +47,8 @@ Admin on your own PC when its keys must also work in apps running as administrat
 2. Put `OmarchyOverlay.exe` in a folder with `assets\fonts` (as `fonts`) and `config\examples`
    folders from this repository.
 3. Run `OmarchyOverlay.exe`. The menu opens at start.
-4. Press **Super + Space** for the app picker, **Super + K** for every keybind,
-   **Super + Alt + Space** for the menu and **Super + Escape** for the System menu.
+4. Press **Super + Space** for the menu, **Super + Alt + Space** for the app grid,
+   **Super + K** for every keybind and **Super + Escape** for the System menu.
 5. To give every key back to Windows, choose **Trigger > Toggle > Pause Omarchy Overlay keys**.
 
 Its logs and state are kept in `%LOCALAPPDATA%\OmarchyOverlay`.
@@ -108,8 +122,12 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
   middle, tray and status on the right, in JetBrainsMono Nerd Font.
 - Square window corners with a 2 px border in the theme's active color on the
   focused window and its inactive color on the rest, with gaps between tiles.
-- Walker-style launcher and menus: centred, square, 2 px accent border, an 84%
-  opaque background and the selected row filled with the theme's border color.
+- Walker-style menus: centred, square, a 2 px border, an 84% opaque
+  background, a faded search line at the top and the selected row in the
+  theme's accent color.
+- The app picker is a grid like Omarchy's launcher: 7 columns of large app icons
+  with their names under them, 4 rows at a time. Type to filter; the arrow keys
+  move left, right, up and down, Page Up/Down and the mouse wheel scroll by rows.
 - The theme sets the Windows accent color and its first background, at start
   and whenever you choose one. **Super+Ctrl+Space** opens the background switcher for the theme's
   `backgrounds` folder. The Admin edition ships Omarchy's backgrounds for every theme in
