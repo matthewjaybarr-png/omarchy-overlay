@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Menus follow Omarchy's menu card: square corners, a 2 px border, a faded
+  search line, the accent color on the selected row and Omarchy's sizes.
+- The app picker is a grid like Omarchy's launcher: large app icons with their
+  names, 7 across and 4 rows at a time, moved with the arrow keys.
+- The README shows screenshots of the menu, the app grid and the Tokyo Night look.
+
 ## 0.3.0
 
 - Tokyo Night, Omarchy's default, is the theme of a new setup. Settings you already
