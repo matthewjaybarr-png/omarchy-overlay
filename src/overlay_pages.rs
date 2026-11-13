@@ -7,8 +7,6 @@ use crate::appearance_profiles::{self, Profile};
 use crate::commands::{self, Command};
 use crate::rules::{AppRule, Mode};
 
-const MENU_HINT: &str = "Enter opens · Esc goes back · type to search";
-const PAGE_HINT: &str = "Enter chooses · Esc goes back · type to search";
 /// Real app icons loaded per app picker view; rows further down show a plain glyph.
 const ICON_BUDGET: usize = 48;
 
@@ -77,7 +75,6 @@ fn page(title: &str, rows: Vec<Row>) -> View {
     View {
         title: title.into(),
         rows,
-        hint: PAGE_HINT.into(),
         ranked: false,
     }
 }
@@ -339,7 +336,6 @@ impl App {
                     Row::new(POWER, "Yes", Act::Choose("confirm", "yes".into())),
                     Row::new(CLOSE, "No, go back", Act::Back),
                 ],
-                hint: "Enter chooses · Esc goes back".into(),
                 ranked: false,
             },
             Level::Profile(i) => self.profile_view(*i),
@@ -365,7 +361,6 @@ impl App {
                 rows: vec![info(format!(
                     "menu.json has no list called \"{id}\". Esc goes back."
                 ))],
-                hint: MENU_HINT.into(),
                 ranked: false,
             };
         };
@@ -416,7 +411,6 @@ impl App {
         View {
             title: menu.title.clone(),
             rows,
-            hint: MENU_HINT.into(),
             ranked: false,
         }
     }
@@ -428,11 +422,12 @@ impl App {
             .collect();
         let order = self.picker_history.rank(&overlay::filter(), &apps);
         let mut rows = Vec::with_capacity(order.len());
+        let picture = overlay::picture_size();
         for (n, &i) in order.iter().enumerate() {
             let key = self.entries[i].key();
             let mut row = Row::new(RUN, self.entries[i].label.clone(), Act::Launch(i));
             if n < ICON_BUDGET {
-                row.icon = Glyph::Icon(self.entry_icon(i));
+                row.icon = Glyph::Icon(self.entry_picture(i, picture));
             }
             if self.picker_history.favorite(&key) {
                 row = row.detail("favorite");
@@ -441,13 +436,10 @@ impl App {
             }
             rows.push(row);
         }
-        if rows.is_empty() {
-            rows.push(info("No app matches. Backspace clears the search."));
-        }
+        // An empty grid draws Omarchy's "No apps match" itself.
         View {
             title: "Apps".into(),
             rows,
-            hint: "Enter launches · type to search · Esc closes".into(),
             ranked: true,
         }
     }
@@ -524,7 +516,6 @@ impl App {
         View {
             title: page_title(id).into(),
             rows,
-            hint: PAGE_HINT.into(),
             ranked: true,
         }
     }
@@ -639,7 +630,6 @@ impl App {
         View {
             title: "Keybinds".into(),
             rows,
-            hint: "Enter runs · type to search · Esc goes back".into(),
             ranked: false,
         }
     }
@@ -2948,7 +2938,6 @@ fn windows_view() -> View {
     View {
         title: "Open windows".into(),
         rows,
-        hint: "Enter switches · type to search · Esc goes back".into(),
         ranked: false,
     }
 }

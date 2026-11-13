@@ -141,6 +141,50 @@ pub(super) unsafe fn shell_icon(
     info.hIcon
 }
 
+/// An owned icon `px` square, drawn by the Shell at that size (the app grid's big icons).
+/// Null when the Shell has no picture for `target`.
+pub(super) unsafe fn shell_picture(
+    target: &str,
+    px: i32,
+) -> windows_sys::Win32::UI::WindowsAndMessaging::HICON {
+    use ::windows::{
+        core::PCWSTR,
+        Win32::{
+            Foundation::SIZE,
+            Graphics::Gdi::DeleteObject,
+            UI::Shell::{IShellItemImageFactory, SIIGBF_ICONONLY},
+        },
+    };
+    use windows_sys::Win32::{
+        Graphics::Gdi::CreateBitmap,
+        UI::WindowsAndMessaging::{CreateIconIndirect, ICONINFO},
+    };
+    let _apartment = Apartment::enter();
+    let text = super::wide(target);
+    let Ok(factory): Result<IShellItemImageFactory> =
+        SHCreateItemFromParsingName(PCWSTR(text.as_ptr()), None)
+    else {
+        return std::ptr::null_mut();
+    };
+    let Ok(color) = factory.GetImage(SIZE { cx: px, cy: px }, SIIGBF_ICONONLY) else {
+        return std::ptr::null_mut();
+    };
+    // The 32-bit picture carries its own alpha; the mask only has to exist.
+    let bits = vec![0u8; (px as usize).div_ceil(16) * 2 * px as usize];
+    let mask = CreateBitmap(px, px, 1, 1, bits.as_ptr().cast());
+    let info = ICONINFO {
+        fIcon: 1,
+        xHotspot: 0,
+        yHotspot: 0,
+        hbmMask: mask,
+        hbmColor: color.0 as _,
+    };
+    let icon = CreateIconIndirect(&info);
+    windows_sys::Win32::Graphics::Gdi::DeleteObject(mask);
+    let _ = DeleteObject(color.into());
+    icon
+}
+
 /// Reads one string property from a shell property store, such as a window's
 /// AppUserModelID or the relaunch icon a browser sets on a web-app window.
 unsafe fn store_string(

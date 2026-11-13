@@ -48,6 +48,34 @@ impl App {
             })
             .clone()
     }
+    /// The entry's icon drawn by the Shell at `px`, for the app grid; the small icon
+    /// when the Shell has no big one.
+    pub(super) unsafe fn entry_picture(&mut self, index: usize, px: i32) -> Rc<Icon> {
+        let entry = &self.entries[index];
+        let key = format!("{}@{px}", entry.key());
+        if let Some(icon) = self.picker_icons.get(&key) {
+            return icon.clone();
+        }
+        let target = if entry.action.is_some() {
+            String::new()
+        } else if entry.arguments.starts_with("\"shell:") || entry.arguments.starts_with("\"::") {
+            entry.arguments.trim_matches('"').to_owned()
+        } else {
+            entry.path.to_string_lossy().into_owned()
+        };
+        let big = if target.contains(['\\', '/', ':']) {
+            native_status::shell_picture(&target, px)
+        } else {
+            null_mut()
+        };
+        let icon = if big.is_null() {
+            self.entry_icon(index)
+        } else {
+            Rc::new(Icon(big))
+        };
+        self.picker_icons.insert(key, icon.clone());
+        icon
+    }
     pub(super) unsafe fn draw_picker(&mut self, item: &DRAWITEMSTRUCT) {
         let palette = theme::current();
         let selected = item.itemState & ODS_SELECTED != 0;
