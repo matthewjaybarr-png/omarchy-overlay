@@ -11,6 +11,11 @@ A keyboard-first tiling window manager for Windows 11, inspired by the
 *Out of the box: Tokyo Night, Omarchy's default theme, with its first background,
 the top bar and the menu (**Super + Space**).*
 
+![Two terminals and Notepad tiled side by side under the top bar](docs/screenshots/tiling.jpg)
+
+*Tiling in the default main-stack layout, with gaps and the 2 px border on the
+focused window.*
+
 ![The app grid: a search box over a grid of app icons](docs/screenshots/apps.png)
 
 *The app grid (**Super + Alt + Space**): type to filter, arrow keys move in the grid.*
