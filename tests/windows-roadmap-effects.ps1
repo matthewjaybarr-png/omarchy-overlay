@@ -227,8 +227,9 @@ try {
   [void][Desktop]::SetForegroundWindow($windows[0]);Key-Action (50+$i)
   $expected=@(217,230,242,250)[$i]
   Check "Opacity preset $i applies its native alpha" ([Math]::Abs([Desktop]::Alpha($windows[0])-$expected)-le 1)
-  Key-Action (50+$i)
-  Check "Opacity preset $i restores the original opaque state" (-not [Desktop]::Layered($windows[0]))
+  # The fixture's own console window can take the foreground between the two presses.
+  [void][Desktop]::SetForegroundWindow($windows[0]);Key-Action (50+$i)
+  Check "Opacity preset $i restores the original opaque state" (-not [Desktop]::Layered($windows[0])) ("alpha=$([Desktop]::Alpha($windows[0])); foreground=$([Desktop]::GetForegroundWindow()); fixture=$($windows[0])")
  }
  $close=[ResizeTest]::Fixture(9)
  # Let automatic tiling place the new window before clicking its caption.
@@ -272,7 +273,8 @@ try {
  Check 'Terminal integration adds a separate native profile and scheme' ($fragment.profiles[0].name -eq 'Omarchy Overlay' -and $fragment.schemes.Count -eq 1 -and $null -eq $fragment.defaultProfile)
  Check 'Terminal integration preserves a recovery record' (Test-Path "$local\terminal-appearance-restore.json")
  Capture $appearance 'appearance-profiles.png'
- Click $appearance 817
+ # Sent, not posted: restore ends with the Terminal fragment after slow color broadcasts.
+ [void][Desktop]::SendMessage($appearance,0x0111,[IntPtr]817,[IntPtr]::Zero);Wait-Desktop 650
  Check 'Restore returns the original wallpaper' ([Desktop]::Wallpaper() -eq $wallpaperBefore) "now '$([Desktop]::Wallpaper())', before '$wallpaperBefore', status '$([Desktop]::ControlText($appearance,819))'"
  Check 'Restore returns the original fragment or removes only its new file' ($(if($null -eq $terminalBefore){-not (Test-Path $terminalPath)}else{[IO.File]::ReadAllText($terminalPath) -eq $terminalBefore}))
  Check 'Successful appearance restore clears its journals' (-not (Test-Path "$local\wallpaper-restore.json") -and -not (Test-Path "$local\terminal-appearance-restore.json"))
