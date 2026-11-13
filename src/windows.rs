@@ -2233,23 +2233,47 @@ impl App {
     unsafe fn register_hotkeys(&mut self) {
         self.cycle_binding = None;
         self.cycle_error = None;
-        let mut occupied = HashSet::new();
-        for (index, action) in crate::shortcuts::ACTIONS.iter().enumerate() {
-            let chord = crate::shortcuts::chord(
-                index,
-                &self.config.modifiers,
-                &self.config.shortcut_overrides,
-            );
-            let Some(binding) = crate::shortcuts::parse(&chord).ok().flatten() else {
-                continue;
-            };
-            let id = BASE as i32 + crate::shortcuts::action_slot(index) as i32;
-            if occupied.insert((binding.modifiers, binding.key))
-                && RegisterHotKey(self.main, id, binding.modifiers | MOD_NOREPEAT, binding.key) != 0
+        for attempt in 0..2 {
+            if attempt > 0 {
+                // A controller that was just killed or is still exiting can hold every chord briefly.
+                self.failures
+                    .retain(|f| !f.starts_with("Shortcut unavailable"));
+                Sleep(1000);
+            }
+            let mut occupied = HashSet::new();
+            for (index, action) in crate::shortcuts::ACTIONS.iter().enumerate() {
+                let chord = crate::shortcuts::chord(
+                    index,
+                    &self.config.modifiers,
+                    &self.config.shortcut_overrides,
+                );
+                let Some(binding) = crate::shortcuts::parse(&chord).ok().flatten() else {
+                    continue;
+                };
+                let id = BASE as i32 + crate::shortcuts::action_slot(index) as i32;
+                let reason = if !occupied.insert((binding.modifiers, binding.key)) {
+                    "another action uses it".to_string()
+                } else if RegisterHotKey(
+                    self.main,
+                    id,
+                    binding.modifiers | MOD_NOREPEAT,
+                    binding.key,
+                ) != 0
+                {
+                    self.hotkeys.push(id);
+                    continue;
+                } else {
+                    format!("Windows error {}", GetLastError())
+                };
+                self.failures.push(format!("Shortcut unavailable: {} ({chord}). Another action, app or Windows may own it ({reason}).", action.label));
+            }
+            if !self.hotkeys.is_empty()
+                || !self
+                    .failures
+                    .iter()
+                    .any(|f| f.starts_with("Shortcut unavailable"))
             {
-                self.hotkeys.push(id);
-            } else {
-                self.failures.push(format!("Shortcut unavailable: {} ({chord}). Another action, app or Windows may own it.",action.label));
+                break;
             }
         }
     }

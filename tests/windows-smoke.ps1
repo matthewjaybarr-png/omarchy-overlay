@@ -414,7 +414,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Set-Slider $appearance 31 80
     Check 'Top-bar opacity slider changes native alpha' ([Desktop]::Alpha([Desktop]::Bar()) -eq 204)
     Set-Slider $appearance 33 75
-    Check 'Selected-window opacity slider applies to the remembered app' ([Desktop]::Alpha($forms[0].Handle) -eq 191)
+    Check 'Selected-window opacity slider applies to the remembered app' ([Desktop]::Alpha($forms[0].Handle) -eq 191) ("alpha=$([Desktop]::Alpha($forms[0].Handle)); layered=$([Desktop]::Layered($forms[0].Handle)); foreground=$([Desktop]::GetForegroundWindow()); fixture=$($forms[0].Handle)")
     [void][Desktop]::PostMessage($appearance,0x0111,[IntPtr]35,[IntPtr]::Zero)
     Wait-Desktop 450
     Check 'Restore selected removes its opacity change' (-not [Desktop]::Layered($forms[0].Handle))
@@ -546,6 +546,11 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     if ($null -ne $app -and -not $app.HasExited) {
         [Desktop]::Shortcut(0x1b)
         Wait-Desktop 1200
+    }
+    # The exit shortcut does nothing if the controller could not register its hotkeys; post Exit directly.
+    if ($null -ne $app -and -not $app.HasExited) {
+        [void][Desktop]::PostMessage([Desktop]::MainWindow(), 0x0312, [IntPtr]105, [IntPtr]::Zero)
+        [void]$app.WaitForExit(5000)
     }
     foreach ($form in $forms) { $form.Close(); $form.Dispose() }
     if ($null -ne $shortcut -and (Test-Path $shortcut)) { Remove-Item $shortcut }
