@@ -140,7 +140,7 @@ unsafe fn select(app: &App, index: usize) {
         "Registered and ready."
     } else if index == ACTIONS.len() && crate::desktops::snapshot().is_none_or(|s| s.ids.len() < 2)
     {
-        "Inactive: at least two observable Windows desktops are needed."
+        "Inactive: at least two workspaces are needed."
     } else {
         "Unavailable: another action, app or Windows owns this shortcut. Choose another chord."
     };
@@ -188,7 +188,7 @@ pub(super) unsafe fn fill(app: &App, index: Option<usize>) {
     InvalidateRect(list, null(), 1);
     select(app, index);
     let exit = text(app, 5);
-    set_text(GetDlgItem(app.help,9),&format!("Restore and exit: {}. The dashboard and tray also provide Restore desktop and exit.\r\nWorkspace shortcuts switch native Windows desktops on all monitors together.",if exit.is_empty(){"keyboard action disabled"}else{&exit}));
+    set_text(GetDlgItem(app.help,9),&format!("Restore and exit: {}. The dashboard and tray also provide Restore desktop and exit.\r\nWorkspace shortcuts switch every monitor together.",if exit.is_empty(){"keyboard action disabled"}else{&exit}));
 }
 pub(super) unsafe fn command(app: &mut App, id: usize, notification: usize) {
     let index = selected(app.help).min(ACTIONS.len());

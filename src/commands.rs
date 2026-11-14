@@ -161,6 +161,7 @@ pub enum Command {
     Workspace(usize),
     /// Moving windows between desktops is not offered; this opens Task View instead.
     MoveToWorkspace(usize),
+    MoveSilently(usize),
     Layout(&'static str),
     Theme(String),
     /// A Windows Settings page, `settings sound` opens ms-settings:sound.
@@ -220,17 +221,17 @@ pub fn parse(text: &str) -> Result<Command, String> {
                 .map(|(id, _)| Command::Page(id))
                 .ok_or_else(|| format!("Unknown page \"{argument}\"."))
         }
-        "workspace" | "move-to-workspace" => {
-            need("a number from 1 to 9")?;
+        "workspace" | "move-to-workspace" | "move-to-workspace-silent" => {
+            need("a number from 1 to 10")?;
             let number = argument
                 .parse::<usize>()
                 .ok()
-                .filter(|n| (1..=9).contains(n))
-                .ok_or("Workspaces are numbered 1 to 9.")?;
-            Ok(if name == "workspace" {
-                Command::Workspace(number)
-            } else {
-                Command::MoveToWorkspace(number)
+                .filter(|n| (1..=10).contains(n))
+                .ok_or("Workspaces are numbered 1 to 10.")?;
+            Ok(match name.as_str() {
+                "workspace" => Command::Workspace(number),
+                "move-to-workspace" => Command::MoveToWorkspace(number),
+                _ => Command::MoveSilently(number),
             })
         }
         "layout" => {
@@ -323,7 +324,7 @@ impl Command {
     /// True when the command opens a Windows screen rather than a Omarchy Overlay one.
     pub fn windows(&self) -> bool {
         match self {
-            Self::Settings(_) | Self::MoveToWorkspace(_) => true,
+            Self::Settings(_) => true,
             Self::Builtin(name) => matches!(
                 *name,
                 "task-view"
@@ -364,7 +365,7 @@ impl Command {
                             | "grow-main-pane"
                     )
             }
-            Self::Layout(_) => true,
+            Self::Layout(_) | Self::Workspace(_) | Self::MoveToWorkspace(_) | Self::MoveSilently(_) => true,
             _ => false,
         }
     }
@@ -379,7 +380,9 @@ mod tests {
         assert_eq!(parse(" menu system "), Ok(Command::Menu("system".into())));
         assert_eq!(parse("menu"), Ok(Command::Builtin("menu")));
         assert_eq!(parse("workspace 9"), Ok(Command::Workspace(9)));
-        assert!(parse("workspace 10").is_err());
+        assert_eq!(parse("workspace 10"), Ok(Command::Workspace(10)));
+        assert!(parse("workspace 11").is_err());
+        assert_eq!(parse("move-to-workspace-silent 2"), Ok(Command::MoveSilently(2)));
         assert_eq!(
             parse("settings sound"),
             Ok(Command::Settings("sound".into()))

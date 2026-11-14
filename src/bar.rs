@@ -1182,8 +1182,8 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                             }
                         }
                         100..=163 => {
-                            if !desktops::select(slot.item.action - 100) {
-                                log("Desktop selection is unavailable; use Windows Task View.");
+                            if desktops::select(slot.item.action - 100) {
+                                PostMessageW(state.owner, WM_TIMER, 1, 0);
                             }
                         }
                         90 => desktops::task_view(),
@@ -1208,6 +1208,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                                     (snapshot.current + 1).min(snapshot.ids.len() - 1)
                                 };
                                 desktops::select(index);
+                                PostMessageW(state.owner, WM_TIMER, 1, 0);
                             } else {
                                 desktops::task_view();
                             }

@@ -19,7 +19,7 @@ pub(super) struct Drag {
 }
 impl App {
     pub(super) unsafe fn resize_tick(&mut self) {
-        if !self.active || crate::desktops::switching() {
+        if !self.active {
             self.drag = None;
             return;
         }

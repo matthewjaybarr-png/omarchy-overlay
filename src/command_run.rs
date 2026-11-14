@@ -110,11 +110,13 @@ impl App {
                 self.action(crate::shortcuts::action_slot(*index) as u32);
             }
             Command::Workspace(number) => {
-                if !crate::desktops::select(number.saturating_sub(1)) {
-                    self.show_feedback(&format!("Workspace {number} does not exist yet. Super+Ctrl+D or Windows Task View adds desktops."));
+                if crate::desktops::select(number.saturating_sub(1)) {
+                    self.tick();
+                    bar::poll();
                 }
             }
-            Command::MoveToWorkspace(_) => crate::desktops::task_view(),
+            Command::MoveToWorkspace(number) => self.move_to_workspace(number - 1, false),
+            Command::MoveSilently(number) => self.move_to_workspace(number - 1, true),
             Command::Layout(layout) => self.set_layout(layout),
             Command::Theme(name) => {
                 let mut c = self.config.clone();
@@ -207,6 +209,7 @@ impl App {
             }
             "former-desktop" => {
                 if crate::desktops::select_former() {
+                    self.tick();
                     bar::poll();
                 } else {
                     self.show_feedback("No former workspace yet.");
@@ -220,6 +223,7 @@ impl App {
                     _ => crate::desktops::cycle_next(),
                 };
                 if moved {
+                    self.tick();
                     bar::poll();
                 }
             }
