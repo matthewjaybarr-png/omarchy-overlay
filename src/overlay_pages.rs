@@ -841,7 +841,7 @@ impl App {
                         rows.push(Row::new(TRASH, workspace_ui::entry_label(entry), Act::Choose("ws-remove", i.to_string())));
                     }
                 }
-                rows.push(info("Choices stay on this PC. Specific desktop/display choices override broader ones. Native Windows desktops still switch every monitor together."));
+                rows.push(info("Choices stay on this PC. Specific desktop/display choices override broader ones. Workspaces switch every monitor together."));
                 rows
             }
             "terminal-colors" => {

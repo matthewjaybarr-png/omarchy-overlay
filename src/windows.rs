@@ -2319,7 +2319,7 @@ impl App {
         let status = if binding.is_none() {
             "Workspace cycling disabled (blank shortcut).".to_string()
         } else if !available {
-            "Shortcut inactive: at least two observable Windows desktops are needed.".into()
+            "Shortcut inactive: at least two workspaces are needed.".into()
         } else {
             String::new()
         };
@@ -2356,7 +2356,7 @@ impl App {
             set_text(
                 GetDlgItem(self.settings.hwnd, 74),
                 &format!(
-                    "Ready: {} cycles native desktops on all monitors; last → first.",
+                    "Ready: {} cycles workspaces on all monitors; last → first.",
                     self.config.cycle_workspace_shortcut
                 ),
             );
