@@ -43,6 +43,12 @@ def quote(value):
 processes = vm('ps', " @(Get-Process OmarchyOverlay -ErrorAction SilentlyContinue).Count")
 if int(processes.strip()) != 0:
     raise SystemExit('A controller/guard is running; leave it alone and finish its task first.')
+# The fixtures' fixed waits assume a responsive desktop. Windows 11 Home uses one CPU socket,
+# so a VM with N vCPUs as N sockets (libvirt's default) runs on one CPU and fails at random.
+cpus = int(vm('ps', ' (Get-CimInstance Win32_Processor | Measure-Object NumberOfLogicalProcessors -Sum).Sum').strip())
+if cpus < 2:
+    raise SystemExit(f'The guest sees {cpus} CPU; give the VM one socket with several cores '
+                     "(libvirt: <topology sockets='1' cores='4' threads='1'/>).")
 print(vm('push', str(args.exe), args.guest + r'\OmarchyOverlay.exe').strip(), flush=True)
 # 0.19: every report records the SHA256 of the exe it tested, checked on the guest's copy.
 exe_sha256 = hashlib.sha256(args.exe.read_bytes()).hexdigest()
