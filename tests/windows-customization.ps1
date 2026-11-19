@@ -162,7 +162,8 @@ try {
  Input-Text $help 502 'Ctrl+Alt+F10';Click $help 503
  Check 'Individual launcher shortcut saves' ((Read-Profile $folder).settings.shortcut_overrides.launcher -eq 'Ctrl+Alt+F10')
  # 0.16: the Launcher action opens the Omarchy Overlay menu.
- [RecoverTest]::Shortcut(0x79);Pump 700
+ # Retries: after a save the app re-registers its hotkeys, which can outlast a fixed wait on a busy guest.
+ foreach($try in 1..4){[RecoverTest]::Shortcut(0x79);Pump 1000;if([RecoverTest]::IsWindowVisible([RecoverTest]::Overlay())){break}}
  Check 'Actual custom global key opens the Omarchy Overlay menu' ([RecoverTest]::IsWindowVisible([RecoverTest]::Overlay()))
  [RecoverTest]::CloseMenu();Pump 300
  Input-Text $help 502 'Ctrl+Alt+T';Click $help 503

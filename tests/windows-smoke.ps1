@@ -119,6 +119,11 @@ function Wait-Desktop([int]$milliseconds = 900) {
         Start-Sleep -Milliseconds 20
     }
 }
+# Polls instead of a fixed wait: a busy guest can take longer than any fixed wait to show or hide a window.
+function Wait-Until([scriptblock]$condition, [int]$milliseconds = 4000) {
+    $until = [DateTime]::UtcNow.AddMilliseconds($milliseconds)
+    while (-not (& $condition) -and [DateTime]::UtcNow -lt $until) { Wait-Desktop 50 }
+}
 function Bounds($window) {
     $r = [Desktop+RECT]::new()
     [void][Desktop]::GetWindowRect($window, [ref]$r)
@@ -250,10 +255,10 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
         @(33,'OmarchyOverlay.AppRules'), @(34,'OmarchyOverlay.Overlay'), @(35,'OmarchyOverlay.Profiles')
     )) {
         Click $main $entry[0]
-        Wait-Desktop 1500
+        Wait-Until { [Desktop]::IsWindowVisible([Desktop]::FindWindow($entry[1], [System.Management.Automation.Language.NullString]::Value)) }
         $editor = [Desktop]::FindWindow($entry[1], [System.Management.Automation.Language.NullString]::Value)
         Check "Dashboard opens $($entry[1])" ([Desktop]::IsWindowVisible($editor)) "control=$([Desktop]::GetDlgItem($main, $entry[0])); editor=$editor"
-        if ($entry[1] -eq 'OmarchyOverlay.Overlay') { [void][Desktop]::SendMessage($editor, 0x0100, [IntPtr]0x1b, [IntPtr]::Zero); Wait-Desktop 300 }
+        if ($entry[1] -eq 'OmarchyOverlay.Overlay') { [void][Desktop]::SendMessage($editor, 0x0100, [IntPtr]0x1b, [IntPtr]::Zero); Wait-Until { -not [Desktop]::IsWindowVisible($editor) } 2000 }
         else { [void][Desktop]::SendMessage($editor, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) }
         if ($entry[0] -eq 34) {
             Check 'Closing dashboard custom apps does not open search' (-not [Desktop]::IsWindowVisible($launcher))
@@ -463,7 +468,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
     Choose $settings 47 0
     Choose $settings 49 1
     Click $settings 51
-    Wait-Desktop 700
+    Wait-Until { ((Bounds $forms[0].Handle) -join ',') -ne ($originals[0] -join ',') }
     Check 'Changing the rule to tile adopts the window again' (((Bounds $forms[0].Handle) -join ',') -ne ($originals[0] -join ','))
     $profile=Get-Content -Raw $configPath | ConvertFrom-Json
     Check 'Preferred monitor is saved by Windows display name' ($profile.rules[0].monitor -like '*DISPLAY*')

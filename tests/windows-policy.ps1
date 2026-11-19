@@ -161,11 +161,11 @@ try {
  Pump 1500
  foreach($p in $fixtures){$p.Refresh();$windows+=,$p.MainWindowHandle}
  Check 'Two isolated Outlook-name fixtures opened' ($windows.Count -eq 2 -and $windows[0] -ne [IntPtr]::Zero -and $windows[1] -ne [IntPtr]::Zero)
- $original=@($windows|ForEach-Object{Bounds $_})
  $excluded=@(Get-Process|Where-Object {$_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId -and $_.ProcessName -notin @('olk','OUTLOOK')}|ForEach-Object {$_.ProcessName+'.exe'}|Select-Object -Unique)
  $profile=@{format='overlay-profile';version=1;id='policy-fixture';settings=@{default_mode='float';default_allow_opacity=$false;excluded_processes=$excluded;rules=@(@{executable='olk.exe';mode='float';allow_opacity=$true},@{executable='OUTLOOK.EXE';mode='tile';allow_opacity=$true})}}
  [IO.File]::WriteAllText("$folder\overlay-profile.json",($profile|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))
- $app=Start-App $folder;Click $controllerWindow 1;Pump 1200
+ # Windows moves DPI-unaware windows when the bar registers as an appbar, so the baseline comes after Start-App.
+ $app=Start-App $folder;$original=@($windows|ForEach-Object{Bounds $_});Click $controllerWindow 1;Pump 1200
  Check 'New Outlook keeps its explicit Float rule' ((Bounds $windows[0]) -eq $original[0]) ("before=$($original[0]); after=$(Bounds $windows[0])")
  Check 'Classic Outlook follows its separate Tile rule' ((Bounds $windows[1]) -ne $original[1])
  Click $controllerWindow 3;Click ([RecoverTest]::Settings()) 76;$panel=[RecoverTest]::Rules()
