@@ -3666,15 +3666,12 @@ unsafe fn basic_eligible(hwnd: HWND) -> bool {
     info.cbSize = size_of::<MONITORINFO>() as u32;
     GetMonitorInfoW(monitor, &mut info);
     // Borderless full-screen games and video must keep their own geometry.
-    if r.left <= info.rcMonitor.left
+    let fullscreen = r.left <= info.rcMonitor.left
         && r.top <= info.rcMonitor.top
         && r.right >= info.rcMonitor.right
         && r.bottom >= info.rcMonitor.bottom
-        && IsZoomed(hwnd) == 0
-    {
-        return false;
-    }
-    true
+        && IsZoomed(hwnd) == 0;
+    !fullscreen
 }
 unsafe fn process_path(hwnd: HWND) -> Option<PathBuf> {
     let mut pid = 0;
