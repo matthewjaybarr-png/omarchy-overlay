@@ -642,9 +642,9 @@ impl Module {
             Self::Start => "Open the native Windows Start menu.",
             Self::Menu | Self::Controls => "Open Omarchy Overlay controls and native Windows actions.",
             Self::Workspaces => {
-                "Switch existing native Windows desktops; all monitors switch together."
+                "Switch workspaces; all monitors switch together."
             }
-            Self::WorkspaceNav => "Previous and next native desktop.",
+            Self::WorkspaceNav => "Previous and next workspace.",
             Self::WindowScroll => "Previous/next window in the scrolling layout. Wheel over these buttons or running apps to scroll.",
             Self::Tiling => "Enable tiling, or pause and restore original placements.",
             Self::Clock => "Clock and date; opens Windows notifications and calendar.",

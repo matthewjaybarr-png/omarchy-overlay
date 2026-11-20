@@ -4,7 +4,71 @@ pub(super) struct Scratchpad {
     pub task: tasks::Task,
     pub hidden_by_us: bool,
 }
+/// Marks a popped-out window, so exit and crash recovery can find it and drop always-on-top.
+const POP: &str = "OmarchyOverlay.Pop.v1";
+const KEEP: u32 = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
+unsafe extern "system" fn unpop(hwnd: HWND, _: LPARAM) -> i32 {
+    if !RemovePropW(hwnd, wide(POP).as_ptr()).is_null() {
+        SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, KEEP);
+    }
+    1
+}
+/// A popped-out window is pinned: it stays on screen across workspaces.
+pub(super) unsafe fn popped(hwnd: HWND) -> bool {
+    !GetPropW(hwnd, wide(POP).as_ptr()).is_null()
+}
+pub(super) unsafe fn unpop_all() {
+    EnumWindows(Some(unpop), 0);
+}
 impl App {
+    /// Omarchy's Super+O: floats the window at 1300x900 in the middle of its monitor, on top of
+    /// the tiles and on every workspace; again puts it back.
+    pub(super) unsafe fn pop_window(&mut self, hwnd: HWND) {
+        if !self.active || !self.movable(hwnd) {
+            return;
+        }
+        let key = hwnd as isize;
+        let tiled = self.order.contains(&key) && !self.floating.contains(&key);
+        if !responsive(hwnd) {
+            return;
+        }
+        // The mark is 1 for a window that was tiled before the pop and 2 for a floating one.
+        let was = RemovePropW(hwnd, wide(POP).as_ptr()) as usize;
+        if was != 0 {
+            SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, KEEP);
+            if was == 1 && self.floating.contains(&key) {
+                self.float_window(hwnd);
+            }
+            return;
+        }
+        // A window already always on top is someone else's: leaving it would lose that on unpop.
+        if GetWindowLongW(hwnd, GWL_EXSTYLE) as u32 & WS_EX_TOPMOST != 0 {
+            return;
+        }
+        let mut info: MONITORINFO = zeroed();
+        info.cbSize = size_of::<MONITORINFO>() as u32;
+        if GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mut info) == 0 {
+            return;
+        }
+        if tiled {
+            self.float_window(hwnd);
+        }
+        let area = info.rcWork;
+        let (width, height) = (1300.min(area.right - area.left), 900.min(area.bottom - area.top));
+        SetPropW(hwnd, wide(POP).as_ptr(), if tiled { 1 } else { 2 } as HANDLE);
+        if IsZoomed(hwnd) != 0 {
+            ShowWindow(hwnd, SW_RESTORE);
+        }
+        SetWindowPos(
+            hwnd,
+            HWND_TOPMOST,
+            (area.left + area.right - width) / 2,
+            (area.top + area.bottom - height) / 2,
+            width,
+            height,
+            SWP_NOACTIVATE,
+        );
+    }
     pub(super) unsafe fn move_direction(&mut self, hwnd: HWND, dx: i32, dy: i32) {
         let mut displays = settings::displays();
         displays.sort_by_key(|d| (d.work.x, d.work.y));

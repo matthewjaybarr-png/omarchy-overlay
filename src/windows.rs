@@ -87,6 +87,8 @@ mod windows_accent;
 mod windows_personalization;
 #[path = "workspace_ui.rs"]
 mod workspace_ui;
+#[path = "workspaces.rs"]
+mod workspaces;
 use serde::{Deserialize, Serialize};
 use std::{
     cell::RefCell,
@@ -326,6 +328,11 @@ struct App {
     layout_sessions: HashMap<String, LayoutSession>,
     drag: Option<resize::Drag>,
     order: Vec<isize>,
+    /// The workspace whose windows are on screen, and the windows parked for the others.
+    workspace: usize,
+    parked: HashMap<isize, workspaces::Parked>,
+    workspace_focus: HashMap<usize, isize>,
+    seen_foreground: isize,
     floating: HashSet<isize>,
     saved: HashMap<isize, Saved>,
     signature: Vec<(isize, isize, Rect)>,
@@ -1419,6 +1426,10 @@ pub fn run() {
             layout_sessions: HashMap::new(),
             drag: None,
             order: vec![],
+            workspace: 0,
+            parked: HashMap::new(),
+            workspace_focus: HashMap::new(),
+            seen_foreground: 0,
             floating: HashSet::new(),
             saved: HashMap::new(),
             scrolling: HashMap::new(),
@@ -2308,7 +2319,7 @@ impl App {
         let status = if binding.is_none() {
             "Workspace cycling disabled (blank shortcut).".to_string()
         } else if !available {
-            "Shortcut inactive: at least two observable Windows desktops are needed.".into()
+            "Shortcut inactive: at least two workspaces are needed.".into()
         } else {
             String::new()
         };
@@ -2345,7 +2356,7 @@ impl App {
             set_text(
                 GetDlgItem(self.settings.hwnd, 74),
                 &format!(
-                    "Ready: {} cycles native desktops on all monitors; last → first.",
+                    "Ready: {} cycles workspaces on all monitors; last → first.",
                     self.config.cycle_workspace_shortcut
                 ),
             );
@@ -2403,6 +2414,7 @@ impl App {
     unsafe fn restore(&mut self) {
         self.finish_motion(false);
         self.restore_scratchpads();
+        window_actions::unpop_all();
         self.tiled.clear();
         self.dwindle.clear();
         self.last_tiled_focus = None;
@@ -2414,6 +2426,7 @@ impl App {
         if let Err(error) = self.save_positions() {
             log(&error);
         }
+        self.forget_workspaces();
         self.order.clear();
         self.floating.clear();
         self.signature.clear();
@@ -2435,9 +2448,21 @@ impl App {
         }
     }
     unsafe fn tick(&mut self) {
-        if !self.active || self.drag.is_some() || crate::desktops::switching() {
+        // Lets other programs (and the VM tests) read the shown workspace and how many show.
+        if let Some(s) = crate::desktops::snapshot() {
+            let state = (s.current + 1) | s.ids.len() << 8;
+            SetPropW(self.main, wide("OmarchyOverlay.Workspace").as_ptr(), state as HANDLE);
+        }
+        if !self.active {
+            // A paused overlay moves no windows: the ones on screen belong to whichever
+            // workspace is shown when tiling starts again.
+            self.workspace = crate::desktops::current();
             return;
         }
+        if self.drag.is_some() {
+            return;
+        }
+        self.sync_workspace();
         if let Some(desktop) = workspace_ui::current_desktop() {
             if desktop != self.layout_desktop {
                 if !self.layout_desktop.is_empty() {
@@ -2478,6 +2503,9 @@ impl App {
         }
         EnumWindows(Some(enumerate), &mut found as *mut _ as isize);
         found.retain(|&key| {
+            if self.parked.contains_key(&key) {
+                return false;
+            }
             if scrolling_runtime::owned(key as HWND)
                 && !self
                     .saved
@@ -2727,6 +2755,7 @@ impl App {
             55 => self.toggle_scratchpad(),
             56 => self.queue_system_action(0),
             57 => self.queue_system_action(1),
+            58 => self.pop_window(GetForegroundWindow()),
             38 => {
                 if crate::desktops::cycle_next() {
                     bar::poll();
@@ -2734,8 +2763,9 @@ impl App {
                 self.sync_cycle_hotkey();
             }
             28..=31 => {
-                if !crate::desktops::select((index - 28) as usize) {
-                    message("That Windows desktop is unavailable. Open Windows Task View (Win + Tab) to create or select your desktops.");
+                if crate::desktops::select((index - 28) as usize) {
+                    self.tick();
+                    bar::poll();
                 }
             }
             24..=26 => self.opacity_hotkey(index),

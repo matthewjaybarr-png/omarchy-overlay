@@ -166,6 +166,7 @@ pub(super) unsafe fn recover(directory: &Path) -> Report {
         Ok(count) => report.placement_records = count,
         Err(e) => report.errors.push(e),
     }
+    window_actions::unpop_all();
     if let Err(error) = window_theme::recover(directory) {
         report.errors.push(error);
     }

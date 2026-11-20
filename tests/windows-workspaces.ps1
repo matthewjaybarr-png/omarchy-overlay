@@ -116,13 +116,12 @@ function Start-App([string]$folder){
 function Stop-App($process){[void][RecoverTest]::PostMessage($controllerWindow,0x312,[IntPtr]105,[IntPtr]::Zero);$until=[DateTime]::UtcNow.AddSeconds(8);while(-not $process.HasExited -and [DateTime]::UtcNow -lt $until){Pump 100};Pump 700;if(-not $process.HasExited){throw 'Controller did not exit.'}}
 function Read-Profile($folder){return Get-Content -Raw (Join-Path $folder 'overlay-profile.json')|ConvertFrom-Json}
 
+Add-Type 'using System;using System.Runtime.InteropServices;public static class WsProp{[DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern IntPtr GetPropW(IntPtr h,string n);}'
+# Omarchy Overlay's own workspaces: the controller window carries (shown workspace) | (count << 8).
 function State {
- $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops'
- $raw=Get-ItemProperty $key -ErrorAction SilentlyContinue
- $ids=@();if($null -ne $raw -and $null -ne $raw.VirtualDesktopIDs){$bytes=[byte[]]$raw.VirtualDesktopIDs;for($i=0;$i+16 -le $bytes.Length;$i+=16){$ids+=([Guid]::new([byte[]]$bytes[$i..($i+15)])).ToString()}}
- $current=$null
- foreach($path in @($key,('HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\'+[Diagnostics.Process]::GetCurrentProcess().SessionId+'\VirtualDesktops'))){$data=Get-ItemProperty $path -ErrorAction SilentlyContinue;if($null -ne $data -and $null -ne $data.CurrentVirtualDesktop){$id=([Guid]::new([byte[]]$data.CurrentVirtualDesktop)).ToString();if($ids -contains $id){$current=$id;break}}}
- return @{ids=$ids;current=$current}
+ $h=[RecoverTest]::MainWindow();$v=if($h -ne [IntPtr]::Zero){[WsProp]::GetPropW($h,'OmarchyOverlay.Workspace').ToInt64()}else{0}
+ $n=$v -shr 8;$ids=@();for($i=1;$i -le $n;$i++){$ids+="$i"}
+ return @{ids=$ids;current=$(if($v -ne 0){"$($v -band 255)"}else{$null})}
 }
 function Wait-Current([string]$id){$until=[DateTime]::UtcNow.AddSeconds(10);do{Pump 150;$state=State}while($state.current -ne $id -and [DateTime]::UtcNow -lt $until);return $state.current -eq $id}
 function Select-Desktop([int]$index){[RecoverTest]::Shortcut([byte](0x31+$index));return Wait-Current ((State).ids[$index])}
@@ -142,15 +141,6 @@ try {
  Check 'No existing Omarchy Overlay controller to disturb' ([RecoverTest]::MainWindow() -eq [IntPtr]::Zero)
  $f=[Windows.Forms.Form]::new();$f.Text='Omarchy Overlay desktop anchor';$f.SetBounds(180,150,520,340);$f.Show();$forms+=,$f;Pump
  $originalDesktop=[RecoverTest]::DesktopId($f.Handle).ToString()
- # Only create missing test desktops. Their exact GUIDs are tracked for cleanup.
- $initial=State
- while(@((State).ids).Count -lt 4){
-  $before=State;[RecoverTest]::NativeDesktop(0x44);Pump 1400;$after=State
-  $new=@($after.ids|Where-Object{$_ -notin $before.ids -and $_ -ne $originalDesktop})
-  foreach($id in $new){if(-not $created.Contains($id)){$created.Add($id)}}
-  if($after.ids.Count -le $before.ids.Count){throw 'Windows did not create a test desktop.'}
- }
- Check 'Four real Windows desktops are available' (@((State).ids).Count -ge 4)
  $folder=Join-Path $root ('bar-workspaces-'+[Guid]::NewGuid().ToString('N'));New-Item -ItemType Directory -Force $folder|Out-Null
  Copy-Item (Join-Path $root 'OmarchyOverlay.exe') (Join-Path $folder 'OmarchyOverlay.exe') -Force
  $profilePath=Join-Path $folder 'overlay-profile.json'
@@ -213,9 +203,9 @@ try {
  Check 'Old profile gains the independent default without resetting bar choices' ([RecoverTest]::ControlText($settings,71) -eq 'Ctrl+Alt+F11' -and (Read-Profile $folder).settings.bar.workspace_labels.Count -eq 4)
  Check 'Retired Rainmeter removal control is absent' ([RecoverTest]::GetDlgItem($settings,70) -eq [IntPtr]::Zero)
  [void][RecoverTest]::PostMessage($settings,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
- # The PC may already have more than four desktops; wrap from the real last one.
- $last=@((State).ids)[-1];for($n=0;(State).current -ne $last -and $n -lt 10;$n++){[RecoverTest]::NativeDesktop(0x27);Pump 700};Pump 1500
- Check 'The last Windows desktop is current before global workspace cycling' ((State).current -eq $last)
+  # Five workspaces show; go to the last one with the cycle key, then wrap from it.
+  $last=@((State).ids)[-1];for($n=0;(State).current -ne $last -and $n -lt 10;$n++){[RecoverTest]::Shortcut(0x7a);Pump 1200}
+ Check 'The last workspace is shown before global workspace cycling' ((State).current -eq $last)
  $cycleForm=[Windows.Forms.Form]::new();$cycleForm.Text='Workspace cycle target';$cycleForm.SetBounds(220,190,520,340);$cycleForm.Show();$forms+=,$cycleForm;Pump 300
  $focused=$false;for($n=0;-not $focused -and $n -lt 3;$n++){$focused=[RecoverTest]::SetForegroundWindow($cycleForm.Handle);if(-not $focused){Pump 500}}
  Check 'An external fixture is focused before global workspace cycling' $focused
@@ -252,10 +242,6 @@ try {
  [void][RecoverTest]::PostMessage($settings,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
  Check 'Workspace cycle returns to the fourth desktop before native-navigation regression' (Select-Desktop 3)
  Pump 1500
- # A native shortcut outside Omarchy Overlay must update the bar as well.
- [RecoverTest]::NativeDesktop(0x25)
- Check 'External Windows desktop switch is observed' (Wait-Current ((State).ids[2]))
- Pump 700;Check 'Bar follows an external desktop switch' ([RecoverTest]::OnCurrent([RecoverTest]::Bar()))
  # The first workspace cell follows MENU, whose width follows the bar font, so walk right until it is
  # hit instead of clicking a fixed x. A click that lands on MENU opens the menu; close it afterwards.
  $bar=[RecoverTest]::Bar();$first=$false
@@ -298,14 +284,5 @@ try {
  if([RecoverTest]::AboutDialog() -ne [IntPtr]::Zero){[void][RecoverTest]::PostMessage([RecoverTest]::AboutDialog(),0x10,[IntPtr]::Zero,[IntPtr]::Zero);Pump 300}
  if($null -ne $app -and -not $app.HasExited){Stop-App $app}
  foreach($form in $forms){$form.Close();$form.Dispose()}
- # Remove only desktops created by this test, then return to the original one.
- foreach($id in $created){
-  $state=State;$index=[Array]::IndexOf([object[]]$state.ids,$id)
-  if($index -ge 0){
-   for($tries=0;$tries -lt 20 -and (State).current -ne $id;$tries++){$state=State;$at=[Array]::IndexOf([object[]]$state.ids,$state.current);[RecoverTest]::NativeDesktop($(if($index -lt $at){0x25}else{0x27}));Pump 700}
-   if((State).current -eq $id){[RecoverTest]::NativeDesktop(0x73);Pump 1100}
-  }
- }
- if($null -ne $originalDesktop){for($tries=0;$tries -lt 20 -and (State).current -ne $originalDesktop;$tries++){$state=State;$index=[Array]::IndexOf([object[]]$state.ids,$originalDesktop);$at=[Array]::IndexOf([object[]]$state.ids,$state.current);if($index -lt 0){break};[RecoverTest]::NativeDesktop($(if($index -lt $at){0x25}else{0x27}));Pump 700}}
  $results|ConvertTo-Json -Depth 8|Set-Content -Encoding UTF8 (Join-Path $root 'workspaces-result.json')
 }

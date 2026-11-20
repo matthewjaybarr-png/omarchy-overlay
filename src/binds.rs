@@ -228,7 +228,7 @@ mod tests {
             assert_eq!(find(key), None, "{key}");
         }
         assert!(matches!(find("Super+Backspace"), Some(Command::Action(_))));
-        // Windows keeps Super+Ctrl+D (New desktop): workspaces are Windows desktops.
+        // Windows keeps Super+Ctrl+D (New desktop).
         assert_eq!(find("Super+Ctrl+D"), None);
         // Opacity toggles are off by default.
         assert_eq!(find("Super+Alt+T"), None);

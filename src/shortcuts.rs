@@ -356,6 +356,12 @@ pub const ACTIONS: &[Action] = &[
         key: "Win+S",
         shift: true,
     },
+    Action {
+        id: "pop-window",
+        label: "Pop window out (float and keep on top)",
+        key: "O",
+        shift: false,
+    },
 ];
 // Keep the existing workspace-cycle WM_HOTKEY slot (38) stable for recovery/tests.
 pub fn action_slot(index: usize) -> usize {
