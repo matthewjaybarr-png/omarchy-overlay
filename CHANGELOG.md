@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- In a winget install, **Make this folder portable** now warns that the next
+  `winget upgrade` deletes the portable profile, and saves only if you confirm.
+
 ## 0.4.1
 
 - Omarchy Overlay is now licensed under the GPL-3.0 (GPL-3.0-only). Releases up to
