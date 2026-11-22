@@ -28,8 +28,8 @@ Admin on your own PC when its keys must also work in apps running as administrat
 
 ## What it does
 
-- **Tiles windows:** main-stack, columns, rows, grid, dwindle and a scrolling
-  layout inspired by Niri. You can resize windows by dragging their shared edges.
+- **Tiles windows:** main-stack, columns, rows, grid, dwindle, a scrolling
+  layout inspired by Niri, centered main for wide monitors and monocle. You can resize windows by dragging their shared edges.
 - **Super keys:** an app grid, a command menu, a keybind list and window
   actions, defined in `config\binds.conf`.
 - **Top bar:** ten workspaces of its own, the active app, a clock,
@@ -349,7 +349,7 @@ Used in binds.conf and menu.json.
 | `workspace <1-10>` | Shows that workspace |
 | `move-to-workspace <1-10>` | Moves the focused window to that workspace and goes there |
 | `move-to-workspace-silent <1-10>` | Moves the focused window to that workspace and stays |
-| `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling` |
+| `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling`, `centered`, `monocle` |
 | `theme <name>` | Switches theme, for example `theme neon-ridge` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |
 | `action <id>` | Runs a window action, for example `action close-window` |

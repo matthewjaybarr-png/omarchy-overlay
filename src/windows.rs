@@ -2666,6 +2666,8 @@ impl App {
                 "columns" => ((area.w - 2 * gap) / (320 + gap).max(1)).max(1) as usize,
                 "rows" => max_stack,
                 "grid" => layout::grid_capacity(*area, gap),
+                "centered" => 2 * max_stack + 1,
+                "monocle" => usize::MAX,
                 _ => max_stack + 1,
             };
             let count = group.len().min(maximum);
@@ -2850,7 +2852,24 @@ impl App {
                 }
             })
             .collect();
-        if let Some(next) = layout::directional(&rects, index, dx, dy) {
+        // Monocle stacks a monitor's windows on top of each other: up/down steps through them.
+        let monitor = MonitorFromWindow(current as HWND, MONITOR_DEFAULTTONEAREST);
+        let pile: Vec<usize> = if dy != 0 && self.layout_for_monitor(monitor) == "monocle" {
+            (0..windows.len())
+                .filter(|i| {
+                    MonitorFromWindow(windows[*i] as HWND, MONITOR_DEFAULTTONEAREST) == monitor
+                })
+                .collect()
+        } else {
+            vec![]
+        };
+        let next = match pile.iter().position(|i| *i == index) {
+            Some(at) if pile.len() > 1 => {
+                Some(pile[(at + if dy > 0 { 1 } else { pile.len() - 1 }) % pile.len()])
+            }
+            _ => layout::directional(&rects, index, dx, dy),
+        };
+        if let Some(next) = next {
             let destination = windows[next];
             if swap {
                 // Swapping order across monitors would not move either window; keep it local.

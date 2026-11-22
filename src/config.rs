@@ -198,16 +198,7 @@ impl Config {
         if !(1..=4).contains(&self.scrolling_columns) {
             return Err("Scrolling columns must be between 1 and 4.".into());
         }
-        if ![
-            "main-stack",
-            "columns",
-            "rows",
-            "grid",
-            "dwindle",
-            "scrolling",
-        ]
-        .contains(&self.layout.as_str())
-        {
+        if !crate::commands::LAYOUTS.iter().any(|(name, _)| *name == self.layout) {
             return Err("Unsupported layout.".into());
         }
         if self.rules.len() > 256

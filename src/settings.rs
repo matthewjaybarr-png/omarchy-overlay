@@ -93,14 +93,10 @@ impl Panel {
         combo(
             hwnd,
             60,
-            &[
-                "Main + stack",
-                "Balanced columns",
-                "Rows",
-                "Grid",
-                "Dwindle",
-                "Scrolling — Niri-inspired",
-            ],
+            &crate::workspace_layouts::LAYOUTS
+                .iter()
+                .map(|(_, label)| *label)
+                .collect::<Vec<_>>(),
             94,
             48,
             205,
@@ -418,14 +414,10 @@ impl Panel {
         for rule in &config.rules {
             SendMessageW(list, LB_ADDSTRING, 0, wide(&rule.label()).as_ptr() as isize);
         }
-        let layout = match config.layout.as_str() {
-            "columns" => 1,
-            "rows" => 2,
-            "grid" => 3,
-            "dwindle" => 4,
-            "scrolling" => 5,
-            _ => 0,
-        };
+        let layout = crate::workspace_layouts::LAYOUTS
+            .iter()
+            .position(|(name, _)| *name == config.layout)
+            .unwrap_or(0);
         SendMessageW(GetDlgItem(self.hwnd, 60), CB_SETCURSEL, layout, 0);
         ui_choices::select(self.hwnd, 61, &config.gap.to_string());
         ui_choices::select(self.hwnd, 62, &format!("{:.0}", config.main_ratio * 100.0));
@@ -553,14 +545,9 @@ impl Panel {
             .ok()
             .filter(|v| (25..=75).contains(v))
             .ok_or("Main pane must be 25–75 percent.")?;
-        let layout = match SendMessageW(GetDlgItem(self.hwnd, 60), CB_GETCURSEL, 0, 0) {
-            1 => "columns",
-            2 => "rows",
-            3 => "grid",
-            4 => "dwindle",
-            5 => "scrolling",
-            _ => "main-stack",
-        };
+        let layout = crate::workspace_layouts::LAYOUTS
+            .get(SendMessageW(GetDlgItem(self.hwnd, 60), CB_GETCURSEL, 0, 0) as usize)
+            .map_or("main-stack", |(name, _)| name);
         let modifiers = match SendMessageW(GetDlgItem(self.hwnd, 63), CB_GETCURSEL, 0, 0) {
             1 => "WinAlt",
             2 => "Alt",

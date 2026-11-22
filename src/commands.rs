@@ -148,6 +148,8 @@ pub const LAYOUTS: &[(&str, &str)] = &[
     ("grid", "Grid"),
     ("dwindle", "Dwindle"),
     ("scrolling", "Scrolling"),
+    ("centered", "Centered main"),
+    ("monocle", "Monocle"),
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
