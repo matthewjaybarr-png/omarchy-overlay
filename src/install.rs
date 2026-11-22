@@ -63,6 +63,12 @@ pub fn is_installed(exe: &Path) -> bool {
     })
 }
 
+/// winget keeps a portable app in `...\Microsoft\WinGet\Packages\<id>` and replaces that
+/// whole folder on upgrade, so nothing the user writes may live beside the exe there.
+pub fn winget_portable(exe: &Path) -> bool {
+    exe.to_string_lossy().to_ascii_lowercase().contains(r"\microsoft\winget\packages\")
+}
+
 /// The Admin release ships an `edition-admin` file beside the exe.
 pub fn admin_marker(exe: &Path) -> bool {
     exe.parent().is_some_and(|p| p.join("edition-admin").is_file())
@@ -391,6 +397,13 @@ mod tests {
         assert_eq!(tray_install_items(true, false), (true, false));
         assert_eq!(tray_install_items(true, true), (false, true));
         assert_eq!(tray_install_items(false, true), (false, true));
+    }
+    #[test]
+    fn winget_package_folder_is_recognised() {
+        let local = r"C:\Users\a\AppData\Local\Microsoft\WinGet\Packages\MattBarr.OmarchyOverlay__DefaultSource\OmarchyOverlay.exe";
+        assert!(winget_portable(Path::new(local)));
+        assert!(!winget_portable(Path::new(r"C:\Users\a\scoop\apps\omarchy-overlay\current\OmarchyOverlay.exe")));
+        assert!(!winget_portable(Path::new(r"D:\Tools\OmarchyOverlay\OmarchyOverlay.exe")));
     }
     #[test]
     fn system_tools_resolve_in_system32_never_beside_the_exe() {

@@ -94,6 +94,8 @@ def build(exe: Path, out: Path, pictures: list[tuple[Path, str]] = ()) -> list[P
                 for source, name in pictures:
                     z.write(source, name, zipfile.ZIP_STORED)
         zips.append(path)
+    sums = ''.join(f'{hashlib.sha256(z.read_bytes()).hexdigest()}  {z.name}\n' for z in zips)
+    (out / 'SHA256SUMS.txt').write_text(sums)
     return zips
 
 
@@ -119,6 +121,8 @@ def selftest() -> None:
         readme = lambda z: zipfile.ZipFile(z).read('README.txt').decode()
         assert 'Standard' in readme(standard) and 'INSTALL.cmd' not in readme(standard)
         assert 'INSTALL.cmd' in readme(admin)
+        sums = (temp / 'dist' / 'SHA256SUMS.txt').read_text().splitlines()
+        assert sums == [f'{hashlib.sha256(z.read_bytes()).hexdigest()}  {z.name}' for z in (standard, admin)], sums
         picture = temp / 'a.jpg'
         picture.write_bytes(b'jpg')
         _, admin = build(exe, temp / 'dist', [(picture, 'themes/nord/backgrounds/nord-a.jpg')])

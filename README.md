@@ -24,7 +24,7 @@ focused window.*
 
 *The app grid (**Super + Alt + Space**): type to filter, arrow keys move in the grid.*
 
-**Status: early.** This is version 0.4.0. It comes in two editions built from the
+**Status: early.** This is version 0.4.1. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
 Pick Standard on a PC where you are not an administrator, or to try it out. Pick
@@ -47,11 +47,20 @@ Admin on your own PC when its keys must also work in apps running as administrat
 
 ## Getting started
 
-1. Download `OmarchyOverlay-<version>-standard.zip` from the
-   [latest release](https://github.com/matthewjaybarr-png/omarchy-overlay/releases/latest)
-   and unzip it anywhere. No installer and no administrator rights. (Or build it; see below.)
+1. Install it in one of three ways. None needs administrator rights.
+   - **Scoop:**
+     `scoop bucket add omarchy-overlay https://github.com/matthewjaybarr-png/omarchy-overlay`,
+     then `scoop install omarchy-overlay`. It adds **Omarchy Overlay** to the Start menu
+     and keeps your `config` folder across updates.
+   - **winget:** `winget install MattBarr.OmarchyOverlay`, then run `omarchy-overlay`
+     (from Win + R or a terminal). Until the package is in winget's catalog, use
+     Scoop or the zip.
+   - **Zip:** download `OmarchyOverlay-<version>-standard.zip` from the
+     [latest release](https://github.com/matthewjaybarr-png/omarchy-overlay/releases/latest)
+     and unzip it anywhere. `SHA256SUMS.txt` on the release page has each zip's
+     checksum. (Or build it; see below.)
 2. Run `OmarchyOverlay.exe`. The menu opens at start. The exe is not code-signed yet,
-   so Windows SmartScreen may warn the first time: choose **More info > Run anyway**.
+   so Windows may warn the first time: choose **More info > Run anyway**, or **Run**.
 3. Press **Super + Space** for the menu, **Super + Alt + Space** for the app grid,
    **Super + K** for every keybind and **Super + Escape** for the System menu.
 4. To give every key back to Windows, choose **Trigger > Toggle > Pause Omarchy Overlay keys**.
@@ -201,8 +210,9 @@ open the site in Chrome, then **⋮ > Cast, save and share > Install page as app
 ## Config files
 
 Omarchy Overlay reads these files from the `config` folder beside `OmarchyOverlay.exe`
-(the installed Admin edition uses `%LOCALAPPDATA%\OmarchyOverlay\config`, so you can
-edit them without administrator rights).
+(the installed Admin edition and a winget install use
+`%LOCALAPPDATA%\OmarchyOverlay\config` instead: the Admin folder needs administrator
+rights to change, and winget replaces its folder on every upgrade).
 Every file is optional. Omarchy Overlay writes only `config\examples` (refreshed at each
 start) and never changes your copies. To change a file, copy it from
 `config\examples` into `config`, edit it in Notepad, then choose **Update >
@@ -393,7 +403,7 @@ them in a libvirt Windows guest through `scripts/vm.py`. Set `OVERLAY_VM`,
 ### Releases
 
 After the release build, `python3 scripts/package.py` writes two zips to `dist\`
-from the same exe:
+from the same exe, and `SHA256SUMS.txt` with their checksums:
 
 - `OmarchyOverlay-<version>-standard.zip`: the exe, `RECOVER.cmd`, `fonts\` and
   `config\examples\`. Unzip and run; no administrator rights.
@@ -407,4 +417,7 @@ checks it, and uninstalls it (it runs elevated, so the VM user must be an admini
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Copyright (c) 2026 Matt Barr. GPL-3.0-only: you may share and change Omarchy
+Overlay under the GNU General Public License version 3. See [LICENSE](LICENSE).
+Releases up to 0.4.0 were published under the MIT License.
+The stock Omarchy themes and backgrounds stay under Omarchy's MIT License.
