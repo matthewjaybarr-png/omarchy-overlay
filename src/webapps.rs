@@ -190,8 +190,14 @@ mod tests {
         use std::path::Path;
         let chrome = Path::new("C:/Users/m/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Chrome Apps/Claude.lnk");
         assert!(browser_app(chrome, ""));
-        assert!(browser_app(Path::new("explorer.exe"), "\"shell:AppsFolder\\Chrome._crx_fmpn\""));
-        assert!(!browser_app(Path::new("explorer.exe"), "\"shell:AppsFolder\\AnthropicPBC.Claude_x!Claude\""));
+        assert!(browser_app(
+            Path::new("explorer.exe"),
+            "\"shell:AppsFolder\\Chrome._crx_fmpn\""
+        ));
+        assert!(!browser_app(
+            Path::new("explorer.exe"),
+            "\"shell:AppsFolder\\AnthropicPBC.Claude_x!Claude\""
+        ));
         // (name, web app)
         let entries = vec![
             ("ChatGPT".to_string(), true),
@@ -203,8 +209,22 @@ mod tests {
             ("Notepad".to_string(), false),
             ("Notepad".to_string(), false),
         ];
-        let kept = dedupe(entries, |e| e.0.as_str(), |e| e.1, |e| e.0.push_str(" (web app)"));
+        let kept = dedupe(
+            entries,
+            |e| e.0.as_str(),
+            |e| e.1,
+            |e| e.0.push_str(" (web app)"),
+        );
         let names: Vec<&str> = kept.iter().map(|e| e.0.as_str()).collect();
-        assert_eq!(names, ["ChatGPT", "Claude", "Claude (web app)", "Claude Code", "Notepad"]);
+        assert_eq!(
+            names,
+            [
+                "ChatGPT",
+                "Claude",
+                "Claude (web app)",
+                "Claude Code",
+                "Notepad"
+            ]
+        );
     }
 }

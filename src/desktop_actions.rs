@@ -112,15 +112,9 @@ impl App {
         }
     }
     pub(super) unsafe fn set_layout(&mut self, layout: &str) {
-        if ![
-            "main-stack",
-            "columns",
-            "rows",
-            "grid",
-            "dwindle",
-            "scrolling",
-        ]
-        .contains(&layout)
+        if !crate::commands::LAYOUTS
+            .iter()
+            .any(|(name, _)| *name == layout)
         {
             return;
         }
@@ -167,14 +161,9 @@ impl App {
             },
             MONITOR_DEFAULTTONEAREST,
         ));
-        let next = match mode.as_str() {
-            "main-stack" => "columns",
-            "columns" => "rows",
-            "rows" => "grid",
-            "grid" => "dwindle",
-            "dwindle" => "scrolling",
-            _ => "main-stack",
-        };
+        let names = crate::commands::LAYOUTS;
+        let at = names.iter().position(|(name, _)| *name == mode);
+        let next = names[at.map_or(0, |i| (i + 1) % names.len())].0;
         self.set_layout(next);
     }
     pub(super) unsafe fn rebalance(&mut self) {

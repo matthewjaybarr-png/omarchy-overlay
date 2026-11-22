@@ -174,12 +174,24 @@ mod tests {
             "..\\..\\PortableApps\\Editor\\editor.exe"
         );
         assert_eq!(
-            relative_to_settings(settings, "G:\\Omarchy Overlay\\OVERLAY SETTINGS\\wallpapers\\a.png"),
+            relative_to_settings(
+                settings,
+                "G:\\Omarchy Overlay\\OVERLAY SETTINGS\\wallpapers\\a.png"
+            ),
             "wallpapers\\a.png"
         );
-        assert_eq!(relative_to_settings(settings, "C:\\Windows\\notepad.exe"), "C:\\Windows\\notepad.exe");
-        assert_eq!(relative_to_settings(settings, "tools\\x.exe"), "tools\\x.exe");
-        assert_eq!(relative_to_settings(Path::new("relative"), "G:\\x.exe"), "G:\\x.exe");
+        assert_eq!(
+            relative_to_settings(settings, "C:\\Windows\\notepad.exe"),
+            "C:\\Windows\\notepad.exe"
+        );
+        assert_eq!(
+            relative_to_settings(settings, "tools\\x.exe"),
+            "tools\\x.exe"
+        );
+        assert_eq!(
+            relative_to_settings(Path::new("relative"), "G:\\x.exe"),
+            "G:\\x.exe"
+        );
         let app = Application {
             id: "a".into(),
             name: "a".into(),

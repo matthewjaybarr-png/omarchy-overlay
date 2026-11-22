@@ -113,7 +113,9 @@ impl Engine {
         let layered = style & WS_EX_LAYERED != 0;
         let (mut color, mut alpha, mut flags) = (0, 255, LWA_ALPHA);
         if layered && GetLayeredWindowAttributes(hwnd, &mut color, &mut alpha, &mut flags) == 0 {
-            return Err("This app manages its own transparency; Omarchy Overlay leaves it alone.".into());
+            return Err(
+                "This app manages its own transparency; Omarchy Overlay leaves it alone.".into(),
+            );
         }
         let mut pid = 0;
         GetWindowThreadProcessId(hwnd, &mut pid);

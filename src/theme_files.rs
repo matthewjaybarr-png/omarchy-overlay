@@ -25,12 +25,40 @@ pub struct Theme {
 
 /// The colors.toml keys Omarchy defines; any other key is ignored.
 const KNOWN: &[&str] = &[
-    "accent", "selection", "muted", "background", "dark_background", "darker_background",
-    "lighter_background", "foreground", "dark_foreground", "light_foreground",
-    "bright_foreground", "cursor", "selection_foreground", "selection_background",
-    "red", "yellow", "orange", "green", "cyan", "blue", "magenta", "brown", "black", "white",
-    "bright_red", "bright_yellow", "bright_orange", "bright_green", "bright_cyan",
-    "bright_blue", "bright_magenta", "bright_brown", "bright_black", "bright_white",
+    "accent",
+    "selection",
+    "muted",
+    "background",
+    "dark_background",
+    "darker_background",
+    "lighter_background",
+    "foreground",
+    "dark_foreground",
+    "light_foreground",
+    "bright_foreground",
+    "cursor",
+    "selection_foreground",
+    "selection_background",
+    "red",
+    "yellow",
+    "orange",
+    "green",
+    "cyan",
+    "blue",
+    "magenta",
+    "brown",
+    "black",
+    "white",
+    "bright_red",
+    "bright_yellow",
+    "bright_orange",
+    "bright_green",
+    "bright_cyan",
+    "bright_blue",
+    "bright_magenta",
+    "bright_brown",
+    "bright_black",
+    "bright_white",
 ];
 
 #[cfg(test)]
@@ -185,15 +213,27 @@ mod tests {
         let list: Vec<PathBuf> = ["a.jpg", "b.jpg", "c.jpg"].map(PathBuf::from).into();
         assert_eq!(next_background(&[], None), None);
         assert_eq!(next_background(&list, None), Some("a.jpg".into()));
-        assert_eq!(next_background(&list, Some(Path::new("x.jpg"))), Some("a.jpg".into()));
-        assert_eq!(next_background(&list, Some(Path::new("a.jpg"))), Some("b.jpg".into()));
-        assert_eq!(next_background(&list, Some(Path::new("c.jpg"))), Some("a.jpg".into()));
+        assert_eq!(
+            next_background(&list, Some(Path::new("x.jpg"))),
+            Some("a.jpg".into())
+        );
+        assert_eq!(
+            next_background(&list, Some(Path::new("a.jpg"))),
+            Some("b.jpg".into())
+        );
+        assert_eq!(
+            next_background(&list, Some(Path::new("c.jpg"))),
+            Some("a.jpg".into())
+        );
     }
     #[test]
     fn accent_values_use_abgr_and_argb() {
         // Tokyo Night accent #7aa2f7 as a COLORREF.
         let v = accent_values(0x00f7a27a);
-        assert_eq!(v, [0xFFf7a27a, 0xC47aa2f7, 0xC47aa2f7, 0xFFf7a27a, 0xFFf7a27a]);
+        assert_eq!(
+            v,
+            [0xFFf7a27a, 0xC47aa2f7, 0xC47aa2f7, 0xFFf7a27a, 0xFFf7a27a]
+        );
     }
     #[test]
     fn every_built_in_theme_parses() {
@@ -240,7 +280,11 @@ mod tests {
     #[test]
     fn colors_toml_files_load_and_mistakes_name_the_line() {
         let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-        let neon = crate::omarchy_themes::FILES.iter().find(|(id, _)| *id == "neon-ridge").unwrap().1;
+        let neon = crate::omarchy_themes::FILES
+            .iter()
+            .find(|(id, _)| *id == "neon-ridge")
+            .unwrap()
+            .1;
         let t = parse("my-neon", neon).unwrap();
         assert_eq!(t.label, "My Neon");
         assert_eq!(t.accent, 0x38bdfa);

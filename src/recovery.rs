@@ -3,7 +3,11 @@ pub(super) const INSTANCE: &str = "Local\\OmarchyOverlay.0.1";
 pub(super) struct Lock(HANDLE);
 impl Lock {
     pub(super) unsafe fn acquire() -> Result<Self, String> {
-        let handle = CreateMutexW(null(), 0, wide("Local\\OmarchyOverlay.Recovery.v1").as_ptr());
+        let handle = CreateMutexW(
+            null(),
+            0,
+            wide("Local\\OmarchyOverlay.Recovery.v1").as_ptr(),
+        );
         if handle.is_null() {
             return Err("Cannot create the recovery lock.".into());
         }

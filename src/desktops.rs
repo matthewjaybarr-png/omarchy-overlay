@@ -35,7 +35,9 @@ pub fn workspace_id(index: usize) -> [u8; 16] {
 /// The workspaces to show: Omarchy's five, plus any further one holding windows or in use.
 /// Bit n of `occupied` is workspace n + 1.
 pub fn shown(occupied: u16, current: usize) -> Snapshot {
-    let count = 5.max(16 - occupied.leading_zeros() as usize).max(current + 1);
+    let count = 5
+        .max(16 - occupied.leading_zeros() as usize)
+        .max(current + 1);
     Snapshot {
         ids: (0..count).map(workspace_id).collect(),
         current,

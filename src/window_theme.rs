@@ -192,7 +192,11 @@ impl Engine {
         }
         for &(a, v) in &desired {
             let stale = if WRITE_ONLY.contains(&a) {
-                let before = self.originals[&key].before.iter().find(|o| o.0 == a).map_or(v, |o| o.1);
+                let before = self.originals[&key]
+                    .before
+                    .iter()
+                    .find(|o| o.0 == a)
+                    .map_or(v, |o| o.1);
                 crate::frame_colors::write_only_stale(previous.as_deref(), a, before, v)
             } else {
                 read(h, a) != Some(v)

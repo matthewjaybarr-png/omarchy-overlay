@@ -46,7 +46,10 @@ mod tests {
         let (sent, received) = std::sync::mpsc::channel();
         let ui = std::thread::spawn(move || exclusive(|| {}, || sent.send(()).unwrap()));
         std::thread::sleep(std::time::Duration::from_millis(100));
-        assert!(received.try_recv().is_err(), "ran while a worker held the lock");
+        assert!(
+            received.try_recv().is_err(),
+            "ran while a worker held the lock"
+        );
         drop(running);
         ui.join().unwrap();
         assert!(received.try_recv().is_ok());

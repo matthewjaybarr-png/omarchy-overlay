@@ -811,7 +811,10 @@ impl DisplayMode {
 impl Module {
     /// The module with this `name()`, for items that have an icon/text mode.
     pub fn from_key(key: &str) -> Option<Module> {
-        DISPLAY_MODULES.iter().map(|&(m, _)| m).find(|m| m.name() == key)
+        DISPLAY_MODULES
+            .iter()
+            .map(|&(m, _)| m)
+            .find(|m| m.name() == key)
     }
 }
 impl BarConfig {
@@ -871,7 +874,9 @@ mod style_tests {
         }
         c.set_all_display(DisplayMode::Icon);
         let d = BarConfig::default();
-        assert!(DISPLAY_MODULES.iter().all(|&(m, _)| c.display(m) == d.display(m)));
+        assert!(DISPLAY_MODULES
+            .iter()
+            .all(|&(m, _)| c.display(m) == d.display(m)));
         c.set_all_display(DisplayMode::Text);
         assert!(DISPLAY_MODULES.iter().all(|&(m, _)| !c.display(m).icon()));
     }
@@ -897,11 +902,21 @@ mod style_tests {
     }
     #[test]
     fn layout_reset_keeps_look_and_clock() {
-        let mut c = BarConfig { left: vec![], center: vec![], right: vec![Module::Clock], task_buttons: 7, clock_format: "24h".into(), ..Default::default() };
+        let mut c = BarConfig {
+            left: vec![],
+            center: vec![],
+            right: vec![Module::Clock],
+            task_buttons: 7,
+            clock_format: "24h".into(),
+            ..Default::default()
+        };
         c.set_all_display(DisplayMode::Text);
         c.reset_layout();
         let d = BarConfig::default();
-        assert_eq!((c.left.clone(), c.center.clone(), c.right.clone()), (d.left, d.center, d.right));
+        assert_eq!(
+            (c.left.clone(), c.center.clone(), c.right.clone()),
+            (d.left, d.center, d.right)
+        );
         assert_eq!(c.task_buttons, d.task_buttons);
         assert_eq!(c.all_display(), Some(DisplayMode::Text));
         assert_eq!(c.clock_format, "24h");

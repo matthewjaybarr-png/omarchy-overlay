@@ -225,7 +225,11 @@ unsafe fn theme_tooltip(tooltip: HWND) {
     if tooltip.is_null() {
         return;
     }
-    let name = if theme::current().dark { "DarkMode_Explorer" } else { "Explorer" };
+    let name = if theme::current().dark {
+        "DarkMode_Explorer"
+    } else {
+        "Explorer"
+    };
     windows_sys::Win32::UI::Controls::SetWindowTheme(tooltip, wide(name).as_ptr(), null());
 }
 pub(super) unsafe fn appearance(opacity: u8) {
@@ -462,7 +466,9 @@ impl State {
             let icon = mode.icon() && module != Module::Divider;
             let tooltip = match module {
                 Module::Start => "Windows Start menu".into(),
-                Module::Launcher => "Search installed apps\nOpen the Omarchy Overlay app picker".into(),
+                Module::Launcher => {
+                    "Search installed apps\nOpen the Omarchy Overlay app picker".into()
+                }
                 Module::Menu | Module::Controls => {
                     "Omarchy Overlay menu\nTiling, apps, appearance, and Windows controls".into()
                 }

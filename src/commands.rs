@@ -51,7 +51,10 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("guide", "Open the Omarchy Overlay guide"),
     ("log", "Open the Omarchy Overlay log"),
     ("config-folder", "Open the config folder"),
-    ("releases-folder", "Show where Omarchy Overlay releases are kept"),
+    (
+        "releases-folder",
+        "Show where Omarchy Overlay releases are kept",
+    ),
     (
         "restore-desktop",
         "Restore every window to its original place",
@@ -148,6 +151,8 @@ pub const LAYOUTS: &[(&str, &str)] = &[
     ("grid", "Grid"),
     ("dwindle", "Dwindle"),
     ("scrolling", "Scrolling"),
+    ("centered", "Centered main"),
+    ("monocle", "Monocle"),
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -365,7 +370,10 @@ impl Command {
                             | "grow-main-pane"
                     )
             }
-            Self::Layout(_) | Self::Workspace(_) | Self::MoveToWorkspace(_) | Self::MoveSilently(_) => true,
+            Self::Layout(_)
+            | Self::Workspace(_)
+            | Self::MoveToWorkspace(_)
+            | Self::MoveSilently(_) => true,
             _ => false,
         }
     }
@@ -382,7 +390,10 @@ mod tests {
         assert_eq!(parse("workspace 9"), Ok(Command::Workspace(9)));
         assert_eq!(parse("workspace 10"), Ok(Command::Workspace(10)));
         assert!(parse("workspace 11").is_err());
-        assert_eq!(parse("move-to-workspace-silent 2"), Ok(Command::MoveSilently(2)));
+        assert_eq!(
+            parse("move-to-workspace-silent 2"),
+            Ok(Command::MoveSilently(2))
+        );
         assert_eq!(
             parse("settings sound"),
             Ok(Command::Settings("sound".into()))

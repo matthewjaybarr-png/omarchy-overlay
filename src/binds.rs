@@ -210,8 +210,14 @@ mod tests {
         assert_eq!(find("Super+X"), Some(Command::Builtin("cut")));
         assert_eq!(find("Super+A"), Some(Command::Builtin("select-all")));
         assert_eq!(find("Super+M"), Some(Command::Builtin("minimize-window")));
-        assert_eq!(find("Super+Ctrl+Tab"), Some(Command::Builtin("former-desktop")));
-        assert_eq!(find("Super+Shift+Space"), Some(Command::Builtin("toggle-bar")));
+        assert_eq!(
+            find("Super+Ctrl+Tab"),
+            Some(Command::Builtin("former-desktop"))
+        );
+        assert_eq!(
+            find("Super+Shift+Space"),
+            Some(Command::Builtin("toggle-bar"))
+        );
         assert_eq!(find("Super+Ctrl+Space"), Some(Command::Page("background")));
         assert!(matches!(find("Super+W"), Some(Command::Action(_))));
         assert_eq!(find("Super+W"), find("Super+Q"));
@@ -219,12 +225,21 @@ mod tests {
             find("Super+Shift+A"),
             Some(Command::WebApp("ChatGPT".into()))
         );
-        assert_eq!(find("Super+Shift+S"), Some(Command::WebApp("Google Maps".into())));
+        assert_eq!(
+            find("Super+Shift+S"),
+            Some(Command::WebApp("Google Maps".into()))
+        );
         assert_eq!(find("Super+3"), Some(Command::Workspace(3)));
         assert_eq!(find("Super+Ctrl+O"), Some(Command::Menu("toggle".into())));
         assert_eq!(find("Super+Ctrl+Alt+D"), Some(Command::App("calendar")));
         // Personal keys that are not Omarchy's are gone; Super+E is Windows' Explorer again.
-        for key in ["Super+E", "Super+Z", "Super+B", "Super+Alt+W", "Super+Shift+V"] {
+        for key in [
+            "Super+E",
+            "Super+Z",
+            "Super+B",
+            "Super+Alt+W",
+            "Super+Shift+V",
+        ] {
             assert_eq!(find(key), None, "{key}");
         }
         assert!(matches!(find("Super+Backspace"), Some(Command::Action(_))));
@@ -236,7 +251,10 @@ mod tests {
         for bind in &binds {
             assert!(bind.key.modifiers & SUPER != 0, "{}", bind.key.label());
             if let Command::WebApp(name) = &bind.command {
-                assert!(apps.iter().any(|a| a.name == *name), "webapps.json lacks {name}");
+                assert!(
+                    apps.iter().any(|a| a.name == *name),
+                    "webapps.json lacks {name}"
+                );
             }
         }
     }

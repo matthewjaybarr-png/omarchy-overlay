@@ -19,6 +19,8 @@ pub const LAYOUTS: &[(&str, &str)] = &[
     ("grid", "Grid"),
     ("dwindle", "Dwindle"),
     ("scrolling", "Scrolling — Niri-inspired"),
+    ("centered", "Centered main"),
+    ("monocle", "Monocle — one at a time"),
 ];
 impl Preferences {
     pub fn validate(&self) -> Result<(), String> {

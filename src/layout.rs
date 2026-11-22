@@ -37,17 +37,67 @@ pub fn tile(area: Rect, count: usize, gap: i32, ratio: f64) -> Vec<Rect> {
         w: left.max(1),
         ..inner
     }];
-    let n = (count - 1) as i32;
-    let stack_gap = gap.min((inner.h / n - 1).max(0));
-    let available = (inner.h - stack_gap * (n - 1)).max(n);
-    for i in 0..n {
-        let start = available * i / n;
-        let end = available * (i + 1) / n;
-        result.push(Rect {
+    result.extend(column(
+        Rect {
             x: inner.x + left + gap,
-            y: inner.y + start + i * stack_gap,
             w: (inner.w - left - gap).max(1),
-            h: end - start,
+            ..inner
+        },
+        count - 1,
+        gap,
+    ));
+    result
+}
+
+/// Splits one column into `n` rows of equal height.
+fn column(space: Rect, n: usize, gap: i32) -> Vec<Rect> {
+    let n = n as i32;
+    if n < 1 {
+        return vec![];
+    }
+    let gap = gap.min((space.h / n - 1).max(0));
+    let available = (space.h - gap * (n - 1)).max(n);
+    (0..n)
+        .map(|i| {
+            let start = available * i / n;
+            Rect {
+                y: space.y + start + i * gap,
+                h: available * (i + 1) / n - start,
+                ..space
+            }
+        })
+        .collect()
+}
+
+/// Main pane in the middle, the rest shared between a right and a left column
+/// (second window right, third left, and so on). Two windows are main and stack.
+fn centered(area: Rect, inner: Rect, count: usize, gap: i32, ratio: f64) -> Vec<Rect> {
+    if count < 3 {
+        return tile(area, count, gap, ratio);
+    }
+    let main = ((inner.w - 2 * gap) as f64 * ratio.clamp(0.25, 0.75)).round() as i32;
+    let side = ((inner.w - 2 * gap - main) / 2).max(1);
+    let main = (inner.w - 2 * gap - 2 * side).max(1);
+    let right = column(
+        Rect {
+            x: inner.x + side + main + 2 * gap,
+            w: side,
+            ..inner
+        },
+        count / 2,
+        gap,
+    );
+    let left = column(Rect { w: side, ..inner }, (count - 1) / 2, gap);
+    let mut result = vec![Rect {
+        x: inner.x + side + gap,
+        w: main,
+        ..inner
+    }];
+    for i in 0..count - 1 {
+        result.push(if i % 2 == 0 {
+            right[i / 2]
+        } else {
+            left[i / 2]
         });
     }
     result
@@ -105,6 +155,13 @@ pub fn arrange(area: Rect, count: usize, gap: i32, ratio: f64, mode: &str) -> Ve
     };
     if count == 0 {
         return vec![];
+    }
+    if mode == "monocle" {
+        // Every window fills the monitor; the focused one is on top.
+        return vec![inner; count];
+    }
+    if mode == "centered" {
+        return centered(area, inner, count, gap, ratio);
     }
     if mode == "grid" {
         let cols = grid_columns(inner, count, gap);
@@ -388,6 +445,52 @@ mod tests {
         assert_eq!(directional(&rects, 2, 0, 1), Some(3));
         assert_eq!(directional(&rects, 2, -1, 0), Some(0));
         assert_eq!(directional(&rects, 0, -1, 0), None);
+    }
+    #[test]
+    fn centered_and_monocle_fill_the_area_without_overlap() {
+        let area = Rect {
+            x: -3440,
+            y: 0,
+            w: 3440,
+            h: 1400,
+        };
+        for count in 1..=7 {
+            let rects = arrange(area, count, 10, 0.5, "centered");
+            assert_eq!(rects.len(), count);
+            for (i, a) in rects.iter().enumerate() {
+                assert!(
+                    a.x >= area.x + 10 && a.x + a.w <= area.x + area.w - 10,
+                    "{count} {a:?}"
+                );
+                assert!(a.y >= area.y + 10 && a.y + a.h <= area.y + area.h - 10);
+                for b in &rects[i + 1..] {
+                    assert!(
+                        a.x + a.w <= b.x
+                            || b.x + b.w <= a.x
+                            || a.y + a.h <= b.y
+                            || b.y + b.h <= a.y,
+                        "{count}: {a:?} overlaps {b:?}"
+                    );
+                }
+            }
+            if count >= 3 {
+                // Main is in the middle: second window to its right, third to its left.
+                assert!(rects[1].x > rects[0].x && rects[2].x < rects[0].x);
+                assert_eq!(
+                    rects[0].x - area.x,
+                    area.x + area.w - rects[0].x - rects[0].w
+                );
+            }
+            let all = arrange(area, count, 10, 0.5, "monocle");
+            assert_eq!(all.len(), count);
+            assert!(all.iter().all(|r| *r
+                == Rect {
+                    x: -3430,
+                    y: 10,
+                    w: 3420,
+                    h: 1380
+                }));
+        }
     }
     #[test]
     fn handles_empty_and_small_work_areas() {

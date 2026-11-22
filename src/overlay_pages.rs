@@ -2016,12 +2016,16 @@ impl App {
             Some(undo) if undo.page == key => {
                 match key {
                     "background" => {
-                        if let Err(error) = appearance_effects::with_effects(|| appearance_effects::restore_wallpaper(&self.directory)) {
+                        if let Err(error) = appearance_effects::with_effects(|| {
+                            appearance_effects::restore_wallpaper(&self.directory)
+                        }) {
                             overlay::message(&error);
                         }
                     }
                     "windows-theme" => {
-                        if let Err(error) = appearance_effects::with_effects(|| windows_personalization::restore(&self.directory)) {
+                        if let Err(error) = appearance_effects::with_effects(|| {
+                            windows_personalization::restore(&self.directory)
+                        }) {
                             overlay::message(&error);
                         }
                     }
@@ -2062,9 +2066,13 @@ impl App {
             "background" => {
                 c.appearance_wallpaper.clear();
                 self.commit(c);
-                appearance_effects::with_effects(|| appearance_effects::restore_wallpaper(&self.directory))
+                appearance_effects::with_effects(|| {
+                    appearance_effects::restore_wallpaper(&self.directory)
+                })
             }
-            "windows-theme" => appearance_effects::with_effects(|| windows_personalization::restore(&self.directory)),
+            "windows-theme" => appearance_effects::with_effects(|| {
+                windows_personalization::restore(&self.directory)
+            }),
             "webapps" | "install-webapp" => {
                 self.webapps = crate::webapps::defaults();
                 self.save_webapps();
@@ -2150,7 +2158,9 @@ impl App {
             }
             "bar-display" => {
                 let (s, i) = self.bar_pick;
-                let (Some(&module), Some(mode)) = (self.config.bar.section(s).get(i), display_mode(value)) else {
+                let (Some(&module), Some(mode)) =
+                    (self.config.bar.section(s).get(i), display_mode(value))
+                else {
                     return false;
                 };
                 c.bar.module_display.insert(module, mode);
@@ -2255,23 +2265,30 @@ impl App {
                         let mut c = self.config.clone();
                         c.appearance_wallpaper.clear();
                         self.commit(c);
-                        appearance_effects::with_effects(|| appearance_effects::restore_wallpaper(&self.directory))
+                        appearance_effects::with_effects(|| {
+                            appearance_effects::restore_wallpaper(&self.directory)
+                        })
                     }
                     path => {
                         self.remember(key);
                         let mut path = PathBuf::from(path);
                         // 0.18: a picture from the version folder is copied into the settings
                         // folder first, so the profile never names a version folder or drive.
-                        if profile::settings().is_some() && !path.starts_with(self.profile_folder()) {
+                        if profile::settings().is_some() && !path.starts_with(self.profile_folder())
+                        {
                             if let Some(name) = path.file_name() {
                                 let copy = self.profile_folder().join("wallpapers").join(name);
-                                let _ = fs::create_dir_all(self.profile_folder().join("wallpapers"));
+                                let _ =
+                                    fs::create_dir_all(self.profile_folder().join("wallpapers"));
                                 if copy.exists() || fs::copy(&path, &copy).is_ok() {
                                     path = copy;
                                 }
                             }
                         }
-                        appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&self.directory, &path)).map(|()| {
+                        appearance_effects::with_effects(|| {
+                            appearance_effects::apply_wallpaper(&self.directory, &path)
+                        })
+                        .map(|()| {
                             let mut c = self.config.clone();
                             c.appearance_wallpaper = path
                                 .strip_prefix(self.profile_folder())
@@ -2488,11 +2505,13 @@ impl App {
             }
             "terminal-colors" => {
                 let result = match value {
-                    "apply" => {
-                        appearance_effects::apply_terminal(&self.directory, &self.config.theme).map(
-                            |()| "Added. Restart Windows Terminal to see the Omarchy Overlay profile.",
-                        )
-                    }
+                    "apply" => appearance_effects::apply_terminal(
+                        &self.directory,
+                        &self.config.theme,
+                    )
+                    .map(|()| {
+                        "Added. Restart Windows Terminal to see the Omarchy Overlay profile."
+                    }),
                     "restore" => appearance_effects::restore_terminal(&self.directory)
                         .map(|()| "Removed. Restart Windows Terminal."),
                     _ => {
@@ -2511,10 +2530,14 @@ impl App {
             }
             "windows-theme" => {
                 let result = if value == "mode" {
-                    appearance_effects::with_effects(|| windows_personalization::apply(&self.directory, theme::current().dark))
+                    appearance_effects::with_effects(|| {
+                        windows_personalization::apply(&self.directory, theme::current().dark)
+                    })
                 } else {
                     let on = windows_personalization::current(value) != Some(1);
-                    appearance_effects::with_effects(|| windows_personalization::apply_effect(&self.directory, value, on))
+                    appearance_effects::with_effects(|| {
+                        windows_personalization::apply_effect(&self.directory, value, on)
+                    })
                 };
                 overlay::message(&match result {
                     Ok(()) => "Applied. Restore puts back the original.".into(),

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Two new layouts. Centered main puts the main window in the middle and shares
+  the rest between a right and a left column, for wide monitors. Monocle makes
+  every window fill the monitor: focus up and down steps through them, left
+  and right moves to the next monitor.
 - Menus follow Omarchy's menu card: square corners, a 2 px border, a faded
   search line, the accent color on the selected row and Omarchy's sizes.
 - The app picker is a grid like Omarchy's launcher: large app icons with their
