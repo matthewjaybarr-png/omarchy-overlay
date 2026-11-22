@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.1
+
+- Omarchy Overlay is now licensed under the GPL-3.0 (GPL-3.0-only). Releases up to
+  0.4.0 were MIT.
+- Install with Scoop or winget; see Getting started. Each release now has a
+  `SHA256SUMS.txt` with the checksum of every zip.
+- When installed by winget, config files are kept in
+  `%LOCALAPPDATA%\OmarchyOverlay\config`, because winget replaces the program's
+  folder on every upgrade.
+
 ## 0.4.0
 
 - Two new layouts. Centered main puts the main window in the middle and shares

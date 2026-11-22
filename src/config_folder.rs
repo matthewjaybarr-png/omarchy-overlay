@@ -36,9 +36,13 @@ pub(super) fn folder() -> PathBuf {
         return settings.join("config");
     }
     let exe = std::env::current_exe().ok();
-    // The Admin install's own folder needs administrator rights to change, so its config
-    // files live with the user's settings instead, where they can be edited.
-    if exe.as_deref().is_some_and(crate::install::is_installed) {
+    // The Admin install's own folder needs administrator rights to change, and winget
+    // replaces its package folder on upgrade, so their config files live with the user's
+    // settings instead.
+    if exe
+        .as_deref()
+        .is_some_and(|e| crate::install::is_installed(e) || crate::install::winget_portable(e))
+    {
         return data_directory().join("config");
     }
     exe.and_then(|exe| exe.parent().map(|d| d.join("config")))
