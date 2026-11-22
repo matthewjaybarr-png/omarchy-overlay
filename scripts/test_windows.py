@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULTS = ['smoke', 'recovery', 'customization', 'workspaces', 'desktop',
             'picker', 'modules', 'resize', 'dwindle', 'roadmap-effects',
             'native-controls', 'taskbar', 'workspace-menu', 'policy',
-            'bar-editor', 'taskbar-modes', 'appearance-integration', 'scrolling', 'scroll-recovery', 'tray', 'themes']
+            'bar-editor', 'taskbar-modes', 'appearance-integration', 'scrolling', 'scroll-recovery', 'tray', 'themes', 'layouts']
 parser = argparse.ArgumentParser(description=__doc__)
 # Release suites, run on request: 'standard' (limited token) and 'install' (run elevated).
 RELEASES = ['standard', 'install']
@@ -112,6 +112,9 @@ for name in names:
                 print(json.dumps(row), flush=True)
             local = ROOT / 'dist' / (prefix + name + '.json')
             vm('pull', report, str(local))
+            if name == 'layouts':
+                for shot in ('centered', 'monocle'):
+                    vm('pull', args.guest + rf'\layout-{shot}.png', str(ROOT / 'dist' / f'layout-{shot}.png'))
             if name == 'themes':
                 for theme in ('tokyo-night', 'catppuccin-latte', 'neon-ridge'):
                     vm('pull', args.guest + rf'\theme-{theme}.png', str(ROOT / 'dist' / f'theme-{theme}.png'))
