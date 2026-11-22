@@ -415,6 +415,10 @@ Two VM suites test the zips and are not in the default list: `standard` runs the
 Standard release with a limited token, and `install` installs the Admin release,
 checks it, and uninstalls it (it runs elevated, so the VM user must be an administrator).
 
+## Contributing
+
+Bug reports, ideas and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 Copyright (c) 2026 Matt Barr. GPL-3.0-only: you may share and change Omarchy
