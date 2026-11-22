@@ -132,6 +132,8 @@ They are kept unless you run
   off-screen and still appear in Alt+Tab and on the taskbar, and choosing one shows
   its workspace. All monitors switch together. Pausing or exiting puts every window
   back.
+- **Super + mouse wheel** goes to the previous or next workspace, as on Omarchy.
+  It works with the Super keys on, not in the **Ctrl+Alt keys only** keymap.
 - After an Omarchy Overlay Super key, releasing Super does not open Start.
 - In the Standard edition, windows running as administrator do not pass keys to
   Omarchy Overlay; click an ordinary window first. The Admin edition has no such limit.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Super + mouse wheel** switches to the previous or next workspace, as on
+  Omarchy. A touchpad's small scroll steps add up to one workspace per notch.
 - In a winget install, **Make this folder portable** now warns that the next
   `winget upgrade` deletes the portable profile, and saves only if you confirm.
 
