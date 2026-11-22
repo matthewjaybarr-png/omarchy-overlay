@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - Two new layouts. Centered main puts the main window in the middle and shares
   the rest between a right and a left column, for wide monitors. Monocle makes

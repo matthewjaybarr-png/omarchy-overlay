@@ -6,6 +6,10 @@ A keyboard-first tiling window manager for Windows 11, inspired by the
 > **Not affiliated with Omarchy or its authors.** It's an independent project
 > that brings an Omarchy-style workflow to Windows.
 
+![Opening terminals and Notepad, which tile as they open, then cycling through the layouts and switching workspace](docs/screenshots/demo.gif)
+
+*Super + Return opens a terminal and it tiles; Super + Shift + L cycles the layouts.*
+
 ![The Omarchy Overlay menu over the Tokyo Night background, with the top bar](docs/screenshots/desktop.jpg)
 
 *Out of the box: Tokyo Night, Omarchy's default theme, with its first background,
@@ -20,7 +24,7 @@ focused window.*
 
 *The app grid (**Super + Alt + Space**): type to filter, arrow keys move in the grid.*
 
-**Status: early.** This is version 0.3.0. It comes in two editions built from the
+**Status: early.** This is version 0.4.0. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
 Pick Standard on a PC where you are not an administrator, or to try it out. Pick
@@ -43,13 +47,14 @@ Admin on your own PC when its keys must also work in apps running as administrat
 
 ## Getting started
 
-1. Build it (see below), or download a release when one is published.
-2. Put `OmarchyOverlay.exe` in a folder with `assets\fonts` (as `fonts`) and `config\examples`
-   folders from this repository.
-3. Run `OmarchyOverlay.exe`. The menu opens at start.
-4. Press **Super + Space** for the menu, **Super + Alt + Space** for the app grid,
+1. Download `OmarchyOverlay-<version>-standard.zip` from the
+   [latest release](https://github.com/matthewjaybarr-png/omarchy-overlay/releases/latest)
+   and unzip it anywhere. No installer and no administrator rights. (Or build it; see below.)
+2. Run `OmarchyOverlay.exe`. The menu opens at start. The exe is not code-signed yet,
+   so Windows SmartScreen may warn the first time: choose **More info > Run anyway**.
+3. Press **Super + Space** for the menu, **Super + Alt + Space** for the app grid,
    **Super + K** for every keybind and **Super + Escape** for the System menu.
-5. To give every key back to Windows, choose **Trigger > Toggle > Pause Omarchy Overlay keys**.
+4. To give every key back to Windows, choose **Trigger > Toggle > Pause Omarchy Overlay keys**.
 
 Its logs and state are kept in `%LOCALAPPDATA%\OmarchyOverlay`.
 
