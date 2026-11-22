@@ -138,11 +138,7 @@ pub(super) fn load() -> Loaded {
     theme_files::install(themes(&folder, &mut errors));
     for bind in &binds {
         if let Some(warning) = bind.key.warning() {
-            log(&format!(
-                "binds.conf line {}: {} {warning}",
-                bind.line,
-                bind.key.label()
-            ));
+            log(&format!("binds.conf line {}: {} {warning}", bind.line, bind.key.label()));
         }
     }
     for error in &errors {

@@ -438,7 +438,11 @@ impl App {
             });
         self.settings.fill(Some(&rule));
     }
-    pub(super) unsafe fn save_app_rule(&mut self, index: Option<usize>, rule: AppRule) -> usize {
+    pub(super) unsafe fn save_app_rule(
+        &mut self,
+        index: Option<usize>,
+        rule: AppRule,
+    ) -> usize {
         let mut affected = vec![];
         unsafe extern "system" fn collect(h: HWND, p: LPARAM) -> i32 {
             (*(p as *mut Vec<HWND>)).push(h);

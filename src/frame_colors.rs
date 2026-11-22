@@ -3,12 +3,7 @@
 
 /// True when a write-only attribute must be written: its value differs from what we last set
 /// (`previous`, the last acceptable set) or, before any change, from the recorded original.
-pub fn write_only_stale(
-    previous: Option<&[(u32, u32)]>,
-    attribute: u32,
-    before: u32,
-    value: u32,
-) -> bool {
+pub fn write_only_stale(previous: Option<&[(u32, u32)]>, attribute: u32, before: u32, value: u32) -> bool {
     let last = previous
         .and_then(|set| set.iter().find(|(a, _)| *a == attribute))
         .map_or(before, |&(_, v)| v);

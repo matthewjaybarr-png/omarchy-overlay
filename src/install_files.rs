@@ -27,16 +27,12 @@ const OLD: &str = ".install-old";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Plan {
     Fresh,
-    Update {
-        from: String,
-    },
+    Update { from: String },
     /// The same version again: the files and registrations are put back as new.
     Reinstall,
     /// A copy is there but its version is unknown, for example after a failed uninstall.
     Repair,
-    Downgrade {
-        from: String,
-    },
+    Downgrade { from: String },
 }
 
 /// `0.2.0`, `v0.2` or `0.3.0-beta` as numbers; None when it is not a version.
@@ -59,19 +55,11 @@ pub fn parse_version(text: &str) -> Option<[u32; 3]> {
 /// folder has the program in it.
 pub fn plan(installed: Option<&str>, files_present: bool, this: &str) -> Plan {
     let Some(from) = installed else {
-        return if files_present {
-            Plan::Repair
-        } else {
-            Plan::Fresh
-        };
+        return if files_present { Plan::Repair } else { Plan::Fresh };
     };
     match (parse_version(from), parse_version(this)) {
-        (Some(old), Some(new)) if old < new => Plan::Update {
-            from: from.trim().into(),
-        },
-        (Some(old), Some(new)) if old > new => Plan::Downgrade {
-            from: from.trim().into(),
-        },
+        (Some(old), Some(new)) if old < new => Plan::Update { from: from.trim().into() },
+        (Some(old), Some(new)) if old > new => Plan::Downgrade { from: from.trim().into() },
         (Some(_), Some(_)) => Plan::Reinstall,
         _ => Plan::Repair,
     }
@@ -110,9 +98,7 @@ pub fn success_message(plan: &Plan, this: &str, dir: &Path, user: &str, pending:
         dir.display()
     );
     if pending {
-        text.push_str(
-            "\r\n\r\nSome old files were still in use. Windows removes them at the next restart.",
-        );
+        text.push_str("\r\n\r\nSome old files were still in use. Windows removes them at the next restart.");
     }
     text
 }
@@ -155,23 +141,14 @@ pub fn release_files(exe: &Path) -> Vec<Item> {
 /// Every file under `folder`, sorted, relative to it with `/` between folders.
 fn files_under(folder: &Path) -> Vec<String> {
     let mut found = vec![];
-    let mut entries: Vec<PathBuf> = fs::read_dir(folder)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|e| e.path())
-        .collect();
+    let mut entries: Vec<PathBuf> = fs::read_dir(folder).into_iter().flatten().flatten().map(|e| e.path()).collect();
     entries.sort();
     for path in entries {
         let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
             continue;
         };
         if path.is_dir() {
-            found.extend(
-                files_under(&path)
-                    .into_iter()
-                    .map(|r| format!("{name}/{r}")),
-            );
+            found.extend(files_under(&path).into_iter().map(|r| format!("{name}/{r}")));
         } else {
             found.push(name.to_string());
         }
@@ -187,9 +164,7 @@ fn safe_relative(relative: &str) -> bool {
             .all(|p| !p.is_empty() && p != "." && p != ".." && !p.contains(['\\', ':']))
 }
 fn target(dir: &Path, relative: &str) -> PathBuf {
-    relative
-        .split('/')
-        .fold(dir.to_path_buf(), |p, part| p.join(part))
+    relative.split('/').fold(dir.to_path_buf(), |p, part| p.join(part))
 }
 fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
     let mut name = path.file_name().unwrap_or_default().to_os_string();
@@ -215,15 +190,13 @@ pub fn manifest_version(dir: &Path) -> Option<String> {
         .find_map(|l| l.trim().strip_prefix("version=").map(String::from))
 }
 fn write_manifest(dir: &Path, version: &str, items: &[Item]) -> Result<(), String> {
-    let mut text =
-        format!("# Files installed by Omarchy Overlay. Do not edit.\r\nversion={version}\r\n");
+    let mut text = format!("# Files installed by Omarchy Overlay. Do not edit.\r\nversion={version}\r\n");
     for item in items {
         text.push_str(&item.relative);
         text.push_str("\r\n");
     }
     let temporary = dir.join(format!("{MANIFEST}{NEW}"));
-    fs::write(&temporary, text)
-        .map_err(|e| format!("Could not write the install manifest: {e}"))?;
+    fs::write(&temporary, text).map_err(|e| format!("Could not write the install manifest: {e}"))?;
     fs::rename(&temporary, dir.join(MANIFEST))
         .map_err(|e| format!("Could not write the install manifest: {e}"))
 }
@@ -251,25 +224,12 @@ fn aside_name(path: &Path) -> PathBuf {
 /// still in use stay and are tried again next time.
 pub fn clear_leftovers(dir: &Path) {
     // Only the top level of the install folder and the folders the install owns.
-    let mut paths: Vec<PathBuf> = fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|e| e.path())
-        .collect();
+    let mut paths: Vec<PathBuf> = fs::read_dir(dir).into_iter().flatten().flatten().map(|e| e.path()).collect();
     for sub in SUBFOLDERS {
-        paths.extend(
-            files_under(&dir.join(sub))
-                .iter()
-                .map(|r| target(&dir.join(sub), r)),
-        );
+        paths.extend(files_under(&dir.join(sub)).iter().map(|r| target(&dir.join(sub), r)));
     }
     for path in paths {
-        let name = path
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .into_owned();
+        let name = path.file_name().unwrap_or_default().to_string_lossy().into_owned();
         if (name.ends_with(NEW) || name.contains(OLD)) && path.is_file() {
             let _ = fs::remove_file(path);
         }
@@ -396,10 +356,9 @@ pub fn size_kib(items: &[Item]) -> u64 {
 
 /// True when a running program's image is the install folder's.
 pub fn in_folder(image: &Path, dir: &Path) -> bool {
-    image.parent().is_some_and(|p| {
-        p.to_string_lossy()
-            .eq_ignore_ascii_case(&dir.to_string_lossy())
-    })
+    image
+        .parent()
+        .is_some_and(|p| p.to_string_lossy().eq_ignore_ascii_case(&dir.to_string_lossy()))
 }
 
 #[cfg(test)]
@@ -433,11 +392,7 @@ mod tests {
             for entry in fs::read_dir(&folder).into_iter().flatten().flatten() {
                 if entry.path().is_file() {
                     let name = entry.file_name().to_string_lossy().into_owned();
-                    found.push(if folder == dir {
-                        name
-                    } else {
-                        format!("fonts/{name}")
-                    });
+                    found.push(if folder == dir { name } else { format!("fonts/{name}") });
                 }
             }
         }
@@ -458,57 +413,25 @@ mod tests {
     fn plan_follows_the_installed_version() {
         assert_eq!(plan(None, false, "0.3.0"), Plan::Fresh);
         assert_eq!(plan(None, true, "0.3.0"), Plan::Repair);
-        assert_eq!(
-            plan(Some("0.2.0"), true, "0.3.0"),
-            Plan::Update {
-                from: "0.2.0".into()
-            }
-        );
+        assert_eq!(plan(Some("0.2.0"), true, "0.3.0"), Plan::Update { from: "0.2.0".into() });
         assert_eq!(plan(Some("0.3.0"), true, "0.3.0"), Plan::Reinstall);
-        assert_eq!(
-            plan(Some("0.4.0"), true, "0.3.0"),
-            Plan::Downgrade {
-                from: "0.4.0".into()
-            }
-        );
+        assert_eq!(plan(Some("0.4.0"), true, "0.3.0"), Plan::Downgrade { from: "0.4.0".into() });
         assert_eq!(plan(Some("garbage"), true, "0.3.0"), Plan::Repair);
         assert!(question(&plan(Some("0.4.0"), true, "0.3.0"), "0.3.0").is_some());
-        assert!(question(
-            &Plan::Update {
-                from: "0.2.0".into()
-            },
-            "0.3.0"
-        )
-        .is_none());
+        assert!(question(&Plan::Update { from: "0.2.0".into() }, "0.3.0").is_none());
     }
     #[test]
     fn tray_and_messages_name_the_versions() {
         assert_eq!(tray_label(None, "0.3.0"), "Install (admin)…");
-        assert!(
-            tray_label(Some("0.2.0"), "0.3.0").starts_with("Update the installed copy to 0.3.0")
-        );
+        assert!(tray_label(Some("0.2.0"), "0.3.0").starts_with("Update the installed copy to 0.3.0"));
         assert!(tray_label(Some("0.3.0"), "0.3.0").starts_with("Repair"));
         let dir = Path::new(r"C:\Program Files\OmarchyOverlay");
         let fresh = success_message(&Plan::Fresh, "0.3.0", dir, "PC\\me", false);
         // The VM install test reads this prefix.
-        assert!(
-            fresh.starts_with("Omarchy Overlay is installed in"),
-            "{fresh}"
-        );
-        let update = success_message(
-            &Plan::Update {
-                from: "0.2.0".into(),
-            },
-            "0.3.0",
-            dir,
-            "PC\\me",
-            true,
-        );
+        assert!(fresh.starts_with("Omarchy Overlay is installed in"), "{fresh}");
+        let update = success_message(&Plan::Update { from: "0.2.0".into() }, "0.3.0", dir, "PC\\me", true);
         assert!(update.starts_with("Omarchy Overlay is installed in"));
-        assert!(
-            update.contains("updated from 0.2.0 to 0.3.0") && update.contains("next restart"),
-            "{update}"
-        );
+        assert!(update.contains("updated from 0.2.0 to 0.3.0") && update.contains("next restart"), "{update}");
     }
     #[test]
     fn fresh_install_copies_the_release_and_writes_a_manifest() {
@@ -518,17 +441,7 @@ mod tests {
         let dir = temp().join("OmarchyOverlay");
         let report = replace_files(&dir, &release_files(&exe), "0.2.0").unwrap();
         assert_eq!(report, Replaced::default());
-        assert_eq!(
-            names(&dir),
-            [
-                "LICENSE.txt",
-                EXE,
-                "RECOVER.cmd",
-                "fonts/a.ttf",
-                "fonts/b.ttf",
-                MANIFEST
-            ]
-        );
+        assert_eq!(names(&dir), ["LICENSE.txt", EXE, "RECOVER.cmd", "fonts/a.ttf", "fonts/b.ttf", MANIFEST]);
         assert_eq!(fs::read_to_string(dir.join(EXE)).unwrap(), "v1");
         assert_eq!(manifest_version(&dir).as_deref(), Some("0.2.0"));
         assert_eq!(read_manifest(&dir).len(), 5);
@@ -536,60 +449,26 @@ mod tests {
     #[test]
     fn theme_backgrounds_are_installed_with_their_folders() {
         let exe = release("v1", &["a.ttf"]);
-        let backgrounds = exe
-            .parent()
-            .unwrap()
-            .join("themes")
-            .join("nord")
-            .join("backgrounds");
+        let backgrounds = exe.parent().unwrap().join("themes").join("nord").join("backgrounds");
         fs::create_dir_all(&backgrounds).unwrap();
         fs::write(backgrounds.join("nord-1.jpg"), "jpg").unwrap();
         let dir = temp().join("OmarchyOverlay");
         replace_files(&dir, &release_files(&exe), "0.3.0").unwrap();
-        assert_eq!(
-            fs::read_to_string(dir.join("themes/nord/backgrounds/nord-1.jpg")).unwrap(),
-            "jpg"
-        );
+        assert_eq!(fs::read_to_string(dir.join("themes/nord/backgrounds/nord-1.jpg")).unwrap(), "jpg");
         assert!(read_manifest(&dir).contains(&"themes/nord/backgrounds/nord-1.jpg".to_string()));
-        fs::write(
-            dir.join("themes/nord/backgrounds/x.jpg.install-new"),
-            "left",
-        )
-        .unwrap();
+        fs::write(dir.join("themes/nord/backgrounds/x.jpg.install-new"), "left").unwrap();
         clear_leftovers(&dir);
-        assert!(!dir
-            .join("themes/nord/backgrounds/x.jpg.install-new")
-            .exists());
+        assert!(!dir.join("themes/nord/backgrounds/x.jpg.install-new").exists());
     }
     #[test]
     fn update_replaces_files_removes_dropped_ones_and_keeps_others() {
         let dir = temp().join("OmarchyOverlay");
-        replace_files(
-            &dir,
-            &release_files(&release("v1", &["a.ttf", "b.ttf"])),
-            "0.2.0",
-        )
-        .unwrap();
+        replace_files(&dir, &release_files(&release("v1", &["a.ttf", "b.ttf"])), "0.2.0").unwrap();
         fs::write(dir.join("notes.txt"), "mine").unwrap();
-        let report = replace_files(
-            &dir,
-            &release_files(&release("v2", &["a.ttf", "c.ttf"])),
-            "0.3.0",
-        )
-        .unwrap();
+        let report = replace_files(&dir, &release_files(&release("v2", &["a.ttf", "c.ttf"])), "0.3.0").unwrap();
         assert_eq!(report.stale_removed, ["fonts/b.ttf"]);
         assert!(report.pending_delete.is_empty());
-        assert_eq!(
-            names(&dir),
-            [
-                EXE,
-                "RECOVER.cmd",
-                "fonts/a.ttf",
-                "fonts/c.ttf",
-                MANIFEST,
-                "notes.txt"
-            ]
-        );
+        assert_eq!(names(&dir), [EXE, "RECOVER.cmd", "fonts/a.ttf", "fonts/c.ttf", MANIFEST, "notes.txt"]);
         assert_eq!(fs::read_to_string(dir.join(EXE)).unwrap(), "v2");
         assert_eq!(manifest_version(&dir).as_deref(), Some("0.3.0"));
     }
@@ -599,10 +478,7 @@ mod tests {
         replace_files(&dir, &release_files(&release("v1", &["a.ttf"])), "0.2.0").unwrap();
         let before = names(&dir);
         let mut items = release_files(&release("v2", &["a.ttf"]));
-        items.push(Item {
-            source: PathBuf::from("/no/such/file.ttf"),
-            relative: "fonts/z.ttf".into(),
-        });
+        items.push(Item { source: PathBuf::from("/no/such/file.ttf"), relative: "fonts/z.ttf".into() });
         let error = replace_files(&dir, &items, "0.3.0").unwrap_err();
         assert!(error.contains("file.ttf"), "{error}");
         assert_eq!(names(&dir), before);
@@ -613,11 +489,7 @@ mod tests {
     fn leftovers_from_an_interrupted_run_are_cleared() {
         let dir = temp().join("OmarchyOverlay");
         fs::create_dir_all(dir.join("fonts")).unwrap();
-        for name in [
-            "OmarchyOverlay.exe.install-new",
-            "OmarchyOverlay.exe.install-old",
-            "fonts/a.ttf.install-old-2",
-        ] {
+        for name in ["OmarchyOverlay.exe.install-new", "OmarchyOverlay.exe.install-old", "fonts/a.ttf.install-old-2"] {
             fs::write(target(&dir, name), "x").unwrap();
         }
         replace_files(&dir, &release_files(&release("v1", &["a.ttf"])), "0.2.0").unwrap();
@@ -626,31 +498,16 @@ mod tests {
     #[test]
     fn manifest_paths_cannot_leave_the_install_folder() {
         let dir = temp();
-        fs::write(
-            dir.join(MANIFEST),
-            "version=0.1.0\r\nfonts/a.ttf\r\n../evil.txt\r\nC:/x\r\nfonts\\b.ttf\r\n",
-        )
-        .unwrap();
+        fs::write(dir.join(MANIFEST), "version=0.1.0\r\nfonts/a.ttf\r\n../evil.txt\r\nC:/x\r\nfonts\\b.ttf\r\n").unwrap();
         assert_eq!(read_manifest(&dir), ["fonts/a.ttf"]);
     }
     #[test]
     fn processes_match_the_install_folder_only() {
         let dir = Path::new(r"C:\Program Files\OmarchyOverlay");
-        assert!(
-            in_folder(
-                Path::new(r"C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe"),
-                dir
-            ) || cfg!(not(windows))
-        );
-        assert!(!in_folder(
-            Path::new(r"C:\Program Files\OmarchyOverlay2\OmarchyOverlay.exe"),
-            dir
-        ));
+        assert!(in_folder(Path::new(r"C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe"), dir) || cfg!(not(windows)));
+        assert!(!in_folder(Path::new(r"C:\Program Files\OmarchyOverlay2\OmarchyOverlay.exe"), dir));
         let unix = Path::new("/opt/OmarchyOverlay");
-        assert!(in_folder(
-            Path::new("/opt/omarchyoverlay/OmarchyOverlay.exe"),
-            unix
-        ));
+        assert!(in_folder(Path::new("/opt/omarchyoverlay/OmarchyOverlay.exe"), unix));
         assert!(!in_folder(Path::new("/opt/OmarchyOverlay/fonts/x"), unix));
     }
 }

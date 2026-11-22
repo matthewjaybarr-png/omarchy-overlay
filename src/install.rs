@@ -4,8 +4,7 @@ use std::path::{Path, PathBuf};
 
 pub const TASK: &str = "Omarchy Overlay";
 const FOLDER: &str = "OmarchyOverlay";
-const UNINSTALL_KEY: &str =
-    r"HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\OmarchyOverlay";
+const UNINSTALL_KEY: &str = r"HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\OmarchyOverlay";
 
 /// (show "Install (admin)…", show "Uninstall…") for the tray menu.
 pub fn tray_install_items(marker: bool, installed: bool) -> (bool, bool) {
@@ -33,12 +32,7 @@ pub fn task_settings_script() -> String {
 /// Apps entry values stored as numbers.
 pub const DWORD_VALUES: [&str; 3] = ["NoModify", "NoRepair", "EstimatedSize"];
 
-pub fn uninstall_values(
-    dir: &Path,
-    version: &str,
-    size_kib: u64,
-    date: &str,
-) -> Vec<(&'static str, String)> {
+pub fn uninstall_values(dir: &Path, version: &str, size_kib: u64, date: &str) -> Vec<(&'static str, String)> {
     // Built as text so the Windows separator is used on every build host.
     let exe = format!("{}\\OmarchyOverlay.exe", dir.display());
     vec![
@@ -47,15 +41,9 @@ pub fn uninstall_values(
         ("InstallLocation", dir.display().to_string()),
         ("DisplayIcon", exe.clone()),
         ("UninstallString", format!("\"{exe}\" --uninstall")),
-        (
-            "QuietUninstallString",
-            format!("\"{exe}\" --uninstall --quiet"),
-        ),
+        ("QuietUninstallString", format!("\"{exe}\" --uninstall --quiet")),
         ("InstallDate", date.into()),
-        (
-            "EstimatedSize",
-            size_kib.min(u64::from(u32::MAX)).to_string(),
-        ),
+        ("EstimatedSize", size_kib.min(u64::from(u32::MAX)).to_string()),
         ("NoModify", "1".into()),
         ("NoRepair", "1".into()),
     ]
@@ -77,8 +65,7 @@ pub fn is_installed(exe: &Path) -> bool {
 
 /// The Admin release ships an `edition-admin` file beside the exe.
 pub fn admin_marker(exe: &Path) -> bool {
-    exe.parent()
-        .is_some_and(|p| p.join("edition-admin").is_file())
+    exe.parent().is_some_and(|p| p.join("edition-admin").is_file())
 }
 
 #[cfg(windows)]
@@ -91,19 +78,12 @@ fn shortcut() -> PathBuf {
 /// A Windows tool's full path. A bare name would also search this exe's folder, which an
 /// elevated install from a user-writable folder must never run from.
 pub fn system_tool(root: &str, name: &str) -> String {
-    let folder = if name == "powershell.exe" {
-        r"System32\WindowsPowerShell\v1.0"
-    } else {
-        "System32"
-    };
+    let folder = if name == "powershell.exe" { r"System32\WindowsPowerShell\v1.0" } else { "System32" };
     format!("{root}\\{folder}\\{name}")
 }
 #[cfg(windows)]
 fn system(name: &str) -> String {
-    system_tool(
-        &std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into()),
-        name,
-    )
+    system_tool(&std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into()), name)
 }
 #[cfg(windows)]
 fn run(program: &str, args: &[String]) -> Result<(), String> {
@@ -116,10 +96,7 @@ fn run(program: &str, args: &[String]) -> Result<(), String> {
     if status.success() {
         Ok(())
     } else {
-        Err(format!(
-            "{program} {} failed ({status}).",
-            args.first().map_or("", |a| a)
-        ))
+        Err(format!("{program} {} failed ({status}).", args.first().map_or("", |a| a)))
     }
 }
 
@@ -128,12 +105,8 @@ fn run(program: &str, args: &[String]) -> Result<(), String> {
 #[cfg(windows)]
 pub unsafe fn elevate(arguments: &str) -> Option<u32> {
     use windows_sys::Win32::Foundation::CloseHandle;
-    use windows_sys::Win32::System::Threading::{
-        GetExitCodeProcess, WaitForSingleObject, INFINITE,
-    };
-    use windows_sys::Win32::UI::Shell::{
-        ShellExecuteExW, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW,
-    };
+    use windows_sys::Win32::System::Threading::{GetExitCodeProcess, WaitForSingleObject, INFINITE};
+    use windows_sys::Win32::UI::Shell::{ShellExecuteExW, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW};
     use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
     let exe = std::env::current_exe().ok()?;
     let (verb, file, parameters) = (wide("runas"), wide(&exe.to_string_lossy()), wide(arguments));
@@ -225,12 +198,7 @@ pub unsafe fn wait_for_programs_in(dir: &Path, timeout_ms: u32) -> usize {
             if !process.is_null() {
                 let mut image = [0u16; 1024];
                 let mut len = image.len() as u32;
-                let ours = QueryFullProcessImageNameW(
-                    process,
-                    PROCESS_NAME_WIN32,
-                    image.as_mut_ptr(),
-                    &mut len,
-                ) != 0
+                let ours = QueryFullProcessImageNameW(process, PROCESS_NAME_WIN32, image.as_mut_ptr(), &mut len) != 0
                     && crate::install_files::in_folder(
                         Path::new(&String::from_utf16_lossy(&image[..len as usize])),
                         dir,
@@ -248,9 +216,7 @@ pub unsafe fn wait_for_programs_in(dir: &Path, timeout_ms: u32) -> usize {
     let deadline = std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms.into());
     let mut left = 0;
     for process in running {
-        let wait = deadline
-            .saturating_duration_since(std::time::Instant::now())
-            .as_millis() as u32;
+        let wait = deadline.saturating_duration_since(std::time::Instant::now()).as_millis() as u32;
         if WaitForSingleObject(process, wait) != 0 {
             left += 1;
         }
@@ -264,11 +230,7 @@ pub unsafe fn wait_for_programs_in(dir: &Path, timeout_ms: u32) -> usize {
 fn delete_at_restart(path: &Path) {
     use windows_sys::Win32::Storage::FileSystem::{MoveFileExW, MOVEFILE_DELAY_UNTIL_REBOOT};
     unsafe {
-        MoveFileExW(
-            wide(&path.to_string_lossy()).as_ptr(),
-            std::ptr::null(),
-            MOVEFILE_DELAY_UNTIL_REBOOT,
-        );
+        MoveFileExW(wide(&path.to_string_lossy()).as_ptr(), std::ptr::null(), MOVEFILE_DELAY_UNTIL_REBOOT);
     }
 }
 
@@ -308,21 +270,14 @@ pub fn install(user: &str) -> Result<crate::install_files::Replaced, String> {
             delete_at_restart(path);
         }
         for removed in &report.stale_removed {
-            crate::windows::log(&format!(
-                "Install: removed {removed}, which this version no longer ships."
-            ));
+            crate::windows::log(&format!("Install: removed {removed}, which this version no longer ships."));
         }
     }
     let installed = dir.join(files::EXE);
     run("schtasks.exe", &schtasks_create_args(&installed, user))?;
     run(
         "powershell.exe",
-        &[
-            "-NoProfile".into(),
-            "-NonInteractive".into(),
-            "-Command".into(),
-            task_settings_script(),
-        ],
+        &["-NoProfile".into(), "-NonInteractive".into(), "-Command".into(), task_settings_script()],
     )?;
     let quote = |p: &Path| p.display().to_string().replace('\'', "''");
     let schtasks = system("schtasks.exe");
@@ -346,25 +301,10 @@ pub fn install(user: &str) -> Result<crate::install_files::Replaced, String> {
         files::size_kib(&items)
     };
     for (name, value) in uninstall_values(&dir, env!("CARGO_PKG_VERSION"), size, &today()) {
-        let kind = if DWORD_VALUES.contains(&name) {
-            "REG_DWORD"
-        } else {
-            "REG_SZ"
-        };
+        let kind = if DWORD_VALUES.contains(&name) { "REG_DWORD" } else { "REG_SZ" };
         run(
             "reg.exe",
-            &[
-                "add",
-                UNINSTALL_KEY,
-                "/v",
-                name,
-                "/t",
-                kind,
-                "/d",
-                &value,
-                "/f",
-            ]
-            .map(String::from),
+            &["add", UNINSTALL_KEY, "/v", name, "/t", kind, "/d", &value, "/f"].map(String::from),
         )?;
     }
     // An install recorded somewhere else (another Program Files) is now replaced by this one.
@@ -387,19 +327,13 @@ pub fn start_task() -> Result<(), String> {
 #[cfg(windows)]
 pub fn remove(settings: Option<&Path>) -> Vec<String> {
     let mut errors = vec![];
-    let _ = run(
-        "schtasks.exe",
-        &["/Delete", "/F", "/TN", TASK].map(String::from),
-    );
+    let _ = run("schtasks.exe", &["/Delete", "/F", "/TN", TASK].map(String::from));
     if shortcut().exists() {
         if let Err(e) = std::fs::remove_file(shortcut()) {
             errors.push(format!("Start menu shortcut: {e}"));
         }
     }
-    let _ = run(
-        "reg.exe",
-        &["delete", UNINSTALL_KEY, "/f"].map(String::from),
-    );
+    let _ = run("reg.exe", &["delete", UNINSTALL_KEY, "/f"].map(String::from));
     if let Some(settings) = settings.filter(|s| s.exists()) {
         if let Err(e) = std::fs::remove_dir_all(settings) {
             errors.push(format!("{}: {e}", settings.display()));
@@ -423,11 +357,7 @@ pub fn remove_folder_after_exit() {
         if Some(&path) == own.as_ref() {
             continue;
         }
-        let _ = if path.is_dir() {
-            std::fs::remove_dir_all(&path)
-        } else {
-            std::fs::remove_file(&path)
-        };
+        let _ = if path.is_dir() { std::fs::remove_dir_all(&path) } else { std::fs::remove_file(&path) };
     }
     let _ = std::process::Command::new(system("cmd.exe"))
         .raw_arg(remove_folder_command(&dir))
@@ -445,8 +375,7 @@ pub fn remove_folder_command(dir: &Path) -> String {
 /// An earlier install at `old` that this install to `dir` replaces: only a different
 /// folder named like ours that holds our program is ever removed.
 pub fn is_old_install(old: &Path, dir: &Path) -> bool {
-    !old.to_string_lossy()
-        .eq_ignore_ascii_case(&dir.to_string_lossy())
+    !old.to_string_lossy().eq_ignore_ascii_case(&dir.to_string_lossy())
         && old
             .file_name()
             .is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case(FOLDER))
@@ -465,10 +394,7 @@ mod tests {
     }
     #[test]
     fn system_tools_resolve_in_system32_never_beside_the_exe() {
-        assert_eq!(
-            system_tool(r"C:\Windows", "reg.exe"),
-            r"C:\Windows\System32\reg.exe"
-        );
+        assert_eq!(system_tool(r"C:\Windows", "reg.exe"), r"C:\Windows\System32\reg.exe");
         assert_eq!(
             system_tool(r"D:\Win", "powershell.exe"),
             r"D:\Win\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -480,18 +406,8 @@ mod tests {
         assert_eq!(
             schtasks_create_args(exe, r"PC\user"),
             [
-                "/Create",
-                "/F",
-                "/TN",
-                "Omarchy Overlay",
-                "/SC",
-                "ONLOGON",
-                "/RL",
-                "HIGHEST",
-                "/RU",
-                r"PC\user",
-                "/IT",
-                "/TR",
+                "/Create", "/F", "/TN", "Omarchy Overlay", "/SC", "ONLOGON", "/RL", "HIGHEST",
+                "/RU", r"PC\user", "/IT", "/TR",
                 r#""C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe""#,
             ]
         );
@@ -512,10 +428,7 @@ mod tests {
     #[test]
     fn manifest_version_follows_the_package_version() {
         let expected = format!("version=\"{}.0\"", env!("CARGO_PKG_VERSION"));
-        assert!(
-            include_str!("../app.manifest").contains(&expected),
-            "app.manifest needs {expected}"
-        );
+        assert!(include_str!("../app.manifest").contains(&expected), "app.manifest needs {expected}");
     }
     #[test]
     fn only_a_separate_folder_holding_our_program_counts_as_an_old_install() {
@@ -530,22 +443,14 @@ mod tests {
         let other = root.join("Something");
         std::fs::create_dir_all(&other).unwrap();
         std::fs::write(other.join(crate::install_files::EXE), "x").unwrap();
-        assert!(
-            !is_old_install(&other, &dir),
-            "a folder with another name is never removed"
-        );
+        assert!(!is_old_install(&other, &dir), "a folder with another name is never removed");
         let _ = std::fs::remove_dir_all(&root);
     }
     #[test]
     fn folder_removal_retries_quietly() {
         let command = remove_folder_command(Path::new(r"C:\Program Files\OmarchyOverlay"));
         assert!(command.starts_with("/c for /l %i in (1,1,15)"), "{command}");
-        assert_eq!(
-            command
-                .matches(r#""C:\Program Files\OmarchyOverlay""#)
-                .count(),
-            2
-        );
+        assert_eq!(command.matches(r#""C:\Program Files\OmarchyOverlay""#).count(), 2);
     }
     #[test]
     fn apps_entry_values() {
@@ -555,10 +460,7 @@ mod tests {
         assert_eq!(get("DisplayName"), "Omarchy Overlay");
         assert_eq!(get("DisplayVersion"), "0.2.0");
         assert_eq!(get("InstallLocation"), r"C:\Program Files\OmarchyOverlay");
-        assert_eq!(
-            get("DisplayIcon"),
-            r"C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe"
-        );
+        assert_eq!(get("DisplayIcon"), r"C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe");
         assert_eq!(
             get("UninstallString"),
             r#""C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe" --uninstall"#
@@ -568,10 +470,7 @@ mod tests {
             get("QuietUninstallString"),
             r#""C:\Program Files\OmarchyOverlay\OmarchyOverlay.exe" --uninstall --quiet"#
         );
-        assert_eq!(
-            (get("InstallDate"), get("EstimatedSize")),
-            ("20261109".into(), "12345".into())
-        );
+        assert_eq!((get("InstallDate"), get("EstimatedSize")), ("20261109".into(), "12345".into()));
         for name in DWORD_VALUES {
             assert!(get(name).parse::<u32>().is_ok(), "{name} must be a number");
         }

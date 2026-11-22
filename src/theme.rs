@@ -47,3 +47,4 @@ pub(super) fn set(name: &str) -> bool {
     CURRENT.with(|cell| cell.set(found.unwrap_or_else(|| palette("neon-ridge").unwrap())));
     found.is_some()
 }
+

@@ -23,33 +23,15 @@ impl App {
         {
             return false;
         }
-        let fresh = !self
-            .saved
-            .get(&key)
-            .is_some_and(|saved| saved.matches(hwnd));
+        let fresh = !self.saved.get(&key).is_some_and(|saved| saved.matches(hwnd));
         let mut rect: RECT = zeroed();
         if GetWindowRect(hwnd, &mut rect) == 0 || !self.snapshot(hwnd) {
             return false;
         }
-        self.parked.insert(
-            key,
-            Parked {
-                workspace,
-                rect,
-                fresh,
-            },
-        );
+        self.parked.insert(key, Parked { workspace, rect, fresh });
         if !minimized {
             let x = GetSystemMetrics(SM_XVIRTUALSCREEN) - (rect.right - rect.left) - 64;
-            SetWindowPos(
-                hwnd,
-                null_mut(),
-                x,
-                rect.top,
-                0,
-                0,
-                MOVE | SWP_ASYNCWINDOWPOS,
-            );
+            SetWindowPos(hwnd, null_mut(), x, rect.top, 0, 0, MOVE | SWP_ASYNCWINDOWPOS);
         }
         true
     }
@@ -63,20 +45,8 @@ impl App {
         }
         if IsIconic(hwnd) == 0 {
             // Synchronous where possible: the tiling pass that follows reads the window's monitor.
-            let wait = if responsive(hwnd) {
-                0
-            } else {
-                SWP_ASYNCWINDOWPOS
-            };
-            SetWindowPos(
-                hwnd,
-                null_mut(),
-                parked.rect.left,
-                parked.rect.top,
-                0,
-                0,
-                MOVE | wait,
-            );
+            let wait = if responsive(hwnd) { 0 } else { SWP_ASYNCWINDOWPOS };
+            SetWindowPos(hwnd, null_mut(), parked.rect.left, parked.rect.top, 0, 0, MOVE | wait);
         }
         if parked.fresh && self.saved.remove(&key).is_some() {
             RemovePropW(hwnd, wide(PLACEMENT_OWNER).as_ptr());
@@ -86,12 +56,8 @@ impl App {
         }
     }
     fn report_occupied(&mut self) {
-        self.parked
-            .retain(|&key, _| unsafe { IsWindow(key as HWND) } != 0);
-        let occupied = self
-            .parked
-            .values()
-            .fold(0u16, |mask, p| mask | 1 << p.workspace);
+        self.parked.retain(|&key, _| unsafe { IsWindow(key as HWND) } != 0);
+        let occupied = self.parked.values().fold(0u16, |mask, p| mask | 1 << p.workspace);
         crate::desktops::set_occupied(occupied);
     }
     unsafe fn focus_or_desktop(&mut self, target: Option<isize>) {
@@ -124,11 +90,7 @@ impl App {
                     crate::desktops::select(workspace);
                     self.workspace_focus.insert(workspace, foreground);
                 } else {
-                    let next = self
-                        .order
-                        .iter()
-                        .copied()
-                        .find(|&key| IsWindow(key as HWND) != 0);
+                    let next = self.order.iter().copied().find(|&key| IsWindow(key as HWND) != 0);
                     self.focus_or_desktop(next);
                 }
             }

@@ -42,9 +42,7 @@ unsafe fn open(path: &str) -> Result<Key, String> {
         null_mut(),
     );
     if status != ERROR_SUCCESS {
-        return Err(format!(
-            "The Windows accent color is unavailable ({status})."
-        ));
+        return Err(format!("The Windows accent color is unavailable ({status})."));
     }
     Ok(Key(h))
 }
@@ -74,9 +72,7 @@ unsafe fn write(h: HKEY, name: &str, value: Option<u32>) -> Result<(), String> {
     if status == ERROR_SUCCESS || status == ERROR_FILE_NOT_FOUND {
         Ok(())
     } else {
-        Err(format!(
-            "Windows did not allow the accent color change ({status})."
-        ))
+        Err(format!("Windows did not allow the accent color change ({status})."))
     }
 }
 pub(super) unsafe fn notify() {
@@ -93,10 +89,7 @@ pub(super) unsafe fn notify() {
 }
 fn valid(entries: &[Entry]) -> bool {
     entries.len() == VALUES.len()
-        && entries
-            .iter()
-            .zip(VALUES)
-            .all(|(e, (_, n))| e.name == n && e.acceptable.len() <= 2)
+        && entries.iter().zip(VALUES).all(|(e, (_, n))| e.name == n && e.acceptable.len() <= 2)
 }
 unsafe fn record(path: &Path) -> Result<Vec<Entry>, String> {
     let entries: Vec<Entry> =
@@ -117,11 +110,7 @@ pub(super) unsafe fn apply(directory: &Path, accent: u32) -> Result<(), String> 
         VALUES
             .iter()
             .map(|&(k, name)| {
-                Ok(Entry {
-                    name: name.into(),
-                    before: read(key(k), name)?,
-                    acceptable: vec![],
-                })
+                Ok(Entry { name: name.into(), before: read(key(k), name)?, acceptable: vec![] })
             })
             .collect::<Result<Vec<_>, String>>()?
     };
@@ -166,3 +155,4 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     }
     fs::remove_file(path).map_err(|e| e.to_string())
 }
+

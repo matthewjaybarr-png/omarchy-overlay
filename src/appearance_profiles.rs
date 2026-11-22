@@ -25,13 +25,7 @@ pub const THEMES: &[(&str, &str)] = &[
     ("alpenglow-night", "Alpenglow Night"),
 ];
 /// Menu commands 20-24, in id order.
-pub const COMMAND_THEMES: [&str; 5] = [
-    "everforest",
-    "tokyo-night",
-    "nord",
-    "flexoki-light",
-    "alpenglow-night",
-];
+pub const COMMAND_THEMES: [&str; 5] = ["everforest", "tokyo-night", "nord", "flexoki-light", "alpenglow-night"];
 impl Profile {
     pub fn capture(config: &Config, name: String) -> Self {
         Self {

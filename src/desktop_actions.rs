@@ -112,10 +112,7 @@ impl App {
         }
     }
     pub(super) unsafe fn set_layout(&mut self, layout: &str) {
-        if !crate::commands::LAYOUTS
-            .iter()
-            .any(|(name, _)| *name == layout)
-        {
+        if !crate::commands::LAYOUTS.iter().any(|(name, _)| *name == layout) {
             return;
         }
         let monitor = MonitorFromWindow(

@@ -103,11 +103,7 @@ unsafe fn shortcut_icon(shortcut: &Path) -> HICON {
 /// shortcut with its AppUserModelID, then its relaunch icon; then the window's small then
 /// big icon, the relaunch icon, the shortcut with the same AppUserModelID, the class icon,
 /// the program file's icon, then the generic Windows icon.
-unsafe fn window_icon(
-    hwnd: HWND,
-    path: Option<&Path>,
-    app: &(Option<String>, Option<String>),
-) -> (HICON, &'static str) {
+unsafe fn window_icon(hwnd: HWND, path: Option<&Path>, app: &(Option<String>, Option<String>)) -> (HICON, &'static str) {
     let (app_id, relaunch) = app;
     if app_id.as_deref().is_some_and(web_app_id) {
         if let Some(shortcut) = app_id.as_deref().and_then(shortcut_for) {
@@ -282,11 +278,7 @@ unsafe fn identity(hwnd: HWND, title: &str) -> Identity {
                 .map(|name| name.to_string_lossy().into_owned())
         })
         .unwrap_or_else(|| title.to_owned());
-    let app = if browser {
-        app
-    } else {
-        native_status::window_app(hwnd)
-    };
+    let app = if browser { app } else { native_status::window_app(hwnd) };
     let (icon, source) = window_icon(hwnd, path.as_deref(), &app);
     Identity {
         label,

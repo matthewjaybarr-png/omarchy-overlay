@@ -190,12 +190,7 @@ pub fn settings_folder(executable: &Path) -> Option<PathBuf> {
 /// administrators can change, but any user may create folders in the ones above it
 /// (`C:\Program Files`, `C:\`), so it never walks up for an OVERLAY SETTINGS folder:
 /// its profile is beside it (admin-only) or in the user's own local folder.
-pub fn find_for(
-    executable: &Path,
-    local: &Path,
-    explicit: Option<PathBuf>,
-    installed: bool,
-) -> Found {
+pub fn find_for(executable: &Path, local: &Path, explicit: Option<PathBuf>, installed: bool) -> Found {
     if installed {
         return Found::Use(locate(executable, local, explicit));
     }
@@ -597,10 +592,7 @@ mod tests {
     #[test]
     fn installed_exe_without_settings_folder_uses_local_profile() {
         let root = temp();
-        let exe = root
-            .join("Program Files")
-            .join("OmarchyOverlay")
-            .join("OmarchyOverlay.exe");
+        let exe = root.join("Program Files").join("OmarchyOverlay").join("OmarchyOverlay.exe");
         let local = root.join("local");
         match find(&exe, &local, None) {
             Found::Use(active) => assert_eq!(active.path, local.join("config.json")),
@@ -610,10 +602,7 @@ mod tests {
     #[test]
     fn installed_exe_ignores_a_settings_folder_another_user_could_create() {
         let root = temp();
-        let exe = root
-            .join("Program Files")
-            .join("OmarchyOverlay")
-            .join("OmarchyOverlay.exe");
+        let exe = root.join("Program Files").join("OmarchyOverlay").join("OmarchyOverlay.exe");
         let planted = root.join(SETTINGS_FOLDER);
         fs::create_dir_all(&planted).unwrap();
         fs::write(planted.join(FILE_NAME), "{}").unwrap();
@@ -624,9 +613,7 @@ mod tests {
         }
         match find_for(&exe, &local, None, true) {
             Found::Use(active) => assert_eq!(active.path, local.join("config.json")),
-            Found::Missing { .. } => {
-                panic!("the installed copy must not ask for a settings folder")
-            }
+            Found::Missing { .. } => panic!("the installed copy must not ask for a settings folder"),
         }
     }
     #[test]

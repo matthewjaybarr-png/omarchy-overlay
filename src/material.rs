@@ -132,15 +132,9 @@ mod tests {
     #[test]
     fn selected_row_uses_the_border_unless_accent_text_would_vanish() {
         // Tokyo Night: border #33ccff is too close to the accent #7aa2f7.
-        assert_eq!(
-            selection(rgb(0x33ccff), rgb(0x24283b), rgb(0x7aa2f7)),
-            rgb(0x24283b)
-        );
+        assert_eq!(selection(rgb(0x33ccff), rgb(0x24283b), rgb(0x7aa2f7)), rgb(0x24283b));
         // A dark border keeps accent text readable.
-        assert_eq!(
-            selection(rgb(0x414868), rgb(0x24283b), rgb(0xc0caf5)),
-            rgb(0x414868)
-        );
+        assert_eq!(selection(rgb(0x414868), rgb(0x24283b), rgb(0xc0caf5)), rgb(0x414868));
     }
     /// Walker's 84% background: never more see-through, more opaque only for contrast.
     #[test]

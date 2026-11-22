@@ -113,9 +113,7 @@ pub(super) fn apply_terminal(directory: &Path, theme_name: &str) -> Result<(), S
             .as_ref()
             .is_some_and(|s| !old.acceptable.contains(s))
     {
-        return Err(
-            "The Terminal fragment changed outside Omarchy Overlay; it was left intact.".into(),
-        );
+        return Err("The Terminal fragment changed outside Omarchy Overlay; it was left intact.".into());
     }
     let palette = theme::palette(theme_name).ok_or("Unknown theme.")?;
     let fragment = crate::appearance_profiles::terminal_fragment(
@@ -166,17 +164,10 @@ pub(super) unsafe fn restore_wallpaper(directory: &Path) -> Result<(), String> {
 /// The theme's backgrounds folder: the user's theme folder first, then the stock pictures a
 /// release ships beside the exe as `themes\<id>\backgrounds`.
 pub(super) fn backgrounds_dir(theme_name: &str) -> Option<PathBuf> {
-    crate::theme_files::resolve(theme_name)
-        .and_then(|t| t.backgrounds)
-        .or_else(|| {
-            let shipped = std::env::current_exe()
-                .ok()?
-                .parent()?
-                .join("themes")
-                .join(theme_name)
-                .join("backgrounds");
-            shipped.is_dir().then_some(shipped)
-        })
+    crate::theme_files::resolve(theme_name).and_then(|t| t.backgrounds).or_else(|| {
+        let shipped = std::env::current_exe().ok()?.parent()?.join("themes").join(theme_name).join("backgrounds");
+        shipped.is_dir().then_some(shipped)
+    })
 }
 /// The theme's background images, sorted by name.
 pub(super) fn backgrounds(theme_name: &str) -> Vec<PathBuf> {
@@ -233,21 +224,13 @@ pub(super) fn apply_theme_effects(directory: PathBuf, theme_name: String, dark: 
 }
 /// Sets the theme's next background through the journaled wallpaper path. Ok(false)
 /// when the theme has none.
-pub(super) unsafe fn cycle_background(
-    directory: &Path,
-    theme_name: &str,
-    first: bool,
-) -> Result<bool, String> {
+pub(super) unsafe fn cycle_background(directory: &Path, theme_name: &str, first: bool) -> Result<bool, String> {
     let _guard = crate::effects_gate::lock_pumping(pump);
     cycle_unlocked(directory, theme_name, first)
 }
 unsafe fn cycle_unlocked(directory: &Path, theme_name: &str, first: bool) -> Result<bool, String> {
     let list = backgrounds(theme_name);
-    let current = if first {
-        None
-    } else {
-        wallpaper().ok().map(PathBuf::from)
-    };
+    let current = if first { None } else { wallpaper().ok().map(PathBuf::from) };
     match crate::theme_files::next_background(&list, current.as_deref()) {
         Some(next) => apply_wallpaper(directory, &next).map(|()| true),
         None => Ok(false),
@@ -329,3 +312,4 @@ fn write_text_atomic(path: &Path, text: &str) -> Result<(), String> {
     }
     result.map_err(|e: std::io::Error| e.to_string())
 }
+

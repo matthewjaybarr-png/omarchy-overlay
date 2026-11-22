@@ -137,9 +137,7 @@ struct Fonts {
 impl Drop for Fonts {
     fn drop(&mut self) {
         unsafe {
-            for font in [
-                self.text, self.bold, self.icon, self.small, self.body, self.title,
-            ] {
+            for font in [self.text, self.bold, self.icon, self.small, self.body, self.title] {
                 if !font.is_null() {
                     DeleteObject(font as HGDIOBJ);
                 }
@@ -541,8 +539,10 @@ unsafe fn layout(hwnd: HWND) {
         // Omarchy's launcher card: up to 7 columns and 4 rows, a fixed size, centred.
         let cell = unit(CELL_W);
         let chrome = 2 * unit(INSET) + unit(SEARCH + SEARCH_GAP);
-        let width = (work.right - work.left - unit(80)).min(GRID_COLUMNS * cell + 2 * unit(INSET));
-        let height = (work.bottom - work.top - unit(80)).min(chrome + GRID_ROWS * unit(CELL_H));
+        let width =
+            (work.right - work.left - unit(80)).min(GRID_COLUMNS * cell + 2 * unit(INSET));
+        let height =
+            (work.bottom - work.top - unit(80)).min(chrome + GRID_ROWS * unit(CELL_H));
         let columns = ((width - 2 * unit(INSET)) / cell).max(1);
         let shown = ((height - chrome) / unit(CELL_H)).max(1);
         with(|o| {
@@ -1019,14 +1019,7 @@ unsafe fn grid(hdc: HDC, o: &Overlay, f: &Fonts, client: &RECT) {
             left: bar.right - w,
             ..bar
         };
-        text(
-            hdc,
-            f.small,
-            p.accent,
-            &o.message,
-            &mut mr,
-            DT_RIGHT | DT_END_ELLIPSIS,
-        );
+        text(hdc, f.small, p.accent, &o.message, &mut mr, DT_RIGHT | DT_END_ELLIPSIS);
         bar.right -= w + unit(8);
     }
     let (typed, color) = if o.filter.is_empty() {
@@ -1034,14 +1027,7 @@ unsafe fn grid(hdc: HDC, o: &Overlay, f: &Fonts, client: &RECT) {
     } else {
         (o.filter.clone(), p.text)
     };
-    text(
-        hdc,
-        f.text,
-        color,
-        &typed,
-        &mut bar,
-        DT_LEFT | DT_END_ELLIPSIS,
-    );
+    text(hdc, f.text, color, &typed, &mut bar, DT_LEFT | DT_END_ELLIPSIS);
     let top = inset + unit(SEARCH + SEARCH_GAP);
     if o.filtered.is_empty() {
         let mut r = RECT {
@@ -1051,14 +1037,7 @@ unsafe fn grid(hdc: HDC, o: &Overlay, f: &Fonts, client: &RECT) {
             bottom: client.bottom - inset,
         };
         let empty = format!("No apps match \"{}\"", o.filter);
-        text(
-            hdc,
-            f.title,
-            blend(p.text, p.background, 0.7),
-            &empty,
-            &mut r,
-            DT_CENTER,
-        );
+        text(hdc, f.title, blend(p.text, p.background, 0.7), &empty, &mut r, DT_CENTER);
     }
     let picture = unit(CELL_ICON);
     let flags = DT_CENTER | DT_WORDBREAK | DT_EDITCONTROL | DT_END_ELLIPSIS | DT_NOPREFIX;
@@ -1085,17 +1064,7 @@ unsafe fn grid(hdc: HDC, o: &Overlay, f: &Fonts, client: &RECT) {
             }
         };
         if !icon.is_null() {
-            DrawIconEx(
-                hdc,
-                ix,
-                iy,
-                icon,
-                picture,
-                picture,
-                0,
-                null_mut(),
-                DI_NORMAL,
-            );
+            DrawIconEx(hdc, ix, iy, icon, picture, picture, 0, null_mut(), DI_NORMAL);
         }
         let label: Vec<u16> = row.label.encode_utf16().collect();
         let old = SelectObject(hdc, f.body as HGDIOBJ);
@@ -1106,13 +1075,7 @@ unsafe fn grid(hdc: HDC, o: &Overlay, f: &Fonts, client: &RECT) {
             bottom: y + cell_h - unit(CELL_PAD),
         };
         let mut size = lr;
-        DrawTextW(
-            hdc,
-            label.as_ptr(),
-            label.len() as i32,
-            &mut size,
-            flags | DT_CALCRECT,
-        );
+        DrawTextW(hdc, label.as_ptr(), label.len() as i32, &mut size, flags | DT_CALCRECT);
         lr.bottom = lr.bottom.min(size.bottom);
         if selected {
             let w = (size.right - size.left).min(lr.right - lr.left);
@@ -1362,12 +1325,7 @@ unsafe extern "system" fn proc_(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) 
                 // A list scrolls 3 rows a notch, the grid one row of cells.
                 let cols = o.columns.max(1);
                 let step = if cols > 1 { cols } else { 3 };
-                let max = o
-                    .filtered
-                    .len()
-                    .div_ceil(cols)
-                    .saturating_sub(o.visible / cols)
-                    * cols;
+                let max = o.filtered.len().div_ceil(cols).saturating_sub(o.visible / cols) * cols;
                 o.top = if delta > 0 {
                     o.top.saturating_sub(step)
                 } else {

@@ -458,10 +458,7 @@ unsafe fn install_command(arguments: &[String], directory: &Path) -> i32 {
     if !crate::launch_unelevated::process_elevated() {
         // The task must run as the signed-in user, so pass that name to the elevated copy.
         let mut relaunch = if installing {
-            format!(
-                "--install --yes --user {}",
-                crate::launch_unelevated::quote(&user)
-            )
+            format!("--install --yes --user {}", crate::launch_unelevated::quote(&user))
         } else if remove_settings {
             "--uninstall --remove-settings".into()
         } else {
@@ -527,9 +524,7 @@ unsafe fn install_locked(
         return match installed {
             Ok(report) => {
                 if let Err(error) = crate::install::start_task() {
-                    log(&format!(
-                        "Installer: could not start the logon task: {error}"
-                    ));
+                    log(&format!("Installer: could not start the logon task: {error}"));
                 }
                 say(&crate::install_files::success_message(
                     plan,
@@ -556,10 +551,7 @@ unsafe fn install_locked(
     say(&if errors.is_empty() {
         "Omarchy Overlay is uninstalled and the desktop is restored.".to_string()
     } else {
-        format!(
-            "Uninstall finished with problems:\r\n{}",
-            errors.join("\r\n")
-        )
+        format!("Uninstall finished with problems:\r\n{}", errors.join("\r\n"))
     });
     crate::install::remove_folder_after_exit();
     i32::from(!errors.is_empty())
@@ -725,10 +717,7 @@ unsafe fn shell_in(path: &Path, arguments: &str, directory: Option<&Path>) -> bo
         // Admin mode never starts apps elevated; with no helper the launch fails.
         let started = crate::launch_unelevated::shell_unelevated(path, arguments, directory);
         if !started {
-            log(&format!(
-                "Could not start {} without elevation.",
-                path.display()
-            ));
+            log(&format!("Could not start {} without elevation.", path.display()));
         }
         return started;
     }
@@ -778,10 +767,7 @@ unsafe fn about(owner: HWND) {
             "Settings folder (shared by every version):\r\n{}",
             folder.display()
         ),
-        None => format!(
-            "Settings and config files:\r\n{}",
-            data_directory().display()
-        ),
+        None => format!("Settings and config files:\r\n{}", data_directory().display()),
     };
     let program = std::env::current_exe()
         .map(|p| p.display().to_string())
@@ -834,19 +820,11 @@ pub fn run() {
             }
             arguments.drain(..arguments.len().min(2));
         }
-        if let Some((path, args, folder)) = crate::launch_unelevated::parse_helper_args(&arguments)
-        {
+        if let Some((path, args, folder)) = crate::launch_unelevated::parse_helper_args(&arguments) {
             // Started by an elevated instance through Explorer: open the item and exit.
-            std::process::exit(if shell_direct(&path, &args, folder.as_deref()) {
-                0
-            } else {
-                1
-            });
+            std::process::exit(if shell_direct(&path, &args, folder.as_deref()) { 0 } else { 1 });
         }
-        if matches!(
-            arguments.first().map(String::as_str),
-            Some("--install" | "--uninstall")
-        ) {
+        if matches!(arguments.first().map(String::as_str), Some("--install" | "--uninstall")) {
             std::process::exit(install_command(&arguments, &directory));
         }
         if let [flag, path] = arguments.as_slice() {
@@ -953,12 +931,7 @@ pub fn run() {
             ) == 2
         });
         ON_STICK.store(stick, std::sync::atomic::Ordering::Relaxed);
-        let mut active_profile = match profile::find_for(
-            &executable,
-            &directory,
-            explicit,
-            crate::install::is_installed(&executable),
-        ) {
+        let mut active_profile = match profile::find_for(&executable, &directory, explicit, crate::install::is_installed(&executable)) {
             profile::Found::Use(active) => active,
             profile::Found::Missing { folder, source } => {
                 let (text, buttons) = match &source {
@@ -2478,11 +2451,7 @@ impl App {
         // Lets other programs (and the VM tests) read the shown workspace and how many show.
         if let Some(s) = crate::desktops::snapshot() {
             let state = (s.current + 1) | s.ids.len() << 8;
-            SetPropW(
-                self.main,
-                wide("OmarchyOverlay.Workspace").as_ptr(),
-                state as HANDLE,
-            );
+            SetPropW(self.main, wide("OmarchyOverlay.Workspace").as_ptr(), state as HANDLE);
         }
         if !self.active {
             // A paused overlay moves no windows: the ones on screen belong to whichever
@@ -3210,11 +3179,7 @@ impl App {
             7 => exit_for_stick(),
             8 | 9 => {
                 // The new process elevates itself and closes this copy before it changes anything.
-                let flag = if selected == 8 {
-                    "--install"
-                } else {
-                    "--uninstall"
-                };
+                let flag = if selected == 8 { "--install" } else { "--uninstall" };
                 if let Err(error) = std::process::Command::new(&exe).arg(flag).spawn() {
                     message(&error.to_string());
                 }

@@ -21,9 +21,9 @@ mod dwindle;
 #[cfg(any(windows, test))]
 mod effects_gate;
 #[cfg(any(windows, test))]
-mod font_names;
-#[cfg(any(windows, test))]
 mod frame_colors;
+#[cfg(any(windows, test))]
+mod font_names;
 #[cfg(any(windows, test))]
 mod install;
 #[cfg(any(windows, test))]
@@ -69,7 +69,5 @@ fn main() {
     #[cfg(windows)]
     windows::run();
     #[cfg(not(windows))]
-    eprintln!(
-        "Omarchy Overlay runs on Windows 11. Use cargo test here to verify layout calculations."
-    );
+    eprintln!("Omarchy Overlay runs on Windows 11. Use cargo test here to verify layout calculations.");
 }

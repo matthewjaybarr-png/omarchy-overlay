@@ -198,10 +198,7 @@ impl Config {
         if !(1..=4).contains(&self.scrolling_columns) {
             return Err("Scrolling columns must be between 1 and 4.".into());
         }
-        if !crate::commands::LAYOUTS
-            .iter()
-            .any(|(name, _)| *name == self.layout)
-        {
+        if !crate::commands::LAYOUTS.iter().any(|(name, _)| *name == self.layout) {
             return Err("Unsupported layout.".into());
         }
         if self.rules.len() > 256
@@ -283,20 +280,14 @@ mod tests {
         let reset = c.reset_keeping_profiles();
         let d = Config::default();
         assert_eq!((reset.theme.as_str(), reset.gap), (d.theme.as_str(), d.gap));
-        assert_eq!(
-            reset.bar.all_display(),
-            Some(crate::bar_model::DisplayMode::Icon)
-        );
+        assert_eq!(reset.bar.all_display(), Some(crate::bar_model::DisplayMode::Icon));
         assert_eq!(reset.appearance_profiles.len(), 1);
         reset.validate().unwrap();
     }
     #[test]
     fn walker_menu_font_by_default() {
         let c = Config::default();
-        assert_eq!(
-            (c.menu_font.as_str(), c.menu_font_size),
-            ("JetBrainsMono Nerd Font", 14)
-        );
+        assert_eq!((c.menu_font.as_str(), c.menu_font_size), ("JetBrainsMono Nerd Font", 14));
     }
     #[test]
     fn waybar_bar_opacity_by_default() {

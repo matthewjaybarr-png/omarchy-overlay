@@ -54,15 +54,8 @@ impl App {
             self.float_window(hwnd);
         }
         let area = info.rcWork;
-        let (width, height) = (
-            1300.min(area.right - area.left),
-            900.min(area.bottom - area.top),
-        );
-        SetPropW(
-            hwnd,
-            wide(POP).as_ptr(),
-            if tiled { 1 } else { 2 } as HANDLE,
-        );
+        let (width, height) = (1300.min(area.right - area.left), 900.min(area.bottom - area.top));
+        SetPropW(hwnd, wide(POP).as_ptr(), if tiled { 1 } else { 2 } as HANDLE);
         if IsZoomed(hwnd) != 0 {
             ShowWindow(hwnd, SW_RESTORE);
         }
