@@ -34,8 +34,8 @@ Admin on your own PC when its keys must also work in apps running as administrat
   actions, defined in `config\binds.conf`.
 - **Top bar:** ten workspaces of its own, the active app, a clock,
   a tray and modules.
-- **Themes:** every Omarchy theme (Neon Ridge, Tokyo Night, Catppuccin,
-  Gruvbox, Nord and more) built in, plus Mica and
+- **Themes:** every stock Omarchy theme (Tokyo Night, the default, Catppuccin,
+  Gruvbox, Nord and more) built in, plus a few extra themes, Mica and
   Acrylic materials and window opacity. It can apply the theme to Windows'
   own settings and puts the originals back on exit.
 - **Recovery:** if the program exits or crashes, it restores the taskbar,
@@ -163,7 +163,7 @@ Choose **Appearance > Apply theme to Windows**. Each line shows the current
 value; **Enter** changes it.
 
 - Windows dark/light mode, Transparency effects, Accent color on Start and taskbar.
-- **Accent color** shows the theme's accent (Neon Ridge: `#2A3A78`). The theme
+- **Accent color** shows the theme's accent (Tokyo Night: `#7AA2F7`). The theme
   sets it as the Windows accent too; the original returns on exit.
 - **Other apps' window frames follow the theme** gives other programs a dark
   frame with the theme's border and caption colors. **Mica or Acrylic** adds a
@@ -276,8 +276,10 @@ text in the app window's title.
 
 ### themes
 
-The built-in themes are the Omarchy themes, embedded from their `colors.toml`
-files. Add or replace a theme in either form:
+The built-in themes are the stock Omarchy themes, embedded from their
+`colors.toml` files, plus a few extras that are not part of stock Omarchy (Aether,
+Alpenglow Night, Haunted Town, Machine Shop, Neon Ridge and Purple Mountain).
+Tokyo Night, Omarchy's default, is the theme of a new setup. Add or replace a theme in either form:
 
 - `config\themes\<name>.toml`: an Omarchy `colors.toml` file; the file name
   is the theme name.
@@ -350,7 +352,7 @@ Used in binds.conf and menu.json.
 | `move-to-workspace <1-10>` | Moves the focused window to that workspace and goes there |
 | `move-to-workspace-silent <1-10>` | Moves the focused window to that workspace and stays |
 | `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling`, `centered`, `monocle` |
-| `theme <name>` | Switches theme, for example `theme neon-ridge` |
+| `theme <name>` | Switches theme, for example `theme tokyo-night` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |
 | `action <id>` | Runs a window action, for example `action close-window` |
 | `launch <file> [arguments]` | Runs a program or script stored inside the config folder, as you |

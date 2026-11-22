@@ -19,6 +19,9 @@
   every window back.
 - **Super+O** pops a window out: it floats at 1300x900 in the middle of the screen,
   on top of the tiles and on every workspace. Press it again to put the window back.
+- Startup retries hotkey registration once after a second when none registered,
+  which happens when a copy that was just closed still holds every key, and logs
+  the Windows error code for each key that failed.
 
 ## 0.3.0
 
@@ -52,7 +55,7 @@
 
 ## 0.2.0
 
-- Every Omarchy theme is built in, Neon Ridge first, replacing the old
+- Every Omarchy theme is built in, replacing the old
   hand-written palettes. A theme you add under `config\themes\` as a
   `<name>.toml` file or an Omarchy theme folder (`<name>\colors.toml`, with
   `backgrounds`) loads too, and replaces a built-in theme of the same name.
