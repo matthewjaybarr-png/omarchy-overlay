@@ -3645,6 +3645,15 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 }
                 Some(0)
             }
+            keyhook::SCROLL_MESSAGE => {
+                if l as usize == app.bind_generation && !app.keys_paused {
+                    let name = if w == 1 { "next-desktop" } else { "previous-desktop" };
+                    if let Ok(command) = crate::commands::parse(name) {
+                        app.run_command(&command, false);
+                    }
+                }
+                Some(0)
+            }
             keyhook::TAP_MESSAGE => {
                 app.open_level(overlay::Level::Apps, true);
                 Some(0)

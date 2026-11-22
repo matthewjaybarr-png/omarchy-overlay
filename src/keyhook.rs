@@ -13,6 +13,8 @@ use std::sync::{
 
 pub(super) const BIND_MESSAGE: u32 = WM_APP + 70;
 pub(super) const TAP_MESSAGE: u32 = WM_APP + 71;
+/// Super + mouse wheel: wParam is 1 for the next workspace, 0 for the previous one.
+pub(super) const SCROLL_MESSAGE: u32 = WM_APP + 73;
 /// Mirrors App::active so tiling-only binds pass through while tiling is off.
 pub(super) static TILING: AtomicBool = AtomicBool::new(false);
 /// An unassigned key code. Pressing it between Super down and Super up stops Start
@@ -33,6 +35,8 @@ struct State {
     super_down: bool,
     /// Another key was pressed while Super was down, so it was not a tap.
     other: bool,
+    /// Wheel movement while Super is held, not yet a whole notch (touchpads send less).
+    wheel: i32,
     generation: usize,
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -126,6 +130,7 @@ unsafe fn handle(message: u32, vk: u32) -> bool {
             if !s.super_down {
                 s.super_down = true;
                 s.other = false;
+                s.wheel = 0;
             }
             return false;
         }
@@ -175,6 +180,54 @@ unsafe fn handle(message: u32, vk: u32) -> bool {
     true
 }
 
+/// Adds a wheel delta to the carried remainder and returns whole notches: positive is
+/// away from the user (previous workspace), negative towards (next workspace).
+fn wheel_notches(carry: &mut i32, delta: i32) -> i32 {
+    *carry += delta;
+    let notches = *carry / WHEEL_DELTA as i32;
+    *carry -= notches * WHEEL_DELTA as i32;
+    notches
+}
+
+/// Super + wheel switches workspace, as on Omarchy. True swallows the wheel event.
+unsafe fn handle_wheel(delta: i32) -> bool {
+    let mut guard = state();
+    let Some(s) = guard.as_mut() else {
+        return false;
+    };
+    if !s.super_down {
+        s.wheel = 0;
+        return false;
+    }
+    let first = !s.other;
+    s.other = true;
+    let notches = wheel_notches(&mut s.wheel, delta);
+    for _ in 0..notches.unsigned_abs() {
+        PostMessageW(
+            s.owner as HWND,
+            SCROLL_MESSAGE,
+            (notches < 0) as usize,
+            s.generation as isize,
+        );
+    }
+    drop(guard);
+    if first {
+        // Releasing Super would otherwise open Start: Windows ignores the wheel.
+        send(&[(MASK, false), (MASK, true)]);
+    }
+    true
+}
+
+unsafe extern "system" fn mouse_hook(code: i32, w: WPARAM, l: LPARAM) -> LRESULT {
+    if code == HC_ACTION as i32 && w as u32 == WM_MOUSEWHEEL {
+        let m = &*(l as *const MSLLHOOKSTRUCT);
+        if m.flags & LLMHF_INJECTED == 0 && handle_wheel((m.mouseData >> 16) as i16 as i32) {
+            return 1;
+        }
+    }
+    CallNextHookEx(null_mut(), code, w, l)
+}
+
 unsafe extern "system" fn hook(code: i32, w: WPARAM, l: LPARAM) -> LRESULT {
     if code == HC_ACTION as i32 {
         let k = &*(l as *const KBDLLHOOKSTRUCT);
@@ -215,6 +268,7 @@ pub(super) unsafe fn start(owner: HWND, binds: &[binds::Bind], tap: &str) -> Res
         },
         super_down: false,
         other: false,
+        wheel: 0,
         generation,
     });
     let (sender, receiver) = mpsc::channel();
@@ -227,7 +281,12 @@ pub(super) unsafe fn start(owner: HWND, binds: &[binds::Bind], tap: &str) -> Res
         if h.is_null() {
             return;
         }
+        // Without the mouse hook only Super + wheel is lost, so a failure is not fatal.
+        let mouse = SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook), GetModuleHandleW(null()), 0);
         while GetMessageW(&mut msg, null_mut(), 0, 0) > 0 {}
+        if !mouse.is_null() {
+            UnhookWindowsHookEx(mouse);
+        }
         UnhookWindowsHookEx(h);
     });
     match receiver.recv_timeout(std::time::Duration::from_secs(2)) {
@@ -378,4 +437,23 @@ pub(super) unsafe fn holders() -> Vec<String> {
     let mut found: Vec<String> = vec![];
     EnumWindows(Some(each), &mut found as *mut _ as LPARAM);
     found
+}
+
+#[cfg(test)]
+mod wheel_tests {
+    use super::wheel_notches;
+
+    #[test]
+    fn whole_notches_carry_the_remainder() {
+        let mut carry = 0;
+        assert_eq!(wheel_notches(&mut carry, -120), -1);
+        assert_eq!(wheel_notches(&mut carry, 240), 2);
+        // A touchpad's small steps add up to one notch.
+        assert_eq!(wheel_notches(&mut carry, 50), 0);
+        assert_eq!(wheel_notches(&mut carry, 50), 0);
+        assert_eq!(wheel_notches(&mut carry, 50), 1);
+        assert_eq!(carry, 30);
+        assert_eq!(wheel_notches(&mut carry, -150), -1);
+        assert_eq!(carry, 0);
+    }
 }
