@@ -100,8 +100,18 @@ impl App {
     pub(super) unsafe fn profiles_command(&mut self, id: usize) -> Result<(), String> {
         match id {
             80 => {
-                let path = std::env::current_exe()
-                    .map_err(|e| e.to_string())?
+                let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+                if crate::install::winget_portable(&exe)
+                    && MessageBoxW(
+                        self.profiles,
+                        wide("winget replaces this folder on every upgrade, so a portable profile here will be deleted by the next winget upgrade. Save it anyway?").as_ptr(),
+                        wide(NAME).as_ptr(),
+                        MB_YESNO | MB_ICONWARNING,
+                    ) != IDYES
+                {
+                    return Ok(());
+                }
+                let path = exe
                     .parent()
                     .ok_or("Executable folder is unavailable.")?
                     .join(profile::FILE_NAME);
