@@ -6,7 +6,7 @@ A keyboard-first tiling window manager for Windows 11, inspired by the
 > **Not affiliated with Omarchy or its authors.** It's an independent project
 > that brings an Omarchy-style workflow to Windows.
 
-![Opening terminals and Notepad, which tile as they open, then cycling through the layouts and switching workspace](docs/screenshots/demo.gif)
+![Opening terminals, which tile as they open, then cycling through the layouts and switching workspace](docs/screenshots/demo.gif)
 
 *Super + Return opens a terminal and it tiles; Super + Shift + L cycles the layouts.*
 
