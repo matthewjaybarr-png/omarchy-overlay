@@ -2,6 +2,8 @@
 
 A keyboard-first tiling window manager for Windows 11, inspired by the
 [Omarchy](https://omarchy.org) desktop. It's written in Rust.
+I built it because I have to use Windows at work and wanted the Omarchy workflow
+there too.
 
 > **Not affiliated with Omarchy or its authors.** It's an independent project
 > that brings an Omarchy-style workflow to Windows.
