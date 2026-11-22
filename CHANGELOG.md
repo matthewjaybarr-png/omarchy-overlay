@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Super + left drag** moves a window and **Super + right drag** resizes it, as on
+  Omarchy. Dropping a tiled window on another tile swaps them, and resizing a tile
+  moves its neighbours with it.
 - **Super + mouse wheel** switches to the previous or next workspace, as on
   Omarchy. A touchpad's small scroll steps add up to one workspace per notch.
 - In a winget install, **Make this folder portable** now warns that the next

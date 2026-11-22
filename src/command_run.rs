@@ -509,6 +509,8 @@ impl App {
     /// Re-registers every Omarchy Overlay key for the current keymap. Paused, nothing is held.
     pub(super) unsafe fn restart_keys(&mut self) {
         keyhook::stop();
+        // A stopped hook never sends the button-up, so end any Super + drag here.
+        self.mouse_drag_event(keyhook::DRAG_END);
         for id in self.hotkeys.drain(..) {
             UnregisterHotKey(self.main, id);
         }

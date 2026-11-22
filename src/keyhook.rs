@@ -15,6 +15,14 @@ pub(super) const BIND_MESSAGE: u32 = WM_APP + 70;
 pub(super) const TAP_MESSAGE: u32 = WM_APP + 71;
 /// Super + mouse wheel: wParam is 1 for the next workspace, 0 for the previous one.
 pub(super) const SCROLL_MESSAGE: u32 = WM_APP + 73;
+/// Super + mouse drag: wParam is one of the DRAG_* values below.
+pub(super) const DRAG_MESSAGE: u32 = WM_APP + 74;
+pub(super) const DRAG_MOVE: usize = 0;
+pub(super) const DRAG_RESIZE: usize = 1;
+pub(super) const DRAG_MOTION: usize = 2;
+pub(super) const DRAG_END: usize = 3;
+/// Set while a DRAG_MOTION message waits in the queue, so mouse moves are not piled up.
+pub(super) static DRAG_PENDING: AtomicBool = AtomicBool::new(false);
 /// Mirrors App::active so tiling-only binds pass through while tiling is off.
 pub(super) static TILING: AtomicBool = AtomicBool::new(false);
 /// An unassigned key code. Pressing it between Super down and Super up stops Start
@@ -37,6 +45,8 @@ struct State {
     other: bool,
     /// Wheel movement while Super is held, not yet a whole notch (touchpads send less).
     wheel: i32,
+    /// The button-up message that ends the current Super + drag.
+    drag_up: Option<u32>,
     generation: usize,
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -218,10 +228,59 @@ unsafe fn handle_wheel(delta: i32) -> bool {
     true
 }
 
+/// Super + left drag moves a window and Super + right drag resizes it, as on Omarchy.
+/// The buttons are swallowed; the main window does the moving. True swallows the event.
+unsafe fn handle_button(message: u32) -> bool {
+    let mut guard = state();
+    let Some(s) = guard.as_mut() else {
+        return false;
+    };
+    let post =
+        |kind: usize| PostMessageW(s.owner as HWND, DRAG_MESSAGE, kind, s.generation as isize);
+    if let Some(up) = s.drag_up {
+        if message == WM_MOUSEMOVE {
+            if !DRAG_PENDING.swap(true, Ordering::AcqRel) {
+                post(DRAG_MOTION);
+            }
+            return false;
+        }
+        if message == up {
+            s.drag_up = None;
+            post(DRAG_END);
+            return true;
+        }
+        return false;
+    }
+    let (kind, up) = match message {
+        WM_LBUTTONDOWN => (DRAG_MOVE, WM_LBUTTONUP),
+        WM_RBUTTONDOWN => (DRAG_RESIZE, WM_RBUTTONUP),
+        _ => return false,
+    };
+    if !s.super_down || !TILING.load(Ordering::Relaxed) {
+        return false;
+    }
+    let first = !s.other;
+    s.other = true;
+    s.drag_up = Some(up);
+    post(kind);
+    drop(guard);
+    if first {
+        send(&[(MASK, false), (MASK, true)]);
+    }
+    true
+}
+
 unsafe extern "system" fn mouse_hook(code: i32, w: WPARAM, l: LPARAM) -> LRESULT {
-    if code == HC_ACTION as i32 && w as u32 == WM_MOUSEWHEEL {
+    if code == HC_ACTION as i32 {
         let m = &*(l as *const MSLLHOOKSTRUCT);
-        if m.flags & LLMHF_INJECTED == 0 && handle_wheel((m.mouseData >> 16) as i16 as i32) {
+        let message = w as u32;
+        let swallow = m.flags & LLMHF_INJECTED == 0
+            && if message == WM_MOUSEWHEEL {
+                handle_wheel((m.mouseData >> 16) as i16 as i32)
+            } else {
+                handle_button(message)
+            };
+        if swallow {
             return 1;
         }
     }
@@ -269,6 +328,7 @@ pub(super) unsafe fn start(owner: HWND, binds: &[binds::Bind], tap: &str) -> Res
         super_down: false,
         other: false,
         wheel: 0,
+        drag_up: None,
         generation,
     });
     let (sender, receiver) = mpsc::channel();
@@ -281,7 +341,7 @@ pub(super) unsafe fn start(owner: HWND, binds: &[binds::Bind], tap: &str) -> Res
         if h.is_null() {
             return;
         }
-        // Without the mouse hook only Super + wheel is lost, so a failure is not fatal.
+        // Without the mouse hook only Super + wheel and Super + drag are lost, so a failure is not fatal.
         let mouse = SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook), GetModuleHandleW(null()), 0);
         while GetMessageW(&mut msg, null_mut(), 0, 0) > 0 {}
         if !mouse.is_null() {

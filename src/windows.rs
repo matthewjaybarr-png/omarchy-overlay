@@ -327,6 +327,7 @@ struct App {
     menu_target: Option<tasks::Task>,
     layout_sessions: HashMap<String, LayoutSession>,
     drag: Option<resize::Drag>,
+    mouse_drag: Option<resize::MouseDrag>,
     order: Vec<isize>,
     /// The workspace whose windows are on screen, and the windows parked for the others.
     workspace: usize,
@@ -1425,6 +1426,7 @@ pub fn run() {
             menu_target: None,
             layout_sessions: HashMap::new(),
             drag: None,
+            mouse_drag: None,
             order: vec![],
             workspace: 0,
             parked: HashMap::new(),
@@ -2421,6 +2423,7 @@ impl App {
         self.layout_sessions.clear();
         self.layout_desktop.clear();
         self.drag = None;
+        self.mouse_drag = None;
         self.moves.clear();
         self.saved.retain(|&key, saved| !saved.restore(key as HWND));
         if let Err(error) = self.save_positions() {
@@ -2459,7 +2462,7 @@ impl App {
             self.workspace = crate::desktops::current();
             return;
         }
-        if self.drag.is_some() {
+        if self.drag.is_some() || self.mouse_drag.is_some() {
             return;
         }
         self.sync_workspace();
@@ -2819,6 +2822,25 @@ impl App {
             _ => {}
         }
     }
+    /// Swaps two tiled windows on the same monitor and retiles.
+    unsafe fn swap_tiles(&mut self, current: isize, destination: isize) {
+        let (Some(a), Some(b)) = (
+            self.order.iter().position(|key| *key == current),
+            self.order.iter().position(|key| *key == destination),
+        ) else {
+            return;
+        };
+        let monitor = MonitorFromWindow(current as HWND, MONITOR_DEFAULTTONEAREST) as isize;
+        if self.layout_for_monitor(monitor as HMONITOR) == "dwindle" {
+            if let Some(tree) = self.dwindle.get_mut(&monitor) {
+                tree.swap(current, destination);
+            }
+        }
+        self.order.swap(a, b);
+        self.dirty = true;
+        self.tick();
+    }
+
     unsafe fn navigate(&mut self, dx: i32, dy: i32, swap: bool) {
         let current = GetForegroundWindow() as isize;
         if dx != 0
@@ -2878,21 +2900,7 @@ impl App {
                 {
                     return;
                 }
-                let a = self.order.iter().position(|key| *key == current).unwrap();
-                let b = self
-                    .order
-                    .iter()
-                    .position(|key| *key == destination)
-                    .unwrap();
-                let monitor = MonitorFromWindow(current as HWND, MONITOR_DEFAULTTONEAREST) as isize;
-                if self.layout_for_monitor(monitor as HMONITOR) == "dwindle" {
-                    if let Some(tree) = self.dwindle.get_mut(&monitor) {
-                        tree.swap(current, destination);
-                    }
-                }
-                self.order.swap(a, b);
-                self.dirty = true;
-                self.tick();
+                self.swap_tiles(current, destination);
             } else {
                 SetForegroundWindow(destination as HWND);
             }
@@ -3651,6 +3659,18 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                     if let Ok(command) = crate::commands::parse(name) {
                         app.run_command(&command, false);
                     }
+                }
+                Some(0)
+            }
+            keyhook::DRAG_MESSAGE => {
+                if w == keyhook::DRAG_MOTION {
+                    keyhook::DRAG_PENDING.store(false, std::sync::atomic::Ordering::Release);
+                }
+                // Motion and the end always reach a drag already under way.
+                if w >= keyhook::DRAG_MOTION
+                    || (l as usize == app.bind_generation && !app.keys_paused)
+                {
+                    app.mouse_drag_event(w);
                 }
                 Some(0)
             }
