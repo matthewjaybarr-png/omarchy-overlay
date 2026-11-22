@@ -6,6 +6,10 @@ A keyboard-first tiling window manager for Windows 11, inspired by the
 > **Not affiliated with Omarchy or its authors.** It's an independent project
 > that brings an Omarchy-style workflow to Windows.
 
+![Opening terminals and Notepad, which tile as they open, then cycling through the layouts and switching workspace](docs/screenshots/demo.gif)
+
+*Super + Return opens a terminal and it tiles; Super + Shift + L cycles the layouts.*
+
 ![The Omarchy Overlay menu over the Tokyo Night background, with the top bar](docs/screenshots/desktop.jpg)
 
 *Out of the box: Tokyo Night, Omarchy's default theme, with its first background,
@@ -20,7 +24,7 @@ focused window.*
 
 *The app grid (**Super + Alt + Space**): type to filter, arrow keys move in the grid.*
 
-**Status: early.** This is version 0.3.0. It comes in two editions built from the
+**Status: early.** This is version 0.4.0. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
 Pick Standard on a PC where you are not an administrator, or to try it out. Pick
@@ -34,8 +38,8 @@ Admin on your own PC when its keys must also work in apps running as administrat
   actions, defined in `config\binds.conf`.
 - **Top bar:** ten workspaces of its own, the active app, a clock,
   a tray and modules.
-- **Themes:** every Omarchy theme (Neon Ridge, Tokyo Night, Catppuccin,
-  Gruvbox, Nord and more) built in, plus Mica and
+- **Themes:** every stock Omarchy theme (Tokyo Night, the default, Catppuccin,
+  Gruvbox, Nord and more) built in, plus a few extra themes, Mica and
   Acrylic materials and window opacity. It can apply the theme to Windows'
   own settings and puts the originals back on exit.
 - **Recovery:** if the program exits or crashes, it restores the taskbar,
@@ -43,13 +47,14 @@ Admin on your own PC when its keys must also work in apps running as administrat
 
 ## Getting started
 
-1. Build it (see below), or download a release when one is published.
-2. Put `OmarchyOverlay.exe` in a folder with `assets\fonts` (as `fonts`) and `config\examples`
-   folders from this repository.
-3. Run `OmarchyOverlay.exe`. The menu opens at start.
-4. Press **Super + Space** for the menu, **Super + Alt + Space** for the app grid,
+1. Download `OmarchyOverlay-<version>-standard.zip` from the
+   [latest release](https://github.com/matthewjaybarr-png/omarchy-overlay/releases/latest)
+   and unzip it anywhere. No installer and no administrator rights. (Or build it; see below.)
+2. Run `OmarchyOverlay.exe`. The menu opens at start. The exe is not code-signed yet,
+   so Windows SmartScreen may warn the first time: choose **More info > Run anyway**.
+3. Press **Super + Space** for the menu, **Super + Alt + Space** for the app grid,
    **Super + K** for every keybind and **Super + Escape** for the System menu.
-5. To give every key back to Windows, choose **Trigger > Toggle > Pause Omarchy Overlay keys**.
+4. To give every key back to Windows, choose **Trigger > Toggle > Pause Omarchy Overlay keys**.
 
 Its logs and state are kept in `%LOCALAPPDATA%\OmarchyOverlay`.
 
@@ -163,7 +168,7 @@ Choose **Appearance > Apply theme to Windows**. Each line shows the current
 value; **Enter** changes it.
 
 - Windows dark/light mode, Transparency effects, Accent color on Start and taskbar.
-- **Accent color** shows the theme's accent (Neon Ridge: `#2A3A78`). The theme
+- **Accent color** shows the theme's accent (Tokyo Night: `#7AA2F7`). The theme
   sets it as the Windows accent too; the original returns on exit.
 - **Other apps' window frames follow the theme** gives other programs a dark
   frame with the theme's border and caption colors. **Mica or Acrylic** adds a
@@ -276,8 +281,10 @@ text in the app window's title.
 
 ### themes
 
-The built-in themes are the Omarchy themes, embedded from their `colors.toml`
-files. Add or replace a theme in either form:
+The built-in themes are the stock Omarchy themes, embedded from their
+`colors.toml` files, plus a few extras that are not part of stock Omarchy (Aether,
+Alpenglow Night, Haunted Town, Machine Shop, Neon Ridge and Purple Mountain).
+Tokyo Night, Omarchy's default, is the theme of a new setup. Add or replace a theme in either form:
 
 - `config\themes\<name>.toml`: an Omarchy `colors.toml` file; the file name
   is the theme name.
@@ -350,7 +357,7 @@ Used in binds.conf and menu.json.
 | `move-to-workspace <1-10>` | Moves the focused window to that workspace and goes there |
 | `move-to-workspace-silent <1-10>` | Moves the focused window to that workspace and stays |
 | `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling`, `centered`, `monocle` |
-| `theme <name>` | Switches theme, for example `theme neon-ridge` |
+| `theme <name>` | Switches theme, for example `theme tokyo-night` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |
 | `action <id>` | Runs a window action, for example `action close-window` |
 | `launch <file> [arguments]` | Runs a program or script stored inside the config folder, as you |
