@@ -118,6 +118,8 @@ finally {{ Stop-Transcript | Out-Null }}
     encoded = base64.b64encode(wrapped.encode('utf-16-le')).decode()
     source = f"""
 $ErrorActionPreference = 'Stop'
+# This call returns before the task ends, so each run clears the finished tasks of earlier runs.
+Get-ScheduledTask -TaskName 'Overlay-Test-*' -ErrorAction SilentlyContinue | Where-Object State -ne 'Running' | Unregister-ScheduledTask -Confirm:$false
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encoded}'
 $principal = New-ScheduledTaskPrincipal -UserId {quote(OPTIONS.user)} -LogonType Interactive -RunLevel {'Highest' if OPTIONS.elevated else 'Limited'}
 $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
