@@ -134,6 +134,10 @@ They are kept unless you run
   back.
 - **Super + mouse wheel** goes to the previous or next workspace, as on Omarchy.
   It works with the Super keys on, not in the **Ctrl+Alt keys only** keymap.
+- **Super + left drag** moves the window under the cursor, and **Super + right drag**
+  resizes it from the nearest corner, as on Omarchy. Dropping a tiled window on
+  another tile swaps the two; a resized tile pushes its neighbours. Both work while
+  tiling is on, with the Super keys on.
 - After an Omarchy Overlay Super key, releasing Super does not open Start.
 - In the Standard edition, windows running as administrator do not pass keys to
   Omarchy Overlay; click an ordinary window first. The Admin edition has no such limit.
