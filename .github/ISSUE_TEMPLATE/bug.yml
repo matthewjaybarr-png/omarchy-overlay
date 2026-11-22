@@ -1,0 +1,41 @@
+name: Bug report
+description: Something doesn't work or the desktop was left changed
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Omarchy Overlay version and edition
+      placeholder: 0.4.1 Standard
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installed with
+      options: [Zip, Scoop, winget, Admin INSTALL.cmd, Built from source]
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: From `winver`, for example Windows 11 24H2 (26100.4349). Mention your monitors and display scaling if it's a layout problem.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: The end of `%LOCALAPPDATA%\OmarchyOverlay\omarchy-overlay.log` (the `log` command in the menu opens it). Check it for anything private before pasting.
+      render: text
+  - type: markdown
+    attributes:
+      value: If the taskbar or windows were left hidden or moved, run `RECOVER.cmd` from the program folder.

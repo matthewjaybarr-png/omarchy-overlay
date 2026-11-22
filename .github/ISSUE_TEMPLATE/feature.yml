@@ -1,0 +1,16 @@
+name: Feature request
+description: A layout, bind, bar module or other idea
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What you'd like
+      description: What it should do, and where you've seen it (Omarchy, Hyprland, i3, another WM).
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What it would let you do that you can't now.
