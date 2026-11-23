@@ -31,6 +31,14 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("cut", "Universal cut"),
     ("select-all", "Select all"),
     ("minimize-window", "Minimize the focused window"),
+    ("volume-up", "Volume up"),
+    ("volume-down", "Volume down"),
+    ("mute", "Sound on or off"),
+    ("brightness-up", "Monitor brightness up (external monitors)"),
+    ("brightness-down", "Monitor brightness down (external monitors)"),
+    ("toggle-gaps", "Turn the gaps between windows off or back on"),
+    ("show-time", "Show the time and date"),
+    ("show-battery", "Show the battery level"),
     ("next-desktop", "Next workspace"),
     ("former-desktop", "Former workspace"),
     ("previous-desktop", "Previous workspace"),
@@ -373,8 +381,22 @@ impl Command {
     }
 }
 
+/// A brightness value moved by `percent` of the monitor's range, kept inside it.
+pub fn brightness_step(current: u32, maximum: u32, percent: i32) -> u32 {
+    (i64::from(current) + i64::from(maximum) * i64::from(percent) / 100)
+        .clamp(0, i64::from(maximum)) as u32
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn brightness_steps_stay_inside_the_monitor_range() {
+        assert_eq!(super::brightness_step(50, 100, 10), 60);
+        assert_eq!(super::brightness_step(95, 100, 10), 100);
+        assert_eq!(super::brightness_step(5, 100, -10), 0);
+        assert_eq!(super::brightness_step(30, 255, -10), 5);
+    }
+
     use super::*;
     #[test]
     fn commands_parse_to_fixed_functions_only() {

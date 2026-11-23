@@ -336,14 +336,27 @@ pub(super) unsafe fn start(owner: HWND, binds: &[binds::Bind], tap: &str) -> Res
         let mut msg: MSG = zeroed();
         // Creates this thread's message queue before its id is handed out.
         PeekMessageW(&mut msg, null_mut(), WM_USER, WM_USER, PM_NOREMOVE);
-        let h = SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook), GetModuleHandleW(null()), 0);
+        let mut h = SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook), GetModuleHandleW(null()), 0);
         let _ = sender.send((GetCurrentThreadId(), !h.is_null(), GetLastError()));
         if h.is_null() {
             return;
         }
         // Without the mouse hook only Super + wheel and Super + drag are lost, so a failure is not fatal.
         let mouse = SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook), GetModuleHandleW(null()), 0);
-        while GetMessageW(&mut msg, null_mut(), 0, 0) > 0 {}
+        // Windows asks the newest keyboard hook first, so a program started later (such as
+        // AutoHotkey at sign-in) would get our keys. Hooking again puts us back in front;
+        // keys without a bind still pass on to the others.
+        SetTimer(null_mut(), 0, 15_000, None);
+        while GetMessageW(&mut msg, null_mut(), 0, 0) > 0 {
+            if msg.message == WM_TIMER {
+                let newer =
+                    SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook), GetModuleHandleW(null()), 0);
+                if !newer.is_null() {
+                    UnhookWindowsHookEx(h);
+                    h = newer;
+                }
+            }
+        }
         if !mouse.is_null() {
             UnhookWindowsHookEx(mouse);
         }

@@ -35,6 +35,8 @@ mod fonts;
 mod keyhook;
 #[path = "module_settings.rs"]
 mod module_settings;
+#[path = "brightness.rs"]
+mod brightness;
 #[path = "native_status.rs"]
 mod native_status;
 #[path = "omarchy_keys.rs"]
@@ -328,6 +330,8 @@ struct App {
     layout_sessions: HashMap<String, LayoutSession>,
     drag: Option<resize::Drag>,
     mouse_drag: Option<resize::MouseDrag>,
+    /// The gap toggle-gaps turned off, to put back.
+    gaps_before: i32,
     order: Vec<isize>,
     /// The workspace whose windows are on screen, and the windows parked for the others.
     workspace: usize,
@@ -1427,6 +1431,7 @@ pub fn run() {
             layout_sessions: HashMap::new(),
             drag: None,
             mouse_drag: None,
+            gaps_before: 0,
             order: vec![],
             workspace: 0,
             parked: HashMap::new(),
