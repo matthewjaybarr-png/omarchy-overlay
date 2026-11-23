@@ -305,6 +305,9 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     if let Err(error) = restore_wallpaper(directory) {
         errors.push(error);
     }
+    if let Err(error) = windows_tweaks::restore(directory) {
+        errors.push(error);
+    }
     // One settings broadcast for every color value: each can take ~0.5 s with slow windows.
     let colors = windows_personalization::pending(directory) || windows_accent::pending(directory);
     if let Err(e) = windows_personalization::restore_quiet(directory) {

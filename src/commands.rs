@@ -82,6 +82,7 @@ pub const PAGES: &[(&str, &str)] = &[
     ("columns", "Scrolling columns"),
     ("opacity", "Window opacity"),
     ("corners", "Window corners"),
+    ("windows-tweaks", "Windows behavior"),
     ("inactive-opacity", "Inactive window opacity"),
     ("materials", "Blur and materials"),
     ("app-materials", "Material for app windows"),

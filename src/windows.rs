@@ -87,6 +87,8 @@ mod window_theme;
 mod windows_accent;
 #[path = "windows_personalization.rs"]
 mod windows_personalization;
+#[path = "windows_tweaks.rs"]
+mod windows_tweaks;
 #[path = "workspace_ui.rs"]
 mod workspace_ui;
 #[path = "workspaces.rs"]

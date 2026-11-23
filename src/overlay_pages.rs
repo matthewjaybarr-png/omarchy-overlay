@@ -945,6 +945,24 @@ impl App {
                 self.config.inactive_opacity,
                 &[100, 95, 90, 85, 80, 75, 70].map(|p| (p, format!("{p}%"))),
             ),
+            "windows-tweaks" => {
+                let mut rows: Vec<Row> = windows_tweaks::TWEAKS
+                    .iter()
+                    .map(|t| {
+                        let on = windows_tweaks::is_on(t);
+                        Row::new(SLIDERS, t.label, Act::Choose("windows-tweaks", t.id.into()))
+                            .checked(on == Some(true))
+                            .detail(match on {
+                                Some(true) => "now on",
+                                Some(false) => "now off",
+                                None => "",
+                            })
+                    })
+                    .collect();
+                rows.push(Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))));
+                rows.push(info("Each switch is the one in Windows Settings. Omarchy Overlay records the original first and puts it back on Restore, on exit and after a crash."));
+                rows
+            }
             "corners" => commands::CORNERS
                 .iter()
                 .map(|(name, label)| {
@@ -1535,6 +1553,7 @@ impl App {
             Row::new(SLIDERS, "Blur and materials (app windows, Omarchy Overlay menus)", Act::Open(Level::Page("materials"))),
             Row::new(WINDOW, "Window corners", Act::Open(Level::Page("corners")))
                 .detail(commands::CORNERS.iter().find(|(name, _)| *name == self.config.corners).map_or("", |(_, label)| label)),
+            Row::new(WINDOW, "Windows behavior (taskbar, File Explorer, snap, mouse focus)", Act::Open(Level::Page("windows-tweaks"))),
             Row::new(IMAGE, "Background", Act::Open(Level::Page("background"))),
             Row::new(BRUSH, "Windows Terminal colors", Act::Run(Command::Page("terminal-colors"))),
             Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))),
@@ -2328,6 +2347,12 @@ impl App {
                     }
                 };
                 if let Err(error) = result {
+                    overlay::message(&error);
+                }
+                true
+            }
+            "windows-tweaks" => {
+                if let Err(error) = windows_tweaks::toggle(&self.directory, value) {
                     overlay::message(&error);
                 }
                 true
