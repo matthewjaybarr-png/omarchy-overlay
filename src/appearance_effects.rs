@@ -6,6 +6,61 @@ struct Journal {
     before: Option<String>,
     acceptable: Vec<String>,
 }
+/// Each monitor's picture from before Omarchy Overlay first changed one monitor alone.
+const MONITORS: &str = "wallpaper-monitors-restore.json";
+type Originals = std::collections::BTreeMap<String, String>;
+pub(super) fn wallpaper_pending(directory: &Path) -> bool {
+    directory.join("wallpaper-restore.json").exists() || directory.join(MONITORS).exists()
+}
+/// Sets the picture on one monitor (counted left to right from 0), leaving the others.
+pub(super) unsafe fn apply_monitor_wallpaper(
+    directory: &Path,
+    index: usize,
+    path: &Path,
+) -> Result<(), String> {
+    if !path.is_file() {
+        return Err("Choose an existing wallpaper image on this PC.".into());
+    }
+    let monitors = native_status::wallpaper_monitors().map_err(|e| e.message())?;
+    let (id, _) = monitors.get(index).ok_or("That monitor is not connected.")?;
+    let record = directory.join(MONITORS);
+    if !record.exists() {
+        // After an all-monitors change the true original is the one that change saved.
+        let all = directory.join("wallpaper-restore.json");
+        let before = if all.exists() { read_journal(&all)?.before } else { None };
+        let originals: Originals = monitors
+            .iter()
+            .map(|(id, now)| (id.clone(), before.clone().unwrap_or_else(|| now.clone())))
+            .collect();
+        write_json_atomic(&record, &originals)?;
+    }
+    native_status::set_monitor_wallpaper(id, &path.to_string_lossy()).map_err(|e| e.message())
+}
+unsafe fn restore_monitor_wallpapers(directory: &Path) -> Result<(), String> {
+    let record = directory.join(MONITORS);
+    let originals: Originals =
+        serde_json::from_str(&profile::read_text(&record)?).map_err(|e| e.to_string())?;
+    if originals.len() > 64 || originals.values().any(|p| p.len() > 32768) {
+        return Err("Invalid wallpaper recovery record.".into());
+    }
+    if originals.values().all(|p| p.is_empty()) {
+        set_wallpaper("")?;
+    }
+    for (id, path) in &originals {
+        // shortcut: a monitor that had a plain colour beside pictures keeps the overlay's
+        // picture; save and restore the colour too if that mix ever matters.
+        if !path.is_empty() {
+            // An unplugged monitor cannot be set; Windows keeps its old picture for it anyway.
+            let _ = native_status::set_monitor_wallpaper(id, path);
+        }
+    }
+    fs::remove_file(&record).map_err(|e| e.to_string())?;
+    let all = directory.join("wallpaper-restore.json");
+    if all.exists() {
+        fs::remove_file(&all).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
 fn terminal_path(directory: &Path) -> PathBuf {
     directory
         .parent()
@@ -63,7 +118,9 @@ pub(super) unsafe fn apply_wallpaper(directory: &Path, path: &Path) -> Result<()
             acceptable: vec![],
         }
     };
+    // A per-monitor change of the overlay's own also moves the value Windows reports here.
     if !old.acceptable.is_empty()
+        && !directory.join(MONITORS).exists()
         && !old
             .acceptable
             .iter()
@@ -141,6 +198,9 @@ pub(super) fn apply_terminal(directory: &Path, theme_name: &str) -> Result<(), S
 }
 /// Puts back the wallpaper Windows had before Omarchy Overlay first changed it.
 pub(super) unsafe fn restore_wallpaper(directory: &Path) -> Result<(), String> {
+    if directory.join(MONITORS).exists() {
+        return restore_monitor_wallpapers(directory);
+    }
     let record = directory.join("wallpaper-restore.json");
     if !record.exists() {
         return Ok(());

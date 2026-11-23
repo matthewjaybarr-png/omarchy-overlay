@@ -878,12 +878,21 @@ impl App {
                             .checked(chosen)
                     })
                     .collect();
-                if rows.is_empty() {
+                rows.insert(
+                    0,
+                    Row::new(IMAGE, "Apply to", Act::Choose("background", "target".into())).detail(
+                        match self.wallpaper_target {
+                            0 => "all monitors".to_string(),
+                            n => format!("monitor {n} only (counted left to right)"),
+                        },
+                    ),
+                );
+                if rows.len() == 1 {
                     rows.push(info("No pictures found. Put .jpg or .png files in the wallpapers folder next to OmarchyOverlay.exe."));
                 }
                 rows.push(
                     Row::new(UNDO, "Put back my original Windows background", Act::Choose("background", "restore".into()))
-                        .detail(if self.directory.join("wallpaper-restore.json").exists() { "" } else { "nothing to restore" }),
+                        .detail(if appearance_effects::wallpaper_pending(&self.directory) { "" } else { "nothing to restore" }),
                 );
                 rows.push(Row::new(FOLDER, "Open the wallpapers folder", Act::Choose("background", "folder".into())));
                 rows
@@ -2263,6 +2272,11 @@ impl App {
                         shell(&folder, "");
                         Ok(())
                     }
+                    "target" => {
+                        let count = native_status::wallpaper_monitors().map_or(0, |m| m.len());
+                        self.wallpaper_target = (self.wallpaper_target + 1) % (count + 1);
+                        Ok(())
+                    }
                     "restore" => {
                         self.remember(key);
                         let mut c = self.config.clone();
@@ -2284,15 +2298,23 @@ impl App {
                                 }
                             }
                         }
-                        appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&self.directory, &path)).map(|()| {
-                            let mut c = self.config.clone();
-                            c.appearance_wallpaper = path
-                                .strip_prefix(self.profile_folder())
-                                .unwrap_or(&path)
-                                .to_string_lossy()
-                                .into_owned();
-                            self.commit(c);
-                        })
+                        if self.wallpaper_target > 0 {
+                            // Windows itself remembers each monitor's picture; the settings
+                            // keep naming only the all-monitors one.
+                            appearance_effects::with_effects(|| {
+                                appearance_effects::apply_monitor_wallpaper(&self.directory, self.wallpaper_target - 1, &path)
+                            })
+                        } else {
+                            appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&self.directory, &path)).map(|()| {
+                                let mut c = self.config.clone();
+                                c.appearance_wallpaper = path
+                                    .strip_prefix(self.profile_folder())
+                                    .unwrap_or(&path)
+                                    .to_string_lossy()
+                                    .into_owned();
+                                self.commit(c);
+                            })
+                        }
                     }
                 };
                 if let Err(error) = result {

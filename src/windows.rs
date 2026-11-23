@@ -349,6 +349,8 @@ struct App {
     filtered: Vec<usize>,
     command_menu: bool,
     picker_history: crate::picker::History,
+    /// Background page: 0 = every monitor, n = monitor n alone (left to right).
+    wallpaper_target: usize,
     picker_icons: HashMap<String, std::rc::Rc<picker_ui::Icon>>,
     hotkeys: Vec<i32>,
     cycle_binding: Option<crate::shortcuts::Binding>,
@@ -1451,6 +1453,7 @@ pub fn run() {
             filtered: vec![],
             command_menu: false,
             picker_icons: HashMap::new(),
+            wallpaper_target: 0,
             picker_history: fs::read_to_string(data_directory().join("app-picker.json"))
                 .ok()
                 .and_then(|text| serde_json::from_str(&text).ok())

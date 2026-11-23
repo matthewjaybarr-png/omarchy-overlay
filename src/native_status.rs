@@ -7,11 +7,12 @@ use ::windows::{
             MMDeviceEnumerator,
         },
         System::Com::{
-            CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER,
-            COINIT_APARTMENTTHREADED,
+            CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_ALL,
+            CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED,
         },
         UI::Shell::{
-            BHID_EnumItems, IEnumShellItems, IShellItem, SHCreateItemFromParsingName,
+            BHID_EnumItems, DesktopWallpaper, IDesktopWallpaper, IEnumShellItems, IShellItem,
+            SHCreateItemFromParsingName,
             SIGDN_DESKTOPABSOLUTEPARSING, SIGDN_NORMALDISPLAY,
         },
     },
@@ -260,4 +261,30 @@ pub(super) unsafe fn resource_icon(
         );
     }
     small
+}
+
+/// Connected monitors as Windows' wallpaper service names them, left to right, each with
+/// the picture it shows now.
+pub unsafe fn wallpaper_monitors() -> Result<Vec<(String, String)>> {
+    let _com = Apartment::enter();
+    let desktop: IDesktopWallpaper = CoCreateInstance(&DesktopWallpaper, None, CLSCTX_ALL)?;
+    let mut found = vec![];
+    for index in 0..desktop.GetMonitorDevicePathCount()? {
+        let id = take_string(desktop.GetMonitorDevicePathAt(index)?);
+        let name = ::windows::core::HSTRING::from(&id);
+        // Windows also lists monitors that are unplugged; those have no rectangle.
+        let Ok(rect) = desktop.GetMonitorRECT(&name) else {
+            continue;
+        };
+        let current = desktop.GetWallpaper(&name).map(|p| take_string(p)).unwrap_or_default();
+        found.push(((rect.left, rect.top), id, current));
+    }
+    found.sort();
+    Ok(found.into_iter().map(|(_, id, current)| (id, current)).collect())
+}
+pub unsafe fn set_monitor_wallpaper(id: &str, path: &str) -> Result<()> {
+    let _com = Apartment::enter();
+    let desktop: IDesktopWallpaper = CoCreateInstance(&DesktopWallpaper, None, CLSCTX_ALL)?;
+    use ::windows::core::HSTRING;
+    desktop.SetWallpaper(&HSTRING::from(id), &HSTRING::from(path))
 }
