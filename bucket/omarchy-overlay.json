@@ -1,11 +1,11 @@
 {
-    "version": "0.4.1",
+    "version": "0.5.0",
     "description": "Keyboard-first tiling window manager for Windows 11, in the style of Omarchy.",
     "homepage": "https://github.com/matthewjaybarr-png/omarchy-overlay",
     "license": "GPL-3.0-only",
     "notes": "Run 'Omarchy Overlay' from the Start menu. Your config folder is kept across updates.",
-    "url": "https://github.com/matthewjaybarr-png/omarchy-overlay/releases/download/v0.4.1/OmarchyOverlay-0.4.1-standard.zip",
-    "hash": "23a0f1aa1f92139994c1657d7b6a28664fe0e722b1ed6d8442dd3ffa84d865bf",
+    "url": "https://github.com/matthewjaybarr-png/omarchy-overlay/releases/download/v0.5.0/OmarchyOverlay-0.5.0-standard.zip",
+    "hash": "7ec1d249c4c20db8b19ddd120dd47e23005e5783b2c1a9da4e0e5a7f1814464b",
     "shortcuts": [
         [
             "OmarchyOverlay.exe",

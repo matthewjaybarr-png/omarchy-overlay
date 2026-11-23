@@ -1,0 +1,14 @@
+PackageIdentifier: MattBarr.OmarchyOverlay
+PackageVersion: 0.5.0
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles:
+- RelativeFilePath: OmarchyOverlay.exe
+  PortableCommandAlias: omarchy-overlay
+ReleaseDate: 2026-11-22
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/matthewjaybarr-png/omarchy-overlay/releases/download/v0.5.0/OmarchyOverlay-0.5.0-standard.zip
+  InstallerSha256: 7EC1D249C4C20DB8B19DDD120DD47E23005E5783B2C1A9DA4E0E5A7F1814464B
+ManifestType: installer
+ManifestVersion: 1.6.0
