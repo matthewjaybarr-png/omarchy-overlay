@@ -48,6 +48,8 @@ Admin on your own PC when its keys must also work in apps running as administrat
   Gruvbox, Nord and more) built in, plus a few extra themes, Mica and
   Acrylic materials and window opacity. It can apply the theme to Windows'
   own settings and puts the originals back on exit.
+- **Runs from a flash drive:** the Standard edition needs no install, so it can
+  run from a USB stick and take your settings with it. See below.
 - **Recovery:** if the program exits or crashes, it restores the taskbar,
   window positions and transparency. `RECOVER.cmd` does the same by hand.
 
@@ -72,6 +74,26 @@ Admin on your own PC when its keys must also work in apps running as administrat
 4. To give every key back to Windows, choose **Trigger > Toggle > Pause Omarchy Overlay keys**.
 
 Its logs and state are kept in `%LOCALAPPDATA%\OmarchyOverlay`.
+
+### Running from a flash drive
+
+The Standard edition runs from a USB stick: unzip it onto the stick and run
+`OmarchyOverlay.exe` there. Nothing is installed on the PC and no administrator
+rights are needed.
+
+- **Settings on the stick:** by default settings are kept on each PC, in
+  `%LOCALAPPDATA%\OmarchyOverlay`. To carry them with you, choose
+  **Saved profiles > Profile files > Make this folder portable**, which saves them
+  beside the exe. Or make a folder named `OVERLAY SETTINGS` beside the exe, or up to
+  three folders above it: every copy and version on the stick then shares it, and
+  pictures in it are kept without a drive letter, so they work whatever letter the
+  PC gives the stick.
+- **Removing the stick:** the tray menu adds **Exit before removing the stick**,
+  which restores the desktop and exits so the drive can be pulled safely.
+- **If the stick is pulled anyway,** Omarchy Overlay notices within a few seconds
+  that its file is gone, puts the taskbar, windows and Windows appearance back, and
+  exits. Windows keeps the whole program in memory when it starts from removable
+  media, so it does not crash in the meantime.
 
 ### Admin edition
 
@@ -134,11 +156,18 @@ They are kept unless you run
   back.
 - **Super + mouse wheel** goes to the previous or next workspace, as on Omarchy.
   It works with the Super keys on, not in the **Ctrl+Alt keys only** keymap.
+- **Volume, brightness and more:** binds.conf can use `volume-up`, `volume-down`,
+  `mute`, `brightness-up` and `brightness-down` (external monitors that accept
+  DDC/CI; laptop screens are not changed), `toggle-gaps`, `show-time` and
+  `show-battery`.
 - **Super + left drag** moves the window under the cursor, and **Super + right drag**
   resizes it from the nearest corner, as on Omarchy. Dropping a tiled window on
   another tile swaps the two; a resized tile pushes its neighbours. Both work while
   tiling is on, with the Super keys on.
 - After an Omarchy Overlay Super key, releasing Super does not open Start.
+- Omarchy Overlay re-registers its key hook every 15 seconds, so a program started
+  later (an AutoHotkey script, for example) cannot take its keys first. Keys it has
+  no bind for still reach the other program.
 - In the Standard edition, windows running as administrator do not pass keys to
   Omarchy Overlay; click an ordinary window first. The Admin edition has no such limit.
 - **Setup > Keyboard conflicts** lists keys another program already holds, with
@@ -163,8 +192,34 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
   `backgrounds` folder. The Admin edition ships Omarchy's backgrounds for every theme in
   `themes\<id>\backgrounds` beside the exe.
 
+- **Appearance > Window corners** draws every window with square, round or
+  slightly round corners, or leaves them as Windows draws them.
+- **Background > Apply to** sets a background on one monitor only (counted left to
+  right) instead of all of them.
+- **Right-click an app on the bar** to close it.
+
 Every Windows setting this changes is recorded first and restored on exit, from
 the recovery menu, and after a crash.
+
+### Windows behavior
+
+**Appearance > Windows behavior** switches Windows settings that get in the way
+of a tiling setup. Each line shows whether it is on now; **Enter** flips it:
+
+- the taskbar on the left or centred, its Task View button and its search box;
+- File Explorer showing file extensions and hidden files;
+- Windows Snap, the snap layouts flyout, the snap bar at the top of the screen and
+  Snap Assist;
+- focus follows the mouse, and window animations.
+
+Every original value is recorded before the first change and put back on exit,
+by **Restore** at the bottom of the page, from the recovery menu and after a crash.
+
+### Monitors
+
+With **Layout > Remember layout, main share and gap for each set of monitors** on, Omarchy Overlay
+keeps the layout, main pane size and gap for each set of monitors it has seen,
+and switches to them when you dock, undock or plug in a screen.
 
 ### Changing the bar, and going back to defaults
 
@@ -368,11 +423,15 @@ Used in binds.conf and menu.json.
 | `log` | Open the Omarchy Overlay log |
 | `config-folder` | Open the config folder |
 | `releases-folder` | Show where Omarchy Overlay releases are kept |
+| `volume-up`, `volume-down`, `mute` | Change the volume or mute it |
+| `brightness-up`, `brightness-down` | Change the brightness of every external monitor that accepts DDC/CI |
+| `toggle-gaps` | Turn the gaps between tiles off or back on |
+| `show-time`, `show-battery` | Show the time or the battery level on screen |
 | `restore-desktop` | Restore every window to its original place |
 | `reset-bar` | Reset the top bar to its defaults (asks first) |
 | `reset-settings` | Reset all settings to defaults; saved profiles are kept (asks first) |
 | `menu <id>` | Opens that list of menu.json, for example `menu system` |
-| `page <id>` | Opens a settings page: `theme`, `font`, `background`, `gaps`, `main-size`, `layout`, `columns`, `opacity`, `inactive-opacity`, `materials`, `animations`, `focus-outline`, `osd`, `app-rules`, `default-rule`, `add-rule`, `always-float`, `always-float-add`, `bar`, `bar-items`, `bar-style`, `clock`, `bar-height`, `bar-opacity`, `workspace-layouts`, `keyboard`, `conflicts`, `keymap`, `tap-super`, `taskbar`, `profiles`, `windows-theme`, `windows-checklist`, `webapps`, `install-webapp`, `remove-apps`, `custom-apps`, `version`, `terminal-colors`, `config-errors` |
+| `page <id>` | Opens a settings page: `theme`, `font`, `background`, `gaps`, `main-size`, `layout`, `columns`, `opacity`, `inactive-opacity`, `materials`, `animations`, `focus-outline`, `osd`, `app-rules`, `default-rule`, `add-rule`, `always-float`, `always-float-add`, `bar`, `bar-items`, `bar-style`, `clock`, `bar-height`, `bar-opacity`, `workspace-layouts`, `keyboard`, `conflicts`, `keymap`, `tap-super`, `taskbar`, `profiles`, `windows-theme`, `windows-checklist`, `webapps`, `install-webapp`, `remove-apps`, `custom-apps`, `version`, `terminal-colors`, `config-errors`, `corners`, `windows-tweaks` |
 | `app <role>` | Starts or shows an app: `terminal`, `browser`, `browser-private`, `files` (the file manager Windows opens folders with), `explorer` (File Explorer itself, at This PC), `email`, `new-email`, `calendar`, `teams`, `editor`, `calculator`, `activity` (Task Manager), `music` |
 | `webapp <name>` | Brings a web app from webapps.json forward |
 | `workspace <1-10>` | Shows that workspace |
