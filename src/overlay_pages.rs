@@ -911,6 +911,10 @@ impl App {
                     })
                     .collect();
                 rows.push(Row::new(DESKTOP, "Layouts by workspace", Act::Open(Level::Page("workspace-layouts"))));
+                rows.push(
+                    Row::new(OPTION, "Remember layout, main share and gap for each set of monitors", Act::Choose("layout", "displays".into()))
+                        .checked(self.config.remember_displays),
+                );
                 rows
             }
             "columns" => values(
@@ -1812,7 +1816,10 @@ impl App {
     }
 
     /// Saves a changed configuration and applies only what changed.
-    pub(super) unsafe fn commit(&mut self, config: Config) -> bool {
+    pub(super) unsafe fn commit(&mut self, mut config: Config) -> bool {
+        if let Some(set) = &self.display_set {
+            config.remember_display(set);
+        }
         if let Err(error) = config
             .validate()
             .and_then(|()| config.always_float.validate())
@@ -2231,6 +2238,12 @@ impl App {
             "edit" => {
                 self.edit_config_file(value);
                 false
+            }
+            "layout" if value == "displays" => {
+                let mut c = self.config.clone();
+                c.remember_displays = !c.remember_displays;
+                self.commit(c);
+                true
             }
             "layout" => {
                 self.remember(key);

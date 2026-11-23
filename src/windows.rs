@@ -332,6 +332,9 @@ struct App {
     mouse_drag: Option<resize::MouseDrag>,
     /// The gap toggle-gaps turned off, to put back.
     gaps_before: i32,
+    /// The connected monitors last seen, and their display profile key.
+    display_devices: String,
+    display_set: Option<String>,
     order: Vec<isize>,
     /// The workspace whose windows are on screen, and the windows parked for the others.
     workspace: usize,
@@ -1432,6 +1435,8 @@ pub fn run() {
             drag: None,
             mouse_drag: None,
             gaps_before: 0,
+            display_devices: String::new(),
+            display_set: None,
             order: vec![],
             workspace: 0,
             parked: HashMap::new(),
@@ -2470,6 +2475,7 @@ impl App {
         if self.drag.is_some() || self.mouse_drag.is_some() {
             return;
         }
+        self.check_display_set();
         self.sync_workspace();
         if let Some(desktop) = workspace_ui::current_desktop() {
             if desktop != self.layout_desktop {

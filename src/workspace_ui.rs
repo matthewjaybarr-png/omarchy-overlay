@@ -64,6 +64,25 @@ pub(super) unsafe fn monitor_identity(device: &str) -> String {
     device.to_lowercase()
 }
 impl App {
+    /// Display profiles: when the connected monitors change, the layout, main share and gap
+    /// last used with that set come back.
+    pub(super) unsafe fn check_display_set(&mut self) {
+        let mut devices: Vec<String> = settings::displays().into_iter().map(|d| d.device).collect();
+        devices.sort();
+        let devices = devices.join("|");
+        if devices == self.display_devices {
+            return;
+        }
+        let mut names: Vec<String> = devices.split('|').map(|d| monitor_identity(d)).collect();
+        names.sort();
+        let set = names.join("+");
+        self.display_devices = devices;
+        self.display_set = Some(set.clone());
+        let mut c = self.config.clone();
+        if c.recall_display(&set) && self.commit(c) {
+            self.show_feedback("Layout for these monitors is back");
+        }
+    }
     pub(super) unsafe fn layout_for_monitor(&self, monitor: HMONITOR) -> String {
         let Some(desktop) = current_desktop() else {
             return self.config.layout.clone();
