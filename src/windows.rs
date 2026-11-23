@@ -2174,6 +2174,12 @@ impl App {
         self.opacity
             .enforce_rules(|hwnd| can_change_opacity(&self.config, hwnd));
         let config = &self.config;
+        // A chosen corner style wins; otherwise borders keep Hyprland's square corners.
+        let corner = match crate::commands::CORNERS.iter().position(|(n, _)| *n == config.corners) {
+            Some(n) if n > 0 => n as u32,
+            _ if config.window_borders => 1,
+            _ => 0,
+        };
         self.frames.poll(&frame_windows, foreground, |h| {
             let p = window_policy(config, h);
             let excluded = config
@@ -2182,6 +2188,7 @@ impl App {
                 .any(|e| e.eq_ignore_ascii_case(&process_name(h)));
             (p.mode != Mode::Ignore
                 && (config.window_borders
+                    || corner != 0
                     || p.coordinate_theme
                     || p.material_explicit && p.backdrop != 0)
                 && !excluded
@@ -2195,6 +2202,7 @@ impl App {
                     0
                 },
                 config.window_borders,
+                corner,
             ))
         });
         let config = &self.config;

@@ -45,6 +45,8 @@ pub struct Config {
     pub default_allow_opacity: bool,
     pub active_opacity: u8,
     pub coordinate_windows: bool,
+    /// Window corners: default, square, round or small.
+    pub corners: String,
     /// Material for other programs' windows (the default; an app's own rule wins).
     pub window_backdrop: String,
     /// Material for Omarchy Overlay's own menu and app picker. Separate from window_backdrop
@@ -131,6 +133,7 @@ impl Default for Config {
             default_allow_opacity: true,
             active_opacity: 100,
             coordinate_windows: false,
+            corners: "default".into(),
             window_backdrop: "solid".into(),
             menu_backdrop: "solid".into(),
             start_tiling: true,
@@ -186,6 +189,9 @@ impl Config {
 
     pub fn validate(&self) -> Result<(), String> {
         self.bar.validate()?;
+        if !crate::commands::CORNERS.iter().any(|(name, _)| *name == self.corners) {
+            return Err("Unsupported window corners.".into());
+        }
         if self.display_setups.len() > 32 || self.display_setups.keys().any(|k| k.len() > 4096) {
             return Err("display_setups holds too many sets of monitors.".into());
         }

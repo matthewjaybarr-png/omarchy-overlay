@@ -81,6 +81,7 @@ pub const PAGES: &[(&str, &str)] = &[
     ("layout", "Layout"),
     ("columns", "Scrolling columns"),
     ("opacity", "Window opacity"),
+    ("corners", "Window corners"),
     ("inactive-opacity", "Inactive window opacity"),
     ("materials", "Blur and materials"),
     ("app-materials", "Material for app windows"),
@@ -382,6 +383,14 @@ impl Command {
 }
 
 /// A brightness value moved by `percent` of the monitor's range, kept inside it.
+/// Window corner styles; the position is the DWM corner preference value.
+pub const CORNERS: &[(&str, &str)] = &[
+    ("default", "As Windows draws them"),
+    ("square", "Square"),
+    ("round", "Round"),
+    ("small", "Slightly round"),
+];
+
 pub fn brightness_step(current: u32, maximum: u32, percent: i32) -> u32 {
     (i64::from(current) + i64::from(maximum) * i64::from(percent) / 100)
         .clamp(0, i64::from(maximum)) as u32

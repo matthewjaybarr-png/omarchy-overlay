@@ -188,6 +188,7 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
         "layout" => c.layout = d.layout,
         "columns" => c.scrolling_columns = d.scrolling_columns,
         "opacity" => c.active_opacity = d.active_opacity,
+        "corners" => c.corners = d.corners.clone(),
         "inactive-opacity" => c.inactive_opacity = d.inactive_opacity,
         "materials" => {
             c.window_backdrop = d.window_backdrop;
@@ -944,6 +945,12 @@ impl App {
                 self.config.inactive_opacity,
                 &[100, 95, 90, 85, 80, 75, 70].map(|p| (p, format!("{p}%"))),
             ),
+            "corners" => commands::CORNERS
+                .iter()
+                .map(|(name, label)| {
+                    Row::new(OPTION, *label, Act::Choose("corners", (*name).into())).checked(self.config.corners == *name)
+                })
+                .collect(),
             "materials" => {
                 let mut rows = vec![
                     Row::new(SLIDERS, "App windows", Act::Open(Level::Page("app-materials")))
@@ -1526,6 +1533,8 @@ impl App {
                 .checked(self.config.coordinate_windows)
                 .detail("dark frame; App rules can override one app"),
             Row::new(SLIDERS, "Blur and materials (app windows, Omarchy Overlay menus)", Act::Open(Level::Page("materials"))),
+            Row::new(WINDOW, "Window corners", Act::Open(Level::Page("corners")))
+                .detail(commands::CORNERS.iter().find(|(name, _)| *name == self.config.corners).map_or("", |(_, label)| label)),
             Row::new(IMAGE, "Background", Act::Open(Level::Page("background"))),
             Row::new(BRUSH, "Windows Terminal colors", Act::Run(Command::Page("terminal-colors"))),
             Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))),
@@ -2177,6 +2186,7 @@ impl App {
             "default-mode" => c.default_mode = mode_of(value),
             "default-opacity" => c.default_allow_opacity = !c.default_allow_opacity,
             "frames" => c.coordinate_windows = !c.coordinate_windows,
+            "corners" => c.corners = value.into(),
             "conflict" => {
                 let Some((i, chord)) = value.split_once('=') else {
                     return false;
