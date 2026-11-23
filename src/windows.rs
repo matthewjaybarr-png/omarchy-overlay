@@ -35,6 +35,8 @@ mod fonts;
 mod keyhook;
 #[path = "module_settings.rs"]
 mod module_settings;
+#[path = "brightness.rs"]
+mod brightness;
 #[path = "native_status.rs"]
 mod native_status;
 #[path = "omarchy_keys.rs"]
@@ -85,6 +87,8 @@ mod window_theme;
 mod windows_accent;
 #[path = "windows_personalization.rs"]
 mod windows_personalization;
+#[path = "windows_tweaks.rs"]
+mod windows_tweaks;
 #[path = "workspace_ui.rs"]
 mod workspace_ui;
 #[path = "workspaces.rs"]
@@ -328,6 +332,11 @@ struct App {
     layout_sessions: HashMap<String, LayoutSession>,
     drag: Option<resize::Drag>,
     mouse_drag: Option<resize::MouseDrag>,
+    /// The gap toggle-gaps turned off, to put back.
+    gaps_before: i32,
+    /// The connected monitors last seen, and their display profile key.
+    display_devices: String,
+    display_set: Option<String>,
     order: Vec<isize>,
     /// The workspace whose windows are on screen, and the windows parked for the others.
     workspace: usize,
@@ -342,6 +351,8 @@ struct App {
     filtered: Vec<usize>,
     command_menu: bool,
     picker_history: crate::picker::History,
+    /// Background page: 0 = every monitor, n = monitor n alone (left to right).
+    wallpaper_target: usize,
     picker_icons: HashMap<String, std::rc::Rc<picker_ui::Icon>>,
     hotkeys: Vec<i32>,
     cycle_binding: Option<crate::shortcuts::Binding>,
@@ -1427,6 +1438,9 @@ pub fn run() {
             layout_sessions: HashMap::new(),
             drag: None,
             mouse_drag: None,
+            gaps_before: 0,
+            display_devices: String::new(),
+            display_set: None,
             order: vec![],
             workspace: 0,
             parked: HashMap::new(),
@@ -1441,6 +1455,7 @@ pub fn run() {
             filtered: vec![],
             command_menu: false,
             picker_icons: HashMap::new(),
+            wallpaper_target: 0,
             picker_history: fs::read_to_string(data_directory().join("app-picker.json"))
                 .ok()
                 .and_then(|text| serde_json::from_str(&text).ok())
@@ -2161,6 +2176,12 @@ impl App {
         self.opacity
             .enforce_rules(|hwnd| can_change_opacity(&self.config, hwnd));
         let config = &self.config;
+        // A chosen corner style wins; otherwise borders keep Hyprland's square corners.
+        let corner = match crate::commands::CORNERS.iter().position(|(n, _)| *n == config.corners) {
+            Some(n) if n > 0 => n as u32,
+            _ if config.window_borders => 1,
+            _ => 0,
+        };
         self.frames.poll(&frame_windows, foreground, |h| {
             let p = window_policy(config, h);
             let excluded = config
@@ -2169,6 +2190,7 @@ impl App {
                 .any(|e| e.eq_ignore_ascii_case(&process_name(h)));
             (p.mode != Mode::Ignore
                 && (config.window_borders
+                    || corner != 0
                     || p.coordinate_theme
                     || p.material_explicit && p.backdrop != 0)
                 && !excluded
@@ -2182,6 +2204,7 @@ impl App {
                     0
                 },
                 config.window_borders,
+                corner,
             ))
         });
         let config = &self.config;
@@ -2465,6 +2488,7 @@ impl App {
         if self.drag.is_some() || self.mouse_drag.is_some() {
             return;
         }
+        self.check_display_set();
         self.sync_workspace();
         if let Some(desktop) = workspace_ui::current_desktop() {
             if desktop != self.layout_desktop {

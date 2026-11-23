@@ -147,7 +147,8 @@ pub(super) unsafe fn recover(directory: &Path) -> Report {
         || directory.join("windows-colors-restore.json").exists()
         || directory.join("windows-effects-restore.json").exists()
         || directory.join("windows-accent-restore.json").exists()
-        || directory.join("wallpaper-restore.json").exists()
+        || windows_tweaks::pending(directory)
+        || appearance_effects::wallpaper_pending(directory)
         || directory.join("terminal-appearance-restore.json").exists();
     let mut report = Report::default();
     // Restore the usable desktop area first, then translate saved screen positions.

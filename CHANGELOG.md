@@ -7,6 +7,22 @@
   moves its neighbours with it.
 - **Super + mouse wheel** switches to the previous or next workspace, as on
   Omarchy. A touchpad's small scroll steps add up to one workspace per notch.
+- New commands for binds.conf: `volume-up`, `volume-down`, `mute`,
+  `brightness-up` and `brightness-down` (external monitors over DDC/CI),
+  `toggle-gaps`, `show-time` and `show-battery`.
+- **Layout > Remember layout, main share and gap for each set of monitors** switches
+  them when you dock, undock or plug in a screen.
+- **Background > Apply to** sets a background on one monitor only. The originals
+  are recorded and put back on exit.
+- **Appearance > Window corners**: square, round or slightly round.
+- **Appearance > Windows behavior** switches the taskbar alignment, Task View
+  button and search box, file extensions and hidden files in File Explorer, Snap
+  and its parts, focus follows mouse and window animations. Every original is
+  recorded and restored.
+- Right-click an app on the bar to close it.
+- The key hook re-registers every 15 seconds, so a program started later cannot
+  take Omarchy Overlay's keys first.
+- The README now describes running the Standard edition from a flash drive.
 - In a winget install, **Make this folder portable** now warns that the next
   `winget upgrade` deletes the portable profile, and saves only if you confirm.
 

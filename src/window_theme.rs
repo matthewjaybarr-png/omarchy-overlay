@@ -109,7 +109,7 @@ impl Engine {
     unsafe fn apply(
         &mut self,
         h: HWND,
-        (colors, material, borders): (bool, u32, bool),
+        (colors, material, borders, corner): (bool, u32, bool, u32),
         focused: bool,
     ) -> Result<(), String> {
         if self.blocked {
@@ -160,7 +160,7 @@ impl Engine {
                     a,
                     match a {
                         20 if colors => u32::from(p.dark),
-                        33 if borders => 1,
+                        33 if corner != 0 => corner,
                         34 if borders && focused => p.accent,
                         34 if borders => p.border,
                         34 if colors => p.accent,
@@ -207,7 +207,7 @@ impl Engine {
         &mut self,
         windows: &[HWND],
         focused: HWND,
-        policy: impl Fn(HWND) -> Option<(bool, u32, bool)>,
+        policy: impl Fn(HWND) -> Option<(bool, u32, bool, u32)>,
     ) {
         let old_count = self.originals.len();
         self.originals.retain(|_, o| o.matches());

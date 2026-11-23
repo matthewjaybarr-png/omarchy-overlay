@@ -1,9 +1,21 @@
 use crate::rules::AppRule;
 use serde::{Deserialize, Serialize};
 
+/// What one set of monitors was last used with.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DisplaySetup {
+    pub layout: String,
+    pub main_ratio: f64,
+    pub gap: i32,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
+    /// Display profiles: keep the layout, main share and gap of each set of monitors.
+    pub remember_displays: bool,
+    /// Keyed by the monitors connected together, see `remember_display`.
+    pub display_setups: std::collections::BTreeMap<String, DisplaySetup>,
     pub bar: crate::bar_model::BarConfig,
     pub gap: i32,
     /// Space between tiled windows and the monitor edge (Hyprland gaps_out).
@@ -33,6 +45,8 @@ pub struct Config {
     pub default_allow_opacity: bool,
     pub active_opacity: u8,
     pub coordinate_windows: bool,
+    /// Window corners: default, square, round or small.
+    pub corners: String,
     /// Material for other programs' windows (the default; an app's own rule wins).
     pub window_backdrop: String,
     /// Material for Omarchy Overlay's own menu and app picker. Separate from window_backdrop
@@ -90,6 +104,8 @@ pub fn valid_font_name(name: &str) -> bool {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            remember_displays: true,
+            display_setups: Default::default(),
             bar: crate::bar_model::BarConfig::default(),
             gap: 5,
             outer_gap: 10,
@@ -117,6 +133,7 @@ impl Default for Config {
             default_allow_opacity: true,
             active_opacity: 100,
             coordinate_windows: false,
+            corners: "default".into(),
             window_backdrop: "solid".into(),
             menu_backdrop: "solid".into(),
             start_tiling: true,
@@ -140,8 +157,44 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Writes the current layout, main share and gap down for this set of monitors.
+    pub fn remember_display(&mut self, set: &str) {
+        if !self.remember_displays {
+            return;
+        }
+        // The oldest name goes first when a 33rd set of monitors turns up.
+        while self.display_setups.len() >= 32 && !self.display_setups.contains_key(set) {
+            self.display_setups.pop_first();
+        }
+        self.display_setups.insert(set.into(), self.display_setup());
+    }
+    fn display_setup(&self) -> DisplaySetup {
+        DisplaySetup {
+            layout: self.layout.clone(),
+            main_ratio: self.main_ratio,
+            gap: self.gap,
+        }
+    }
+    /// Takes back what this set of monitors was last used with. False when nothing changes.
+    pub fn recall_display(&mut self, set: &str) -> bool {
+        let Some(setup) = self.display_setups.get(set).cloned() else {
+            return false;
+        };
+        if !self.remember_displays || setup == self.display_setup() {
+            return false;
+        }
+        (self.layout, self.main_ratio, self.gap) = (setup.layout, setup.main_ratio, setup.gap);
+        true
+    }
+
     pub fn validate(&self) -> Result<(), String> {
         self.bar.validate()?;
+        if !crate::commands::CORNERS.iter().any(|(name, _)| *name == self.corners) {
+            return Err("Unsupported window corners.".into());
+        }
+        if self.display_setups.len() > 32 || self.display_setups.keys().any(|k| k.len() > 4096) {
+            return Err("display_setups holds too many sets of monitors.".into());
+        }
         if !(50..=100).contains(&self.active_opacity)
             || !(50..=400).contains(&self.animation_duration_ms)
             || !MATERIALS.contains(&self.window_backdrop.as_str())
@@ -268,6 +321,24 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn each_set_of_monitors_gets_its_layout_back() {
+        let mut c = Config::default();
+        c.remember_display("desk");
+        c.layout = "monocle".into();
+        c.gap = 2;
+        c.remember_display("laptop");
+        assert!(c.recall_display("desk") && c.layout == Config::default().layout);
+        assert!(c.recall_display("laptop") && c.layout == "monocle" && c.gap == 2);
+        assert!(!c.recall_display("laptop") && !c.recall_display("never seen"));
+        c.remember_displays = false;
+        assert!(!c.recall_display("desk") && c.layout == "monocle");
+        for n in 0..40 {
+            c.remember_displays = true;
+            c.remember_display(&format!("set {n:02}"));
+        }
+        assert!(c.display_setups.len() == 32 && c.validate().is_ok());
+    }
     #[test]
     fn reset_restores_defaults_but_keeps_saved_profiles() {
         let mut c = Config {

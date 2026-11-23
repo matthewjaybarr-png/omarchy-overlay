@@ -207,6 +207,51 @@ impl App {
                     ShowWindow(window, SW_MINIMIZE);
                 }
             }
+            "volume-up" => native_status::adjust_volume(5),
+            "volume-down" => native_status::adjust_volume(-5),
+            "mute" => native_status::toggle_mute(),
+            "brightness-up" => brightness::adjust(10),
+            "brightness-down" => brightness::adjust(-10),
+            "toggle-gaps" => {
+                let mut c = self.config.clone();
+                if c.gap == 0 {
+                    c.gap = match std::mem::take(&mut self.gaps_before) {
+                        0 => Config::default().gap,
+                        gap => gap,
+                    };
+                } else {
+                    self.gaps_before = std::mem::take(&mut c.gap);
+                }
+                self.commit(c);
+            }
+            "show-time" => {
+                let mut t: SYSTEMTIME = zeroed();
+                windows_sys::Win32::System::SystemInformation::GetLocalTime(&mut t);
+                let format = if self.config.bar.clock_format.ends_with("-12h") {
+                    "day-time-12h"
+                } else {
+                    "day-time"
+                };
+                self.show_feedback(&crate::bar_model::clock_label(
+                    format,
+                    [t.wYear, t.wMonth, t.wDay],
+                    t.wDayOfWeek,
+                    t.wHour,
+                    t.wMinute,
+                ));
+            }
+            "show-battery" => {
+                use windows_sys::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
+                let mut power: SYSTEM_POWER_STATUS = zeroed();
+                let known = GetSystemPowerStatus(&mut power) != 0;
+                self.show_feedback(&if !known || power.BatteryLifePercent > 100 {
+                    "This PC has no battery".to_string()
+                } else if power.ACLineStatus == 1 {
+                    format!("Battery {}%, plugged in", power.BatteryLifePercent)
+                } else {
+                    format!("Battery {}%", power.BatteryLifePercent)
+                });
+            }
             "former-desktop" => {
                 if crate::desktops::select_former() {
                     self.tick();

@@ -188,6 +188,7 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
         "layout" => c.layout = d.layout,
         "columns" => c.scrolling_columns = d.scrolling_columns,
         "opacity" => c.active_opacity = d.active_opacity,
+        "corners" => c.corners = d.corners.clone(),
         "inactive-opacity" => c.inactive_opacity = d.inactive_opacity,
         "materials" => {
             c.window_backdrop = d.window_backdrop;
@@ -878,12 +879,21 @@ impl App {
                             .checked(chosen)
                     })
                     .collect();
-                if rows.is_empty() {
+                rows.insert(
+                    0,
+                    Row::new(IMAGE, "Apply to", Act::Choose("background", "target".into())).detail(
+                        match self.wallpaper_target {
+                            0 => "all monitors".to_string(),
+                            n => format!("monitor {n} only (counted left to right)"),
+                        },
+                    ),
+                );
+                if rows.len() == 1 {
                     rows.push(info("No pictures found. Put .jpg or .png files in the wallpapers folder next to OmarchyOverlay.exe."));
                 }
                 rows.push(
                     Row::new(UNDO, "Put back my original Windows background", Act::Choose("background", "restore".into()))
-                        .detail(if self.directory.join("wallpaper-restore.json").exists() { "" } else { "nothing to restore" }),
+                        .detail(if appearance_effects::wallpaper_pending(&self.directory) { "" } else { "nothing to restore" }),
                 );
                 rows.push(Row::new(FOLDER, "Open the wallpapers folder", Act::Choose("background", "folder".into())));
                 rows
@@ -911,6 +921,10 @@ impl App {
                     })
                     .collect();
                 rows.push(Row::new(DESKTOP, "Layouts by workspace", Act::Open(Level::Page("workspace-layouts"))));
+                rows.push(
+                    Row::new(OPTION, "Remember layout, main share and gap for each set of monitors", Act::Choose("layout", "displays".into()))
+                        .checked(self.config.remember_displays),
+                );
                 rows
             }
             "columns" => values(
@@ -931,6 +945,30 @@ impl App {
                 self.config.inactive_opacity,
                 &[100, 95, 90, 85, 80, 75, 70].map(|p| (p, format!("{p}%"))),
             ),
+            "windows-tweaks" => {
+                let mut rows: Vec<Row> = windows_tweaks::TWEAKS
+                    .iter()
+                    .map(|t| {
+                        let on = windows_tweaks::is_on(t);
+                        Row::new(SLIDERS, t.label, Act::Choose("windows-tweaks", t.id.into()))
+                            .checked(on == Some(true))
+                            .detail(match on {
+                                Some(true) => "now on",
+                                Some(false) => "now off",
+                                None => "",
+                            })
+                    })
+                    .collect();
+                rows.push(Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))));
+                rows.push(info("Each switch is the one in Windows Settings. Omarchy Overlay records the original first and puts it back on Restore, on exit and after a crash."));
+                rows
+            }
+            "corners" => commands::CORNERS
+                .iter()
+                .map(|(name, label)| {
+                    Row::new(OPTION, *label, Act::Choose("corners", (*name).into())).checked(self.config.corners == *name)
+                })
+                .collect(),
             "materials" => {
                 let mut rows = vec![
                     Row::new(SLIDERS, "App windows", Act::Open(Level::Page("app-materials")))
@@ -1513,6 +1551,9 @@ impl App {
                 .checked(self.config.coordinate_windows)
                 .detail("dark frame; App rules can override one app"),
             Row::new(SLIDERS, "Blur and materials (app windows, Omarchy Overlay menus)", Act::Open(Level::Page("materials"))),
+            Row::new(WINDOW, "Window corners", Act::Open(Level::Page("corners")))
+                .detail(commands::CORNERS.iter().find(|(name, _)| *name == self.config.corners).map_or("", |(_, label)| label)),
+            Row::new(WINDOW, "Windows behavior (taskbar, File Explorer, snap, mouse focus)", Act::Open(Level::Page("windows-tweaks"))),
             Row::new(IMAGE, "Background", Act::Open(Level::Page("background"))),
             Row::new(BRUSH, "Windows Terminal colors", Act::Run(Command::Page("terminal-colors"))),
             Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))),
@@ -1812,7 +1853,10 @@ impl App {
     }
 
     /// Saves a changed configuration and applies only what changed.
-    pub(super) unsafe fn commit(&mut self, config: Config) -> bool {
+    pub(super) unsafe fn commit(&mut self, mut config: Config) -> bool {
+        if let Some(set) = &self.display_set {
+            config.remember_display(set);
+        }
         if let Err(error) = config
             .validate()
             .and_then(|()| config.always_float.validate())
@@ -2161,6 +2205,7 @@ impl App {
             "default-mode" => c.default_mode = mode_of(value),
             "default-opacity" => c.default_allow_opacity = !c.default_allow_opacity,
             "frames" => c.coordinate_windows = !c.coordinate_windows,
+            "corners" => c.corners = value.into(),
             "conflict" => {
                 let Some((i, chord)) = value.split_once('=') else {
                     return false;
@@ -2232,6 +2277,12 @@ impl App {
                 self.edit_config_file(value);
                 false
             }
+            "layout" if value == "displays" => {
+                let mut c = self.config.clone();
+                c.remember_displays = !c.remember_displays;
+                self.commit(c);
+                true
+            }
             "layout" => {
                 self.remember(key);
                 self.set_layout(value);
@@ -2248,6 +2299,11 @@ impl App {
                         let folder = self.profile_folder().join("wallpapers");
                         let _ = fs::create_dir_all(&folder);
                         shell(&folder, "");
+                        Ok(())
+                    }
+                    "target" => {
+                        let count = native_status::wallpaper_monitors().map_or(0, |m| m.len());
+                        self.wallpaper_target = (self.wallpaper_target + 1) % (count + 1);
                         Ok(())
                     }
                     "restore" => {
@@ -2271,18 +2327,32 @@ impl App {
                                 }
                             }
                         }
-                        appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&self.directory, &path)).map(|()| {
-                            let mut c = self.config.clone();
-                            c.appearance_wallpaper = path
-                                .strip_prefix(self.profile_folder())
-                                .unwrap_or(&path)
-                                .to_string_lossy()
-                                .into_owned();
-                            self.commit(c);
-                        })
+                        if self.wallpaper_target > 0 {
+                            // Windows itself remembers each monitor's picture; the settings
+                            // keep naming only the all-monitors one.
+                            appearance_effects::with_effects(|| {
+                                appearance_effects::apply_monitor_wallpaper(&self.directory, self.wallpaper_target - 1, &path)
+                            })
+                        } else {
+                            appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&self.directory, &path)).map(|()| {
+                                let mut c = self.config.clone();
+                                c.appearance_wallpaper = path
+                                    .strip_prefix(self.profile_folder())
+                                    .unwrap_or(&path)
+                                    .to_string_lossy()
+                                    .into_owned();
+                                self.commit(c);
+                            })
+                        }
                     }
                 };
                 if let Err(error) = result {
+                    overlay::message(&error);
+                }
+                true
+            }
+            "windows-tweaks" => {
+                if let Err(error) = windows_tweaks::toggle(&self.directory, value) {
                     overlay::message(&error);
                 }
                 true

@@ -922,6 +922,30 @@ impl State {
             InvalidateRect(panel.hwnd, null(), 0);
         }
     }
+    /// The menu of one open program on the bar. Close asks the window to close, the same
+    /// as its own X button, so the program can still ask about unsaved work.
+    unsafe fn task_menu(&self, hwnd: HWND, window: HWND, title: &str) {
+        let menu = CreatePopupMenu();
+        let short: String = title.chars().take(40).collect();
+        AppendMenuW(menu, MF_STRING, 1, wide(&format!("Close {short}")).as_ptr());
+        let mut point: POINT = zeroed();
+        GetCursorPos(&mut point);
+        SetForegroundWindow(hwnd);
+        let selected = TrackPopupMenu(
+            menu,
+            TPM_RETURNCMD | TPM_RIGHTBUTTON,
+            point.x,
+            point.y,
+            0,
+            hwnd,
+            null(),
+        );
+        DestroyMenu(menu);
+        if selected == 1 && IsWindow(window) != 0 {
+            PostMessageW(window, WM_CLOSE, 0, 0);
+        }
+        PostMessageW(hwnd, WM_NULL, 0, 0);
+    }
     unsafe fn menu(&self, hwnd: HWND) {
         let menu = CreatePopupMenu();
         let add = |target: HMENU, id: usize, label: &str| {
@@ -1095,7 +1119,27 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                 Some(0)
             }
             WM_RBUTTONUP => {
-                state.menu(hwnd);
+                // On an open program: a small menu to close that window. Elsewhere: the bar menu.
+                let task = state
+                    .panels
+                    .iter()
+                    .find(|p| p.hwnd == hwnd)
+                    .and_then(|panel| {
+                        let x = (l as i16 as i32) * 96 / panel.dpi as i32;
+                        let width = (panel.rect.right - panel.rect.left) * 96 / panel.dpi as i32;
+                        state
+                            .slots(width, panel.monitor)
+                            .into_iter()
+                            .find(|s| x >= s.left && x < s.right)
+                            .filter(|s| s.item.module == Module::Tasks && s.item.action >= 2000)
+                            .and_then(|s| state.tasks.get(s.item.action - 2000))
+                            .filter(|task| task.valid())
+                            .map(|task| (task.hwnd, task.title.clone()))
+                    });
+                match task {
+                    Some((window, title)) => state.task_menu(hwnd, window, &title),
+                    None => state.menu(hwnd),
+                }
                 Some(0)
             }
             WM_MOUSEWHEEL | WM_MBUTTONUP => {
