@@ -1703,7 +1703,7 @@ pub fn run() {
                 "OmarchyOverlay.exe is gone: the drive it runs from is no longer there.\r\nThe taskbar, windows and transparency were put back and Omarchy Overlay closed.\r\nReconnect the drive and start Omarchy Overlay to carry on."
             }),
             3 => message(&format!(
-                "OmarchyOverlay.exe is gone from its folder, but the drive is still there:\r\n{}\r\n\r\nIt was deleted or moved, or security software (Windows Security or Sophos) removed it.\r\nThe taskbar, windows and transparency were put back and Omarchy Overlay closed.\r\nDon't click Allow or Restore in the security software; ask IT if it was quarantined.",
+                "OmarchyOverlay.exe is gone from its folder, but the drive is still there:\r\n{}\r\n\r\nIt was deleted or moved, or antivirus software removed it.\r\nThe taskbar, windows and transparency were put back and Omarchy Overlay closed.\r\nIf your antivirus quarantined it, check its history before restoring it.",
                 std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_default()
             )),
             _ => {}
