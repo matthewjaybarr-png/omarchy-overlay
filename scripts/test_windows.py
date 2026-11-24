@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULTS = ['smoke', 'recovery', 'customization', 'workspaces', 'desktop',
             'picker', 'modules', 'resize', 'dwindle', 'roadmap-effects',
             'native-controls', 'taskbar', 'workspace-menu', 'policy',
-            'bar-editor', 'taskbar-modes', 'appearance-integration', 'scrolling', 'scroll-recovery', 'tray', 'themes', 'layouts']
+            'bar-editor', 'taskbar-modes', 'appearance-integration', 'scrolling', 'scroll-recovery', 'tray', 'themes', 'layouts', 'groups']
 parser = argparse.ArgumentParser(description=__doc__)
 # Release suites, run on request: 'standard' (limited token) and 'install' (run elevated).
 RELEASES = ['standard', 'install']
