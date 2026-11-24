@@ -18,6 +18,23 @@ Date: 2026-11-24. Status: direction agreed 2026-11-24; no code yet.
    - **Phase 3:** start full Windows theming with add-ons, only once Standard and
      Admin are fully ironed out.
 
+### Phase 1 items named so far
+
+- **Floating windows mode.** Today single windows float (Win+T, app rules, the
+  always-float list). Add the Omarchy-style mode in which a whole workspace stops
+  tiling: windows keep where the user put them, Super + drag moves and resizes them,
+  and switching back re-tiles. The gap audit confirms Omarchy's exact keys and
+  behavior. It must work the same way per workspace and survive restart, crash
+  recovery and `RECOVER.cmd` like the tiled layouts do.
+- **A dock, and the taskbar fully out of the way.** The taskbar can already be
+  visible, auto-hidden or hidden (`bar.rs`, `taskbar_visibility.rs`, journaled and
+  restored). Add an Omarchy-styled dock window: pinned and running apps in theme
+  colors and font, launching through the existing unelevated launch path,
+  optionally auto-hiding. With the bar plus the dock covering what the taskbar does,
+  "hidden" becomes the default. Things the taskbar does that the replacement must
+  still reach: the tray (the bar already has it), notifications and Quick Settings
+  (Win+N / Win+A), Start (Win), and app flashing for attention.
+
 The tier research below still stands. Phases 1 and 2 use Tiers S and A only.
 Phase 3 uses Tier E.
 
