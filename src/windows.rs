@@ -341,6 +341,10 @@ struct App {
     /// The workspace whose windows are on screen, and the windows parked for the others.
     workspace: usize,
     parked: HashMap<isize, workspaces::Parked>,
+    /// Windows full-screen-toggle put over the whole monitor, and where each was before.
+    full_screen: HashMap<isize, RECT>,
+    /// Widths save-width recorded, for restore-width.
+    widths: HashMap<isize, i32>,
     workspace_focus: HashMap<usize, isize>,
     seen_foreground: isize,
     floating: HashSet<isize>,
@@ -1444,6 +1448,8 @@ pub fn run() {
             order: vec![],
             workspace: 0,
             parked: HashMap::new(),
+            full_screen: HashMap::new(),
+            widths: HashMap::new(),
             workspace_focus: HashMap::new(),
             seen_foreground: 0,
             floating: HashSet::new(),

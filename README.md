@@ -153,6 +153,12 @@ They are kept unless you run
   with Magnifier and **Super + Ctrl + Alt + Z** resets the zoom.
 - **Super + Ctrl + D** opens Display settings, **Super + Ctrl + Alt + T** shows the
   time and **Super + Ctrl + Alt + B** the battery.
+- **Full screen:** **Super + F** puts the focused window over its whole monitor,
+  above the bar, and back; **Super + Alt + F** maximizes it. **Super + Alt + Home**
+  saves a window's width and **Super + Home** puts it back.
+- **Monitors:** **Ctrl + Alt + Tab** and **Ctrl + Alt + Shift + Tab** focus the next
+  or previous monitor, and **Super + Shift + Alt + arrows** move every window on the
+  focused monitor to the monitor in that direction.
 - **Super + Backspace** toggles the focused window to 90% opacity.
 - **Workspaces:** **Super + 1** to **Super + 0** show workspaces 1 to 10 and
   **Super + Shift + number** moves the focused window there. They are Omarchy
@@ -433,6 +439,10 @@ Used in binds.conf and menu.json.
 | `mic-mute` | Turn the default microphone off or back on |
 | `zoom-in`, `zoom-reset` | Zoom in with Windows Magnifier, or close it |
 | `cycle-layout-back` | Cycle the workspace layout backwards |
+| `full-screen` | Put the focused window over its whole monitor, or back |
+| `save-width`, `restore-width` | Save the focused window's width, or put it back |
+| `focus-next-monitor`, `focus-previous-monitor` | Focus the top window on the next or previous monitor |
+| `move-workspace-left`, `-right`, `-up`, `-down` | Move every window on the focused monitor to the monitor in that direction |
 | `brightness-up`, `brightness-down` | Change the brightness of every external monitor that accepts DDC/CI |
 | `toggle-gaps` | Turn the gaps between tiles off or back on |
 | `show-time`, `show-battery` | Show the time or the battery level on screen |

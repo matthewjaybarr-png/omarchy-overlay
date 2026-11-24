@@ -38,6 +38,15 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("zoom-in", "Zoom in (Windows Magnifier)"),
     ("zoom-reset", "Reset zoom (close Windows Magnifier)"),
     ("cycle-layout-back", "Cycle workspace layout back"),
+    ("full-screen", "Full screen over the bar, or back"),
+    ("save-width", "Save window width"),
+    ("restore-width", "Restore window width"),
+    ("focus-next-monitor", "Focus on next monitor"),
+    ("focus-previous-monitor", "Focus on previous monitor"),
+    ("move-workspace-left", "Move workspace to left monitor"),
+    ("move-workspace-right", "Move workspace to right monitor"),
+    ("move-workspace-up", "Move workspace to up monitor"),
+    ("move-workspace-down", "Move workspace to down monitor"),
     ("brightness-up", "Monitor brightness up (external monitors)"),
     ("brightness-down", "Monitor brightness down (external monitors)"),
     ("toggle-gaps", "Turn the gaps between windows off or back on"),
@@ -399,7 +408,9 @@ impl Command {
                             | "grow-main-pane"
                     )
             }
-            Self::Builtin(name) => *name == "cycle-layout-back",
+            Self::Builtin(name) => {
+                *name == "cycle-layout-back" || *name == "restore-width" || name.starts_with("move-workspace-")
+            }
             Self::Resize { .. } | Self::Layout(_) | Self::Workspace(_) | Self::MoveToWorkspace(_) | Self::MoveSilently(_) => true,
             _ => false,
         }
