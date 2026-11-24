@@ -18,6 +18,9 @@ Date: 2026-11-24. Status: direction agreed 2026-11-24; no code yet.
    - **Phase 3:** start full Windows theming with add-ons, only once Standard and
      Admin are fully ironed out.
 
+The gap audit is done: `2026-11-24-omarchy-gap-audit.md` holds the Phase 1 and
+Phase 2 task lists in build order.
+
 ### Phase 1 items named so far
 
 - **Floating windows mode.** Today single windows float (Win+T, app rules, the
