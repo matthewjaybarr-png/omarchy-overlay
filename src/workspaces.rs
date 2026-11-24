@@ -143,6 +143,12 @@ impl App {
             return;
         }
         let key = hwnd as isize;
+        // The group's hidden windows go with the one shown.
+        let members: Vec<isize> =
+            self.groups.iter().filter(|g| g.members.contains(&key)).flat_map(|g| g.members.clone()).collect();
+        for member in members.into_iter().filter(|m| *m != key) {
+            self.park(member as HWND, workspace);
+        }
         self.order.retain(|other| *other != key);
         self.report_occupied();
         if silent {
