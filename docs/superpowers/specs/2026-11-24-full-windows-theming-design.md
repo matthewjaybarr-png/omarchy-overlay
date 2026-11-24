@@ -231,7 +231,8 @@ Stages 1–4 are worth shipping even if stage 6 never happens.
 
 ## Open questions
 
-1. Signing: SignPath Foundation (free, needs an OSS application and review) or
+1. ~~Signing~~ Decided 2026-11-24: **SignPath Foundation**, since the project is fully
+   open source. Remaining question for when we apply:: SignPath Foundation (free, needs an OSS application and review) or
    Azure Trusted Signing (paid, needs identity validation)?
 2. Which add-on first in Phase 3: Windhawk stylers (taskbar and Start in theme
    colors) or SecureUxTheme (window styles)?
