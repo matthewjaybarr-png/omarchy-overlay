@@ -1,6 +1,25 @@
 # Full Windows theming — research and plan
 
-Date: 2026-11-24. Status: draft for discussion; no code yet.
+Date: 2026-11-24. Status: direction agreed 2026-11-24; no code yet.
+
+## Decisions (2026-11-24)
+
+1. **Omarchy is the design source for all theming.** Every look, color and behavior
+   follows Omarchy and its themes. New features we add keep to the same style. We
+   don't ship older-Windows looks (7, XP, classic) as built-ins.
+2. **Three layers:** the Standard edition, the Admin edition, and optional add-ons
+   (the third-party engines in Tier E). People may do what they want to their own PC:
+   add-ons are offered, installed only with consent, and always come with a clear
+   warning about their risks.
+3. **Order of work:**
+   - **Phase 1:** make the Standard edition look, feel and behave as much like
+     Omarchy as Windows physically allows.
+   - **Phase 2:** do the same for the Admin edition, using what elevation adds.
+   - **Phase 3:** start full Windows theming with add-ons, only once Standard and
+     Admin are fully ironed out.
+
+The tier research below still stands. Phases 1 and 2 use Tiers S and A only.
+Phase 3 uses Tier E.
 
 ## Goal
 
@@ -101,13 +120,10 @@ Open-Shell skin / Windhawk style file), visual style. Each area says which tier 
 needs. The UI shows what's unavailable and why ("needs the Admin edition",
 "needs SecureUxTheme"), but never hides it silently.
 
-Built-in looks to start with:
-
-- **Omarchy** (default): today's look plus Tier S additions colored from the theme.
-- **Classic**: grey 3D syscolors, square corners, Tahoma/MS Sans-like fonts where
-  installed, no Mica. With engines: Open-Shell classic Start, ExplorerPatcher taskbar.
-- **Windows 7-ish** and **Windows 10-ish**: as above with their engine settings.
-  The visual style is whatever `.msstyles` the user drops in; we ship none.
+Built-in look: **Omarchy** only, colored from the current Omarchy theme. The look
+layer exists so Phase 3 add-ons (a taskbar or Start style, a visual style) can be
+added without changing how themes work. Users may make their own looks; we ship
+no older-Windows looks and no `.msstyles`.
 
 Pure functions turn (theme, look) into the values to write: syscolor table,
 `AccentPalette` bytes, `.theme` text, Windhawk style JSON, Open-Shell settings.
@@ -128,9 +144,9 @@ blocked?), `apply(settings)`, `restore()`. Rules:
 
 - Detection is read only and runs in both editions, so the Standard UI can tell
   the user what the Admin edition would add.
-- Installing an engine is an explicit button in the Admin edition. It shows the
-  engine's own risk text, then runs `winget install` with the exact id. It never
-  installs as part of picking a look.
+- Installing an engine is an explicit button in the Admin edition. It shows a
+  warning first (what it changes, what can go wrong, how to undo it), then runs
+  `winget install` with the exact id. It never installs as part of picking a look.
 - SecureUxTheme gets extra care: before any change it checks that WinRE is enabled
   (`reagentc /info`) and shows how to recover from a login loop. It's only offered
   on builds the engine states support for.
@@ -165,6 +181,12 @@ flag, so one signed exe serves both zips.
 
 ## Stages
 
+Stages 1–2 belong to Phase 1 (Standard). Stages 3–4 belong to Phase 2 (Admin).
+Stages 5–6 are Phase 3 and start only after Phases 1 and 2 are done. Phase 1 begins
+with an Omarchy gap audit: list every part of Omarchy's look, feel and behavior,
+mark each as done, possible in Standard, Admin only, or not possible on Windows,
+and turn the "possible" rows into tasks ahead of stage 1.
+
 Each stage ends with: `cargo test`, clippy clean for `x86_64-pc-windows-msvc`, a VM
 suite (`scripts/test_windows.py`) covering apply, restore and `--recover` after a
 kill, a CHANGELOG entry, and README/Windows-behavior docs.
@@ -192,14 +214,10 @@ Stages 1–4 are worth shipping even if stage 6 never happens.
 
 ## Open questions
 
-1. Which older look matters most: Windows 7, XP, classic (95/2000) or Windows 10?
-   That decides which engine to support first.
-2. Are you OK with the Admin edition installing third-party engines through winget
-   (with consent), or should it only detect them and link to them?
-3. Signing: SignPath Foundation (free, needs an OSS application and review) or
+1. Signing: SignPath Foundation (free, needs an OSS application and review) or
    Azure Trusted Signing (paid, needs identity validation)?
-4. Should the Classic look also change behavior (e.g. title-bar buttons, Alt+Tab
-   style), or colors and chrome only?
+2. Which add-on first in Phase 3: Windhawk stylers (taskbar and Start in theme
+   colors) or SecureUxTheme (window styles)?
 
 ## To verify before building
 
