@@ -524,6 +524,12 @@ from the same exe, and `SHA256SUMS.txt` with their checksums:
   `edition-admin` marker. Run `INSTALL.cmd` to install (see Admin edition).
 
 `python3 scripts/package.py --selftest` checks both file lists and that the two exes match.
+
+Pushing a `v<version>` tag runs `.github/workflows/release.yml`. It checks that the tag
+matches `Cargo.toml`, builds the exe with `cargo xwin`, packages both zips with the stock
+Omarchy theme backgrounds, and makes a draft GitHub release with the zips, `SHA256SUMS.txt`
+and the CHANGELOG section for that version as its notes. Publish the draft by hand.
+Running the workflow from the Actions tab builds the zips as a workflow artifact only.
 Two VM suites test the zips and are not in the default list: `standard` runs the
 Standard release with a limited token, and `install` installs the Admin release,
 checks it, and uninstalls it (it runs elevated, so the VM user must be an administrator).

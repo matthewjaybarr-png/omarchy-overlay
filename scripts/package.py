@@ -24,7 +24,9 @@ def backgrounds(cache: Path) -> list[tuple[Path, str]]:
     """Each allowed theme background as (jpg file, path in the zip). Windows cannot
     show .webp wallpapers, so those are converted once into `cache`; videos are left out."""
     found = []
-    for theme, folder in omarchy.themes().items():
+    # Stock Omarchy only: backgrounds from ~/.config/omarchy/themes are personal, not MIT.
+    stock = {t: f for t, f in omarchy.themes().items() if f.parent == omarchy.SOURCES[0]}
+    for theme, folder in stock.items():
         folder = folder / 'backgrounds'
         for image in sorted(folder.iterdir()) if folder.is_dir() else []:
             kind = image.suffix.lower()
