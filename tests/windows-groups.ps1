@@ -248,6 +248,18 @@ try {
  [void][Desktop]::SetForegroundWindow($w1);Wait-Desktop 400
  Press 'move-into-group-left'
  Check 'Regrouped for the pause check' ([GroupTest]::IsIconic($w0) -or [GroupTest]::IsIconic($w1))
+ # A group sent to another workspace takes its hidden window with it.
+ [void][Desktop]::SetForegroundWindow($w1);Wait-Desktop 400
+ Press 'move-to-workspace-silent 2'
+ Press 'workspace 2'
+ Press 'next-in-group'
+ Check 'The hidden group member moved to workspace 2' ((-not [GroupTest]::IsIconic($w0)) -and (Bounds $w0)[0] -ge 0) ((Bounds $w0)-join ',')
+ Press 'workspace 1'
+ Check 'The group leaves workspace 1 with every member' ((([GroupTest]::IsIconic($w0)) -or (Bounds $w0)[0] -lt 0) -and (([GroupTest]::IsIconic($w1)) -or (Bounds $w1)[0] -lt 0)) ("$((Bounds $w0)-join ',') / $((Bounds $w1)-join ',')")
+ Press 'workspace 2'
+ [void][Desktop]::SetForegroundWindow($w0);Wait-Desktop 400
+ Press 'move-to-workspace 1'
+ Check 'Moving the group back brings the shown window to workspace 1' ((-not [GroupTest]::IsIconic($w0)) -and (Bounds $w0)[0] -ge 0) ((Bounds $w0)-join ',')
  Click $main 1;Wait-Desktop 1200
  Check 'Pause brings back a hidden group member' ((-not [GroupTest]::IsIconic($w0)) -and -not [GroupTest]::IsIconic($w1))
  for($i=0;$i -lt 3;$i++){Check "Pause restores fixture $i" (Near (Bounds $windows[$i]) $originals[$windows[$i].ToInt64()] 2)}
