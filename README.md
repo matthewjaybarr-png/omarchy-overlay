@@ -144,7 +144,23 @@ They are kept unless you run
   all in any app, as on Omarchy. In Windows Terminal, copy and paste send
   Ctrl + Shift + C / V so Ctrl + C still stops a command. Windows uses Super + C,
   V, X and A itself, so these need the Admin edition, which can take Super keys.
-- Omarchy keys with no Windows meaning (groups, tmux, media and webcam keys) are
+- **Groups:** **Super + G** makes the focused window a group, and
+  **Super + Alt + arrows** move a window into the group of the tile in that
+  direction. A group fills one tile and shows one window at a time:
+  **Super + Alt + Tab** and **Super + Alt + Shift + Tab** switch between them, and
+  **Super + Alt + G** takes a window out. The others wait minimized and come back
+  on pause, exit or a crash. A window chosen from the taskbar or Alt + Tab takes
+  its group's tile. Moving the shown window to another workspace leaves the others
+  behind.
+- **Reminders:** **Super + Ctrl + R** sets a reminder for 5 minutes to 2 hours; it
+  shows as a Windows notification. **Super + Ctrl + Alt + R** lists them and
+  **Super + Ctrl + Shift + R** clears them. Reminders are lost when Omarchy
+  Overlay exits.
+- **Screen recording and text:** **Super + Alt + Print** starts a Snipping Tool screen
+  recording (Omarchy's Alt + Print, with Super so Windows keeps Alt + Print), and
+  **Super + Ctrl + Print** copies text from the screen with Snipping Tool's text
+  extractor, which needs Snipping Tool 11.2503.29 or later.
+- Omarchy keys with no Windows meaning (tmux, media and webcam keys) are
   left out. Omarchy's Super + L layout key is on **Super + Shift + L**, because
   Super + L stays with Windows' lock; **Super + Alt + L** cycles back.
 - **Resize keys:** **Super + Minus / Equal** shrink or grow the focused tile's width,
@@ -423,6 +439,11 @@ Used in binds.conf and menu.json.
 | `clipboard` | Windows clipboard history |
 | `emoji` | Windows emoji panel |
 | `capture` | Screenshot or screen recording (Snipping Tool) |
+| `record-screen`, `extract-text` | Snipping Tool screen recording, or copy text from the screen |
+| `toggle-group`, `leave-group` | Make the focused window a group or break it up, or take the window out of its group |
+| `move-into-group-left`, `-right`, `-up`, `-down` | Move the focused window into the group of the tile in that direction |
+| `next-in-group`, `previous-in-group` | Show the next or previous window of the group |
+| `show-reminders`, `clear-reminders` | List or clear the reminders that are set |
 | `next-desktop` | Next workspace |
 | `former-desktop` | Former workspace |
 | `minimize-window` | Minimize the focused window |
@@ -460,6 +481,7 @@ Used in binds.conf and menu.json.
 | `theme <name>` | Switches theme, for example `theme tokyo-night` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |
 | `resize width\|height <pixels>` | Resizes the focused tile, for example `resize width -100` |
+| `remind <minutes>` | Shows a Windows notification after 1 to 1440 minutes, for example `remind 15` |
 | `action <id>` | Runs a window action, for example `action close-window` |
 | `launch <file> [arguments]` | Runs a program or script stored inside the config folder, as you |
 

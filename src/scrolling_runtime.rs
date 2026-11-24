@@ -26,6 +26,7 @@ impl App {
         for (&key, saved) in &self.saved {
             let hwnd = key as HWND;
             if saved.matches(hwnd)
+                && !self.group_hidden(key)
                 && current_hidden(hwnd)
                 && self.layout_for_monitor(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST))
                     != "scrolling"

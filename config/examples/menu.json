@@ -33,12 +33,30 @@
         { "label": "Emoji", "icon": "F118", "command": "emoji" },
         { "label": "Clipboard history", "icon": "F0147", "command": "clipboard" },
         { "label": "Capture", "icon": "F030", "command": "capture" },
+        { "label": "Screen recording", "icon": "F03D", "command": "record-screen" },
+        { "label": "Copy text from screen", "icon": "F031", "command": "extract-text" },
+        { "label": "Reminder", "icon": "F017", "command": "menu reminder" },
         { "label": "Notifications", "icon": "F009B", "command": "notifications" },
         { "label": "Quick settings", "icon": "F1DE", "command": "quick-settings" },
         { "label": "Open windows", "icon": "F2D2", "command": "open-windows" },
         { "label": "Selected window", "icon": "F2D0", "command": "window-panel" },
         { "label": "Task View", "icon": "F009", "command": "task-view" },
         { "label": "Scratchpad", "icon": "F108", "command": "action toggle-scratchpad" }
+      ]
+    },
+    {
+      "id": "reminder",
+      "title": "Reminder",
+      "items": [
+        { "label": "In 5 minutes", "icon": "F017", "command": "remind 5" },
+        { "label": "In 10 minutes", "icon": "F017", "command": "remind 10" },
+        { "label": "In 15 minutes", "icon": "F017", "command": "remind 15" },
+        { "label": "In 30 minutes", "icon": "F017", "command": "remind 30" },
+        { "label": "In 45 minutes", "icon": "F017", "command": "remind 45" },
+        { "label": "In 1 hour", "icon": "F017", "command": "remind 60" },
+        { "label": "In 2 hours", "icon": "F017", "command": "remind 120" },
+        { "label": "Show reminders", "icon": "F0F3", "command": "show-reminders" },
+        { "label": "Clear reminders", "icon": "F1F8", "command": "clear-reminders" }
       ]
     },
     {
