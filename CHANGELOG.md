@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- More of Omarchy's keys are in the default binds.conf: **Super + Minus / Equal**
+  resize the focused tile (Shift for height, Alt for a little, Ctrl for a lot),
+  **Super + Alt + L** cycles the layout back, **Super + Ctrl + Z** and
+  **Super + Ctrl + Alt + Z** zoom in and reset with Windows Magnifier,
+  **Super + Ctrl + D** opens Display settings, and **Super + Ctrl + Alt + T / B**
+  show the time and battery.
+- New commands: `resize width|height <pixels>`, `cycle-layout-back`, `mic-mute`,
+  `zoom-in` and `zoom-reset`.
+
 ## 0.5.0
 
 - **Super + left drag** moves a window and **Super + right drag** resizes it, as on

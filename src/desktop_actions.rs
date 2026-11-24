@@ -149,7 +149,7 @@ impl App {
             self.settings.refresh(&self.config, self.selected);
         }
     }
-    pub(super) unsafe fn cycle_layout(&mut self) {
+    pub(super) unsafe fn cycle_layout(&mut self, back: bool) {
         let mode = self.layout_for_monitor(MonitorFromWindow(
             if IsWindow(self.selected) != 0 {
                 self.selected
@@ -160,7 +160,8 @@ impl App {
         ));
         let names = crate::commands::LAYOUTS;
         let at = names.iter().position(|(name, _)| *name == mode);
-        let next = names[at.map_or(0, |i| (i + 1) % names.len())].0;
+        let step = if back { names.len() - 1 } else { 1 };
+        let next = names[at.map_or(0, |i| (i + step) % names.len())].0;
         self.set_layout(next);
     }
     pub(super) unsafe fn rebalance(&mut self) {

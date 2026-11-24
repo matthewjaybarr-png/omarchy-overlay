@@ -146,7 +146,13 @@ They are kept unless you run
   V, X and A itself, so these need the Admin edition, which can take Super keys.
 - Omarchy keys with no Windows meaning (groups, tmux, media and webcam keys) are
   left out. Omarchy's Super + L layout key is on **Super + Shift + L**, because
-  Super + L stays with Windows' lock.
+  Super + L stays with Windows' lock; **Super + Alt + L** cycles back.
+- **Resize keys:** **Super + Minus / Equal** shrink or grow the focused tile's width,
+  with **Shift** for its height, **Alt** for a little and **Ctrl** for a lot, as on
+  Omarchy. They take over Windows Magnifier's keys, so **Super + Ctrl + Z** zooms in
+  with Magnifier and **Super + Ctrl + Alt + Z** resets the zoom.
+- **Super + Ctrl + D** opens Display settings, **Super + Ctrl + Alt + T** shows the
+  time and **Super + Ctrl + Alt + B** the battery.
 - **Super + Backspace** toggles the focused window to 90% opacity.
 - **Workspaces:** **Super + 1** to **Super + 0** show workspaces 1 to 10 and
   **Super + Shift + number** moves the focused window there. They are Omarchy
@@ -158,8 +164,8 @@ They are kept unless you run
   It works with the Super keys on, not in the **Ctrl+Alt keys only** keymap.
 - **Volume, brightness and more:** binds.conf can use `volume-up`, `volume-down`,
   `mute`, `brightness-up` and `brightness-down` (external monitors that accept
-  DDC/CI; laptop screens are not changed), `toggle-gaps`, `show-time` and
-  `show-battery`.
+  DDC/CI; laptop screens are not changed), `mic-mute`, `toggle-gaps`, `show-time`
+  and `show-battery`.
 - **Super + left drag** moves the window under the cursor, and **Super + right drag**
   resizes it from the nearest corner, as on Omarchy. Dropping a tiled window on
   another tile swaps the two; a resized tile pushes its neighbours. Both work while
@@ -424,6 +430,9 @@ Used in binds.conf and menu.json.
 | `config-folder` | Open the config folder |
 | `releases-folder` | Show where Omarchy Overlay releases are kept |
 | `volume-up`, `volume-down`, `mute` | Change the volume or mute it |
+| `mic-mute` | Turn the default microphone off or back on |
+| `zoom-in`, `zoom-reset` | Zoom in with Windows Magnifier, or close it |
+| `cycle-layout-back` | Cycle the workspace layout backwards |
 | `brightness-up`, `brightness-down` | Change the brightness of every external monitor that accepts DDC/CI |
 | `toggle-gaps` | Turn the gaps between tiles off or back on |
 | `show-time`, `show-battery` | Show the time or the battery level on screen |
@@ -440,6 +449,7 @@ Used in binds.conf and menu.json.
 | `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling`, `centered`, `monocle` |
 | `theme <name>` | Switches theme, for example `theme tokyo-night` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |
+| `resize width\|height <pixels>` | Resizes the focused tile, for example `resize width -100` |
 | `action <id>` | Runs a window action, for example `action close-window` |
 | `launch <file> [arguments]` | Runs a program or script stored inside the config folder, as you |
 

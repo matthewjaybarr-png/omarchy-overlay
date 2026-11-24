@@ -118,6 +118,9 @@ impl App {
             Command::MoveToWorkspace(number) => self.move_to_workspace(number - 1, false),
             Command::MoveSilently(number) => self.move_to_workspace(number - 1, true),
             Command::Layout(layout) => self.set_layout(layout),
+            Command::Resize { width, pixels } => {
+                self.resize_keyboard(GetForegroundWindow(), *width, *pixels)
+            }
             Command::Theme(name) => {
                 let mut c = self.config.clone();
                 c.theme = name.clone();
@@ -210,6 +213,14 @@ impl App {
             "volume-up" => native_status::adjust_volume(5),
             "volume-down" => native_status::adjust_volume(-5),
             "mute" => native_status::toggle_mute(),
+            "mic-mute" => match native_status::toggle_mic_mute() {
+                Some(true) => self.show_feedback("Microphone muted"),
+                Some(false) => self.show_feedback("Microphone on"),
+                None => self.show_feedback("No microphone found"),
+            },
+            "zoom-in" => self.queue_system_action(13),
+            "zoom-reset" => self.queue_system_action(14),
+            "cycle-layout-back" => self.cycle_layout(true),
             "brightness-up" => brightness::adjust(10),
             "brightness-down" => brightness::adjust(-10),
             "toggle-gaps" => {

@@ -193,6 +193,9 @@ mod native {
             10 => chord(&[VK_CONTROL, b'A' as u16]),
             11 => chord(&[VK_CONTROL, VK_SHIFT, b'C' as u16]),
             12 => chord(&[VK_CONTROL, VK_SHIFT, b'V' as u16]),
+            // Windows Magnifier: Win+Plus zooms in, Win+Esc closes it.
+            13 => chord(&[VK_LWIN, VK_OEM_PLUS]),
+            14 => chord(&[VK_LWIN, VK_ESCAPE]),
             _ => true,
         }
     }

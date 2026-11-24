@@ -34,6 +34,10 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("volume-up", "Volume up"),
     ("volume-down", "Volume down"),
     ("mute", "Sound on or off"),
+    ("mic-mute", "Microphone on or off"),
+    ("zoom-in", "Zoom in (Windows Magnifier)"),
+    ("zoom-reset", "Reset zoom (close Windows Magnifier)"),
+    ("cycle-layout-back", "Cycle workspace layout back"),
     ("brightness-up", "Monitor brightness up (external monitors)"),
     ("brightness-down", "Monitor brightness down (external monitors)"),
     ("toggle-gaps", "Turn the gaps between windows off or back on"),
@@ -175,6 +179,8 @@ pub enum Command {
     MoveToWorkspace(usize),
     MoveSilently(usize),
     Layout(&'static str),
+    /// Resizes the focused tile by `pixels`, wider/taller when positive, `resize width -100`.
+    Resize { width: bool, pixels: i32 },
     Theme(String),
     /// A Windows Settings page, `settings sound` opens ms-settings:sound.
     Settings(String),
@@ -253,6 +259,22 @@ pub fn parse(text: &str) -> Result<Command, String> {
                 .find(|(id, _)| id.eq_ignore_ascii_case(argument))
                 .map(|(id, _)| Command::Layout(id))
                 .ok_or_else(|| format!("Unknown layout \"{argument}\"."))
+        }
+        "resize" => {
+            need("width or height and a number of pixels")?;
+            let (side, pixels) = argument.split_once(char::is_whitespace).unwrap_or((argument, ""));
+            let width = match side.to_ascii_lowercase().as_str() {
+                "width" => true,
+                "height" => false,
+                _ => return Err("resize takes width or height, as in resize width -100.".into()),
+            };
+            let pixels = pixels
+                .trim()
+                .parse::<i32>()
+                .ok()
+                .filter(|n| *n != 0 && n.abs() <= 2000)
+                .ok_or("resize needs a number of pixels from -2000 to 2000, as in resize width -100.")?;
+            Ok(Command::Resize { width, pixels })
         }
         "theme" => {
             need("a theme name")?;
@@ -352,7 +374,7 @@ impl Command {
     }
     /// Commands that act again while their key is held down.
     pub fn repeats(&self) -> bool {
-        matches!(self, Self::Action(index) if {
+        matches!(self, Self::Resize { .. }) || matches!(self, Self::Action(index) if {
             let id = crate::shortcuts::ACTIONS[*index].id;
             id.starts_with("resize-") || id.ends_with("-opaque") || id.contains("main-pane")
         })
@@ -377,7 +399,8 @@ impl Command {
                             | "grow-main-pane"
                     )
             }
-            Self::Layout(_) | Self::Workspace(_) | Self::MoveToWorkspace(_) | Self::MoveSilently(_) => true,
+            Self::Builtin(name) => *name == "cycle-layout-back",
+            Self::Resize { .. } | Self::Layout(_) | Self::Workspace(_) | Self::MoveToWorkspace(_) | Self::MoveSilently(_) => true,
             _ => false,
         }
     }
@@ -408,6 +431,22 @@ mod tests {
     }
 
     use super::*;
+    #[test]
+    fn resize_takes_a_side_and_a_bounded_step() {
+        assert_eq!(
+            parse("resize width -100"),
+            Ok(Command::Resize { width: true, pixels: -100 })
+        );
+        assert_eq!(
+            parse("Resize HEIGHT 25"),
+            Ok(Command::Resize { width: false, pixels: 25 })
+        );
+        for bad in ["resize", "resize width", "resize depth 10", "resize width 0", "resize width 5000"] {
+            assert!(parse(bad).is_err(), "{bad}");
+        }
+        assert!(parse("resize width 30").unwrap().repeats());
+        assert!(parse("cycle-layout-back").unwrap().tiling());
+    }
     #[test]
     fn commands_parse_to_fixed_functions_only() {
         assert_eq!(parse("apps"), Ok(Command::Builtin("apps")));
