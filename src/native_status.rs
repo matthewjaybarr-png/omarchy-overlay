@@ -3,7 +3,7 @@ use ::windows::{
     core::{w, Result, PWSTR},
     Win32::{
         Media::Audio::{
-            eMultimedia, eRender, Endpoints::IAudioEndpointVolume, IMMDeviceEnumerator,
+            eCapture, eCommunications, eMultimedia, eRender, EDataFlow, ERole, Endpoints::IAudioEndpointVolume, IMMDeviceEnumerator,
             MMDeviceEnumerator,
         },
         System::Com::{
@@ -31,11 +31,22 @@ impl Drop for Apartment {
     }
 }
 unsafe fn endpoint() -> Result<IAudioEndpointVolume> {
+    device(eRender, eMultimedia)
+}
+unsafe fn device(flow: EDataFlow, role: ERole) -> Result<IAudioEndpointVolume> {
     let devices: IMMDeviceEnumerator =
         CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_INPROC_SERVER)?;
     devices
-        .GetDefaultAudioEndpoint(eRender, eMultimedia)?
+        .GetDefaultAudioEndpoint(flow, role)?
         .Activate(CLSCTX_INPROC_SERVER, None)
+}
+/// Mutes or unmutes the default microphone; returns the new state, None without one.
+pub(super) unsafe fn toggle_mic_mute() -> Option<bool> {
+    let _apartment = Apartment::enter();
+    let mic = device(eCapture, eCommunications).ok()?;
+    let muted = !mic.GetMute().ok()?.as_bool();
+    mic.SetMute(muted, std::ptr::null()).ok()?;
+    Some(muted)
 }
 pub(super) unsafe fn volume() -> Option<(u8, bool)> {
     let _apartment = Apartment::enter();

@@ -228,8 +228,14 @@ mod tests {
             assert_eq!(find(key), None, "{key}");
         }
         assert!(matches!(find("Super+Backspace"), Some(Command::Action(_))));
-        // Windows keeps Super+Ctrl+D (New desktop).
-        assert_eq!(find("Super+Ctrl+D"), None);
+        // Omarchy's display, zoom, layout-back and resize keys.
+        assert_eq!(find("Super+Ctrl+D"), Some(Command::Settings("display".into())));
+        assert_eq!(find("Super+Ctrl+Z"), Some(Command::Builtin("zoom-in")));
+        assert_eq!(find("Super+Alt+L"), Some(Command::Builtin("cycle-layout-back")));
+        assert_eq!(
+            find("Super+Ctrl+Shift+Equal"),
+            Some(Command::Resize { width: false, pixels: 300 })
+        );
         // Opacity toggles are off by default.
         assert_eq!(find("Super+Alt+T"), None);
         let apps = crate::webapps::defaults();
