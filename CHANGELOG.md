@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The Admin zip carries only the stock Omarchy theme backgrounds, not ones from
+  `~/.config/omarchy/themes`.
+- Release builds run on GitHub Actions: a `v<version>` tag builds both zips and
+  makes a draft release from them.
 - More of Omarchy's keys are in the default binds.conf: **Super + Minus / Equal**
   resize the focused tile (Shift for height, Alt for a little, Ctrl for a lot),
   **Super + Alt + L** cycles the layout back, **Super + Ctrl + Z** and
