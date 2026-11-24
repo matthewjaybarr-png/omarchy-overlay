@@ -30,7 +30,7 @@ focused window.*
 
 *The app grid (**Super + Alt + Space**): type to filter, arrow keys move in the grid.*
 
-**Status: early.** This is version 0.4.1. It comes in two editions built from the
+**Status: early.** This is version 0.5.0. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
 Pick Standard on a PC where you are not an administrator, or to try it out. Pick

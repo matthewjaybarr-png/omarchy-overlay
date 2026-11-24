@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 - **Super + left drag** moves a window and **Super + right drag** resizes it, as on
   Omarchy. Dropping a tiled window on another tile swaps them, and resizing a tile
