@@ -189,6 +189,46 @@ impl App {
             }
         }
     }
+    /// The windows on screen on a monitor, top of the z-order first.
+    unsafe fn shown_on(&self, monitor: HMONITOR) -> Vec<HWND> {
+        workspaces::top_windows()
+            .into_iter()
+            .filter(|key| !self.parked.contains_key(key))
+            .map(|key| key as HWND)
+            .filter(|&hwnd| {
+                IsIconic(hwnd) == 0
+                    && self.movable(hwnd)
+                    && MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) == monitor
+            })
+            .collect()
+    }
+    /// Omarchy's Ctrl+Alt+Tab: focuses the top window on the next monitor, and puts the
+    /// pointer there, so an empty monitor can be focused too.
+    pub(super) unsafe fn focus_monitor(&mut self, step: i32) {
+        let mut displays = settings::displays();
+        displays.sort_by_key(|display| (display.work.x, display.work.y));
+        let current = MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTONEAREST);
+        let Some(index) = displays.iter().position(|d| d.monitor == current) else {
+            return;
+        };
+        if displays.len() < 2 {
+            return;
+        }
+        let next = &displays[(index as i32 + step).rem_euclid(displays.len() as i32) as usize];
+        let work = next.work;
+        SetCursorPos(work.x + work.w / 2, work.y + work.h / 2);
+        let top = self.shown_on(next.monitor).first().map(|&hwnd| hwnd as isize);
+        self.focus_or_desktop(top);
+    }
+    /// Omarchy's Super+Shift+Alt+arrows: every window on the focused monitor moves to the
+    /// monitor in that direction. Workspaces span all monitors here, so its windows move.
+    pub(super) unsafe fn move_workspace_to_monitor(&mut self, dx: i32, dy: i32) {
+        let current = MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTONEAREST);
+        // Bottom first, so the window that was on top ends up focused.
+        for hwnd in self.shown_on(current).into_iter().rev() {
+            self.move_direction(hwnd, dx, dy);
+        }
+    }
     pub(super) unsafe fn move_monitor(&mut self, hwnd: HWND, direction: i32) {
         if !self.movable(hwnd) || !responsive(hwnd) {
             return;

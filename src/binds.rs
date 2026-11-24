@@ -236,11 +236,17 @@ mod tests {
             find("Super+Ctrl+Shift+Equal"),
             Some(Command::Resize { width: false, pixels: 300 })
         );
+        assert_eq!(find("Super+F"), Some(Command::Builtin("full-screen")));
+        assert_eq!(find("Super+Home"), Some(Command::Builtin("restore-width")));
+        assert_eq!(find("Super+Shift+Alt+Left"), Some(Command::Builtin("move-workspace-left")));
+        assert_eq!(find("Ctrl+Alt+Tab"), Some(Command::Builtin("focus-next-monitor")));
         // Opacity toggles are off by default.
         assert_eq!(find("Super+Alt+T"), None);
         let apps = crate::webapps::defaults();
         for bind in &binds {
-            assert!(bind.key.modifiers & SUPER != 0, "{}", bind.key.label());
+            // Omarchy's monitor-focus keys are the only defaults without Super.
+            let monitor_focus = bind.key.modifiers & (CTRL | ALT) == CTRL | ALT && bind.key.vk == 0x09;
+            assert!(bind.key.modifiers & SUPER != 0 || monitor_focus, "{}", bind.key.label());
             if let Command::WebApp(name) = &bind.command {
                 assert!(apps.iter().any(|a| a.name == *name), "webapps.json lacks {name}");
             }

@@ -10,6 +10,16 @@ pub(super) struct Parked {
     /// The journal entry was made for parking, not by tiling, and goes when the window returns.
     fresh: bool,
 }
+/// Every top-level window, top of the z-order first.
+pub(super) unsafe fn top_windows() -> Vec<isize> {
+    let mut found: Vec<isize> = vec![];
+    unsafe extern "system" fn enumerate(hwnd: HWND, parameter: LPARAM) -> i32 {
+        (*(parameter as *mut Vec<isize>)).push(hwnd as isize);
+        1
+    }
+    EnumWindows(Some(enumerate), &mut found as *mut _ as isize);
+    found
+}
 const MOVE: u32 = SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE;
 impl App {
     /// Parks one window for `workspace`. False when the window is not one the overlay may move.
@@ -19,7 +29,7 @@ impl App {
         let minimized = scrolling_runtime::current_hidden(hwnd);
         if self.parked.contains_key(&key)
             || window_actions::popped(hwnd)
-            || !(minimized || self.movable(hwnd))
+            || !(minimized || self.full_screen.contains_key(&key) || self.movable(hwnd))
         {
             return false;
         }
@@ -60,7 +70,7 @@ impl App {
         let occupied = self.parked.values().fold(0u16, |mask, p| mask | 1 << p.workspace);
         crate::desktops::set_occupied(occupied);
     }
-    unsafe fn focus_or_desktop(&mut self, target: Option<isize>) {
+    pub(super) unsafe fn focus_or_desktop(&mut self, target: Option<isize>) {
         // Seen first, so a refused focus change cannot read as the user picking a parked window.
         let front = GetForegroundWindow();
         self.seen_foreground = front as isize;
@@ -103,12 +113,7 @@ impl App {
         if !self.parked.contains_key(&foreground) {
             self.workspace_focus.insert(old, foreground);
         }
-        let mut found: Vec<isize> = vec![];
-        unsafe extern "system" fn enumerate(hwnd: HWND, parameter: LPARAM) -> i32 {
-            (*(parameter as *mut Vec<isize>)).push(hwnd as isize);
-            1
-        }
-        EnumWindows(Some(enumerate), &mut found as *mut _ as isize);
+        let found = top_windows();
         for &key in &found {
             self.park(key as HWND, old);
         }

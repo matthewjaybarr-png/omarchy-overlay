@@ -8,8 +8,17 @@
   **Super + Ctrl + Alt + Z** zoom in and reset with Windows Magnifier,
   **Super + Ctrl + D** opens Display settings, and **Super + Ctrl + Alt + T / B**
   show the time and battery.
+- **Super + F** is real full screen now: the window covers its whole monitor,
+  above the bar, until you press it again. **Super + Alt + F** still maximizes.
+- **Super + Alt + Home** saves the focused window's width and **Super + Home**
+  restores it.
+- **Ctrl + Alt + Tab** and **Ctrl + Alt + Shift + Tab** focus the next and previous
+  monitor, and **Super + Shift + Alt + arrows** move the focused monitor's windows
+  to the monitor in that direction.
 - New commands: `resize width|height <pixels>`, `cycle-layout-back`, `mic-mute`,
-  `zoom-in` and `zoom-reset`.
+  `zoom-in`, `zoom-reset`, `full-screen`, `save-width`, `restore-width`,
+  `focus-next-monitor`, `focus-previous-monitor` and `move-workspace-left`,
+  `-right`, `-up` and `-down`.
 
 ## 0.5.0
 

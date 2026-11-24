@@ -101,6 +101,66 @@ impl App {
             },
         );
     }
+    /// Omarchy's Super+F: the window covers its whole monitor, over the bar, until pressed again.
+    pub(super) unsafe fn toggle_full_screen(&mut self, hwnd: HWND) {
+        self.full_screen.retain(|&key, _| IsWindow(key as HWND) != 0);
+        if let Some(rect) = self.full_screen.remove(&(hwnd as isize)) {
+            let (w, h) = (rect.right - rect.left, rect.bottom - rect.top);
+            SetWindowPos(hwnd, null_mut(), rect.left, rect.top, w, h, SWP_NOZORDER);
+            self.dirty = true;
+            return;
+        }
+        // The journal entry puts the window back on exit or after a crash.
+        if !self.movable(hwnd) || !self.snapshot(hwnd) {
+            return;
+        }
+        if IsZoomed(hwnd) != 0 {
+            ShowWindow(hwnd, SW_RESTORE);
+        }
+        let mut rect: RECT = zeroed();
+        let mut info: MONITORINFO = zeroed();
+        info.cbSize = size_of::<MONITORINFO>() as u32;
+        if GetWindowRect(hwnd, &mut rect) == 0
+            || GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mut info) == 0
+        {
+            return;
+        }
+        self.full_screen.insert(hwnd as isize, rect);
+        let m = info.rcMonitor;
+        // Covering the monitor makes the window full screen to Windows: the tiler leaves it
+        // alone and the bar steps behind it.
+        position(hwnd, Rect { x: m.left, y: m.top, w: m.right - m.left, h: m.bottom - m.top });
+        SetForegroundWindow(hwnd);
+        self.dirty = true;
+    }
+    pub(super) unsafe fn save_width(&mut self, hwnd: HWND) {
+        let mut rect: RECT = zeroed();
+        if self.movable(hwnd) && GetWindowRect(hwnd, &mut rect) != 0 {
+            self.widths.retain(|&key, _| IsWindow(key as HWND) != 0);
+            self.widths.insert(hwnd as isize, rect.right - rect.left);
+            self.show_feedback("Window width saved");
+        }
+    }
+    pub(super) unsafe fn restore_width(&mut self, hwnd: HWND) {
+        let mut rect: RECT = zeroed();
+        let Some(&width) = self.widths.get(&(hwnd as isize)) else {
+            return;
+        };
+        if !self.movable(hwnd) || GetWindowRect(hwnd, &mut rect) == 0 {
+            return;
+        }
+        let delta = width - (rect.right - rect.left);
+        if delta == 0 {
+            return;
+        }
+        let monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) as isize;
+        let tiled = self.tiled.get(&monitor).is_some_and(|g| g.keys.contains(&(hwnd as isize)));
+        if tiled {
+            self.resize_keyboard(hwnd, true, delta);
+        } else {
+            SetWindowPos(hwnd, null_mut(), 0, 0, width, rect.bottom - rect.top, SWP_NOMOVE | SWP_NOZORDER);
+        }
+    }
     pub(super) unsafe fn resize_keyboard(&mut self, hwnd: HWND, horizontal: bool, delta: i32) {
         if !self.active || !self.movable(hwnd) {
             return;
