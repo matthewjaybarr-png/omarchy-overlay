@@ -26,6 +26,18 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("clipboard", "Windows clipboard history"),
     ("emoji", "Windows emoji panel"),
     ("capture", "Screenshot or screen recording (Snipping Tool)"),
+    ("record-screen", "Screen recording (Snipping Tool)"),
+    ("extract-text", "Copy text from the screen (Snipping Tool)"),
+    ("toggle-group", "Make the window a group, or ungroup it"),
+    ("leave-group", "Take the window out of its group"),
+    ("move-into-group-left", "Move the window into the group on the left"),
+    ("move-into-group-right", "Move the window into the group on the right"),
+    ("move-into-group-up", "Move the window into the group above"),
+    ("move-into-group-down", "Move the window into the group below"),
+    ("next-in-group", "Next window in the group"),
+    ("previous-in-group", "Previous window in the group"),
+    ("show-reminders", "Show the reminders that are set"),
+    ("clear-reminders", "Clear all reminders"),
     ("copy", "Universal copy"),
     ("paste", "Universal paste"),
     ("cut", "Universal cut"),
@@ -190,6 +202,8 @@ pub enum Command {
     Layout(&'static str),
     /// Resizes the focused tile by `pixels`, wider/taller when positive, `resize width -100`.
     Resize { width: bool, pixels: i32 },
+    /// Shows a reminder after this many minutes, `remind 15`.
+    Remind(u32),
     Theme(String),
     /// A Windows Settings page, `settings sound` opens ms-settings:sound.
     Settings(String),
@@ -285,6 +299,15 @@ pub fn parse(text: &str) -> Result<Command, String> {
                 .ok_or("resize needs a number of pixels from -2000 to 2000, as in resize width -100.")?;
             Ok(Command::Resize { width, pixels })
         }
+        "remind" => {
+            need("a number of minutes")?;
+            argument
+                .parse::<u32>()
+                .ok()
+                .filter(|n| (1..=1440).contains(n))
+                .map(Command::Remind)
+                .ok_or_else(|| "remind needs minutes from 1 to 1440, as in remind 15.".into())
+        }
         "theme" => {
             need("a theme name")?;
             if plain(argument, 64) {
@@ -376,6 +399,8 @@ impl Command {
                     | "clipboard"
                     | "emoji"
                     | "capture"
+                    | "record-screen"
+                    | "extract-text"
                     | "move-to-desktop"
             ),
             _ => false,
@@ -409,7 +434,10 @@ impl Command {
                     )
             }
             Self::Builtin(name) => {
-                *name == "cycle-layout-back" || *name == "restore-width" || name.starts_with("move-workspace-")
+                *name == "cycle-layout-back"
+                    || *name == "restore-width"
+                    || name.starts_with("move-workspace-")
+                    || name.contains("group")
             }
             Self::Resize { .. } | Self::Layout(_) | Self::Workspace(_) | Self::MoveToWorkspace(_) | Self::MoveSilently(_) => true,
             _ => false,
@@ -452,6 +480,10 @@ mod tests {
             parse("Resize HEIGHT 25"),
             Ok(Command::Resize { width: false, pixels: 25 })
         );
+        assert_eq!(parse("remind 15"), Ok(Command::Remind(15)));
+        for bad in ["remind", "remind 0", "remind 1441", "remind soon"] {
+            assert!(parse(bad).is_err(), "{bad}");
+        }
         for bad in ["resize", "resize width", "resize depth 10", "resize width 0", "resize width 5000"] {
             assert!(parse(bad).is_err(), "{bad}");
         }

@@ -237,6 +237,11 @@ mod tests {
             Some(Command::Resize { width: false, pixels: 300 })
         );
         assert_eq!(find("Super+F"), Some(Command::Builtin("full-screen")));
+        assert_eq!(find("Super+G"), Some(Command::Builtin("toggle-group")));
+        assert_eq!(find("Super+Alt+Left"), Some(Command::Builtin("move-into-group-left")));
+        assert_eq!(find("Super+Alt+Shift+Tab"), Some(Command::Builtin("previous-in-group")));
+        assert_eq!(find("Super+Alt+Print"), Some(Command::Builtin("record-screen")));
+        assert_eq!(find("Super+Ctrl+R"), Some(Command::Menu("reminder".into())));
         assert_eq!(find("Super+Home"), Some(Command::Builtin("restore-width")));
         assert_eq!(find("Super+Shift+Alt+Left"), Some(Command::Builtin("move-workspace-left")));
         assert_eq!(find("Ctrl+Alt+Tab"), Some(Command::Builtin("focus-next-monitor")));

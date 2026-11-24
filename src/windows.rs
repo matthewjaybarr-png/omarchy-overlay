@@ -61,6 +61,10 @@ mod profiles_ui;
 mod recovery;
 #[path = "resize.rs"]
 mod resize;
+#[path = "groups.rs"]
+mod groups;
+#[path = "reminders.rs"]
+mod reminders;
 #[path = "scrolling_runtime.rs"]
 mod scrolling_runtime;
 #[path = "settings.rs"]
@@ -345,6 +349,10 @@ struct App {
     full_screen: HashMap<isize, RECT>,
     /// Widths save-width recorded, for restore-width.
     widths: HashMap<isize, i32>,
+    /// Omarchy's window groups (Super+G): one tile, one window shown at a time.
+    groups: Vec<groups::Group>,
+    /// Due times of the reminders set with `remind <minutes>`.
+    reminders: Vec<(std::time::Instant, u32)>,
     workspace_focus: HashMap<usize, isize>,
     seen_foreground: isize,
     floating: HashSet<isize>,
@@ -1450,6 +1458,8 @@ pub fn run() {
             parked: HashMap::new(),
             full_screen: HashMap::new(),
             widths: HashMap::new(),
+            groups: Vec::new(),
+            reminders: Vec::new(),
             workspace_focus: HashMap::new(),
             seen_foreground: 0,
             floating: HashSet::new(),
@@ -2454,6 +2464,7 @@ impl App {
         self.drag = None;
         self.mouse_drag = None;
         self.moves.clear();
+        self.groups.clear();
         self.saved.retain(|&key, saved| !saved.restore(key as HWND));
         if let Err(error) = self.save_positions() {
             log(&error);
@@ -2526,6 +2537,7 @@ impl App {
                 self.dirty = true;
             }
         }
+        self.sync_groups();
         self.release_scrolling_for_other_layouts();
         let mut found: Vec<isize> = vec![];
         unsafe extern "system" fn enumerate(hwnd: HWND, parameter: LPARAM) -> i32 {
@@ -2536,7 +2548,7 @@ impl App {
         }
         EnumWindows(Some(enumerate), &mut found as *mut _ as isize);
         found.retain(|&key| {
-            if self.parked.contains_key(&key) {
+            if self.parked.contains_key(&key) || self.group_hidden(key) {
                 return false;
             }
             if scrolling_runtime::owned(key as HWND)
@@ -3392,6 +3404,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 app.appearance_poll();
                 focus_outline::update(app);
                 app.poll_system_action();
+                app.check_reminders();
                 app.tick();
                 app.tasks.refresh();
                 app.update_dashboard();

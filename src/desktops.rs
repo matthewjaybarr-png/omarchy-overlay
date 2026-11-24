@@ -196,6 +196,9 @@ mod native {
             // Windows Magnifier: Win+Plus zooms in, Win+Esc closes it.
             13 => chord(&[VK_LWIN, VK_OEM_PLUS]),
             14 => chord(&[VK_LWIN, VK_ESCAPE]),
+            // Snipping Tool's own keys: screen recording, and text extractor (version 11.2503.29+).
+            15 => chord(&[VK_LWIN, VK_SHIFT, b'R' as u16]),
+            16 => chord(&[VK_LWIN, VK_SHIFT, b'T' as u16]),
             _ => true,
         }
     }

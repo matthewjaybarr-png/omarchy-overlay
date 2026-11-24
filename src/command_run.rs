@@ -121,6 +121,7 @@ impl App {
             Command::Resize { width, pixels } => {
                 self.resize_keyboard(GetForegroundWindow(), *width, *pixels)
             }
+            Command::Remind(minutes) => self.remind(*minutes),
             Command::Theme(name) => {
                 let mut c = self.config.clone();
                 c.theme = name.clone();
@@ -192,6 +193,18 @@ impl App {
             "clipboard" => self.queue_system_action(0),
             "emoji" => self.queue_system_action(5),
             "capture" => self.queue_system_action(1),
+            "record-screen" => self.queue_system_action(15),
+            "extract-text" => self.queue_system_action(16),
+            "toggle-group" => self.toggle_group(GetForegroundWindow()),
+            "leave-group" => self.leave_group(GetForegroundWindow()),
+            "move-into-group-left" => self.move_into_group(GetForegroundWindow(), -1, 0),
+            "move-into-group-right" => self.move_into_group(GetForegroundWindow(), 1, 0),
+            "move-into-group-up" => self.move_into_group(GetForegroundWindow(), 0, -1),
+            "move-into-group-down" => self.move_into_group(GetForegroundWindow(), 0, 1),
+            "next-in-group" => self.cycle_group(GetForegroundWindow(), 1),
+            "previous-in-group" => self.cycle_group(GetForegroundWindow(), -1),
+            "show-reminders" => self.show_reminders(),
+            "clear-reminders" => self.clear_reminders(),
             "copy" | "paste" | "cut" | "select-all" => {
                 // Like Omarchy, terminals copy and paste with Ctrl+Shift so Ctrl+C still interrupts.
                 let terminal = process_name(GetForegroundWindow()).eq_ignore_ascii_case("WindowsTerminal.exe");

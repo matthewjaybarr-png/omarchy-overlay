@@ -19,6 +19,18 @@
   `zoom-in`, `zoom-reset`, `full-screen`, `save-width`, `restore-width`,
   `focus-next-monitor`, `focus-previous-monitor` and `move-workspace-left`,
   `-right`, `-up` and `-down`.
+- **Window groups**, as on Omarchy: **Super + G** groups the focused window,
+  **Super + Alt + arrows** move a window into the group in that direction,
+  **Super + Alt + Tab** switches inside the group and **Super + Alt + G** takes a
+  window out. A group shares one tile and shows one window at a time.
+- **Reminders**: **Super + Ctrl + R** picks a time and a Windows notification
+  shows when it is up; **Super + Ctrl + Alt + R** lists them and
+  **Super + Ctrl + Shift + R** clears them.
+- **Super + Alt + Print** starts a Snipping Tool screen recording and
+  **Super + Ctrl + Print** copies text from the screen.
+- New commands: `toggle-group`, `leave-group`, `move-into-group-left`, `-right`,
+  `-up`, `-down`, `next-in-group`, `previous-in-group`, `remind <minutes>`,
+  `show-reminders`, `clear-reminders`, `record-screen` and `extract-text`.
 
 ## 0.5.0
 
