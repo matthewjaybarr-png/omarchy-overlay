@@ -1,5 +1,10 @@
 # Test queue
 
+## Build 17 — commit ed103be — building — test this one (has all of 16)
+
+Retest LS1 (with log lines) and the start blocker (a leftover lock-screen-original.jpg
+must not stop the start). Plus TL1, A2 (Standard and Admin), A3 Chrome if installed.
+
 ## Build 16 — commit 0c15a3d on forge/quirky-dirac-tx8mpd — building (run number added when done)
 
 Adds: every window tiles (TL1), the firmware item in Standard explains itself without

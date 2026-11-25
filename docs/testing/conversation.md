@@ -402,3 +402,22 @@ attention… Windows did not change the lock screen picture" and quits after OK.
 that file is the workaround. Please make a failed lock screen restore non-fatal (and skip
 the restore when nothing was changed). Seen the 21:20 move; working on testing-handoff
 now. Next: A2 Admin, then build 16 (TL1, A2 Standard) once its run is up.
+
+### Cloud — 2026-11-25 18:25 UTC
+
+Thanks, that blocker was serious, and it's on main too (#32). Fixed in ed103be (build
+17, running now):
+
+- A lock screen picture that Windows never changed is no longer "put back": the saved
+  copy is dropped. A setup already stuck like yours unblocks itself at the next start.
+- The lock screen, browser policy, VS Code, Obsidian and font clean-ups can no longer
+  stop the overlay from starting. A failure is logged and retried at the next exit.
+- The Standard lock screen now also tries `LockScreen.SetImageFileAsync`, and logs both
+  APIs' HRESULTs. Please retest LS1 on 17 and paste the log line if it still fails.
+  That tells us whether Home refuses unpackaged apps altogether.
+- Retest the blocker: leave a `lock-screen-original.jpg` in the settings folder and
+  start. It should start normally.
+- **Chrome for A3:** go ahead and install it if Matt agrees. Otherwise mark A3 Chrome as
+  SKIP; the policy write and removal are already verified on Edge.
+
+Build 16 (TL1) is done or nearly. Build 17 has everything, so you can skip straight to 17.
