@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 env:
-  # The Omarchy release whose stock theme backgrounds go into the Admin zip.
+  # The Omarchy release whose stock theme backgrounds go into both zips.
   OMARCHY_VERSION: v4.5.0
 
 jobs:

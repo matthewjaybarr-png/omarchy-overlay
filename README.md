@@ -226,7 +226,7 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
   move left, right, up and down, Page Up/Down and the mouse wheel scroll by rows.
 - The theme sets the Windows accent color and its first background, at start
   and whenever you choose one. **Super+Ctrl+Space** opens the background switcher for the theme's
-  `backgrounds` folder. The Admin edition ships Omarchy's backgrounds for every theme in
+  `backgrounds` folder. Both editions ship Omarchy's backgrounds for every theme in
   `themes\<id>\backgrounds` beside the exe.
 
 - **Appearance > Window transparency** picks Omarchy's opaque, transparent (barely
@@ -557,8 +557,9 @@ them in a libvirt Windows guest through `scripts/vm.py`. Set `OVERLAY_VM`,
 After the release build, `python3 scripts/package.py` writes two zips to `dist\`
 from the same exe, and `SHA256SUMS.txt` with their checksums:
 
-- `OmarchyOverlay-<version>-standard.zip`: the exe, `RECOVER.cmd`, `fonts\` and
-  `config\examples\`. Unzip and run; no administrator rights.
+- `OmarchyOverlay-<version>-standard.zip`: the exe, `RECOVER.cmd`, `fonts\`,
+  `config\examples\` and the stock theme backgrounds in `themes\`. Unzip and run; no
+  administrator rights.
 - `OmarchyOverlay-<version>-admin.zip`: the same, plus `INSTALL.cmd` and the
   `edition-admin` marker. Run `INSTALL.cmd` to install (see Admin edition).
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The Standard zip carries Omarchy's stock theme backgrounds too, so every theme sets
+  its own wallpaper in both editions.
 - **Per-monitor workspaces** (Layout > "Each monitor has its own workspaces"), off by
   default: as in Omarchy, switching workspace changes only the monitor in use, and
   moving to another monitor shows its workspace. Layout choices follow each monitor's
