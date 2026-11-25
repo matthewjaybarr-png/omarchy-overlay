@@ -402,7 +402,11 @@ impl App {
         }
         for item in &menu.items {
             let submenu = matches!(item.command, Command::Menu(_) | Command::Page(_));
-            let act = if item.confirm {
+            // An Admin-only command in the Standard edition only explains itself, so there
+            // is nothing to confirm.
+            let admin_only = matches!(item.command, Command::Builtin("restart-to-firmware"))
+                && !crate::launch_unelevated::process_elevated();
+            let act = if item.confirm && !admin_only {
                 Act::Confirm(item.command.clone(), format!("{}?", item.label))
             } else {
                 Act::Run(item.command.clone())
