@@ -363,6 +363,9 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     if let Err(error) = browser_policy::restore(directory) {
         errors.push(error);
     }
+    if let Err(error) = lock_screen::restore(directory) {
+        errors.push(error);
+    }
     // After the Terminal profile, which may name one of these fonts.
     if let Err(error) = font_install::remove(directory) {
         errors.push(error);

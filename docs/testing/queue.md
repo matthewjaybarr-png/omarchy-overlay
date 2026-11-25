@@ -183,6 +183,11 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
 - **WL1** (build 13) Delete `welcomed` from config.json (or use a fresh settings
   folder) and start: the menu opens. Exit and start again: no menu.
 
+- **A4** (build 13, Admin) Appearance > Lock screen > shows the theme background. Win+L:
+  the lock screen shows the theme's first background (it may need a sign-out on some
+  Windows editions; note which edition the VM runs). A theme switch changes it. Exit:
+  the original lock screen is back. Standard: the page says it needs Admin.
+
 ### Before hiding the taskbar by default
 - **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar", dock on floating workspaces. Then check each and note PASS/FAIL:
   the Win key opens Start; Win+N opens notifications; Win+A Quick Settings; a toast

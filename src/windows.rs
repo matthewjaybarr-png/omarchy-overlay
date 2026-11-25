@@ -11,6 +11,8 @@ mod vscode_effects;
 mod obsidian_effects;
 #[path = "browser_policy.rs"]
 mod browser_policy;
+#[path = "lock_screen.rs"]
+mod lock_screen;
 #[path = "font_install.rs"]
 mod font_install;
 #[path = "windows_syscolors.rs"]
@@ -2280,6 +2282,11 @@ impl App {
         }
         if self.config.obsidian_colors {
             if let Err(error) = obsidian_effects::apply(&self.directory, name) {
+                log(&error);
+            }
+        }
+        if self.config.lock_screen {
+            if let Err(error) = unsafe { lock_screen::apply(&self.directory, name) } {
                 log(&error);
             }
         }

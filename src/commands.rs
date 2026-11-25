@@ -178,6 +178,7 @@ pub const PAGES: &[(&str, &str)] = &[
     ("vscode-colors", "VS Code colors"),
     ("obsidian-colors", "Obsidian colors"),
     ("browser-colors", "Browser colors"),
+    ("lock-screen", "Lock screen picture"),
     ("config-errors", "Config file problems"),
 ];
 

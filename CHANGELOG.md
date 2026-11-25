@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Lock screen** (Appearance > Lock screen, Admin edition): the lock screen shows the
+  theme's first background, as Omarchy's lock screen follows its theme, through
+  Windows' lock screen policy (for every user of the PC). It follows theme changes;
+  exit puts the original back.
 - The menu opens by itself only at the very first start, as a welcome; later starts
   are quiet, as in Omarchy. (After this update it opens once more, then never.)
 - **Browser colors** (Appearance > Browser colors, Admin edition), as Omarchy's

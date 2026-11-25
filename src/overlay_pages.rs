@@ -868,6 +868,17 @@ impl App {
                 rows.push(info("Choices stay on this PC. Specific desktop/display choices override broader ones. Workspaces switch every monitor together."));
                 rows
             }
+            "lock-screen" => vec![
+                Row::new(IMAGE, "Lock screen shows the theme background", Act::Choose("lock-screen", "apply".into()))
+                    .checked(self.config.lock_screen),
+                Row::new(UNDO, "Put back the lock screen picture", Act::Choose("lock-screen", "restore".into())),
+                info("As Omarchy's lock screen follows its theme: the theme's first background, for every user of this PC. Windows shows it on the sign-in screen too when \"Show the lock screen background picture on the sign-in screen\" is on."),
+                info(if crate::launch_unelevated::process_elevated() {
+                    "Exit puts the original back; the next start sets it again."
+                } else {
+                    "Needs the Admin edition: the lock screen setting takes administrator rights."
+                }),
+            ],
             "browser-colors" => vec![
                 Row::new(BRUSH, "Chrome, Edge, Brave and Chromium follow the theme", Act::Choose("browser-colors", "apply".into()))
                     .checked(self.config.browser_colors),
@@ -1661,6 +1672,7 @@ impl App {
             Row::new(BRUSH, "VS Code colors", Act::Run(Command::Page("vscode-colors"))),
             Row::new(BRUSH, "Obsidian colors", Act::Run(Command::Page("obsidian-colors"))),
             Row::new(BRUSH, "Browser colors (Admin edition)", Act::Run(Command::Page("browser-colors"))),
+            Row::new(IMAGE, "Lock screen (Admin edition)", Act::Run(Command::Page("lock-screen"))),
             Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))),
             Row::new(INFO, "Apps Omarchy Overlay cannot theme", Act::Open(Level::Page("windows-checklist"))),
             info("Omarchy Overlay records the original values first and puts them back on Restore, on exit and after a crash."),
@@ -2708,6 +2720,19 @@ impl App {
                     Ok(text) => text.to_string(),
                     Err(error) => error,
                 });
+                true
+            }
+            "lock-screen" => {
+                let result = if value == "apply" {
+                    lock_screen::apply(&self.directory, &self.config.theme).map(|()| "Set. Lock the PC (Win+L) to see it.".to_string())
+                } else {
+                    lock_screen::restore(&self.directory).map(|()| "Put back.".to_string())
+                };
+                if result.is_ok() {
+                    self.config.lock_screen = value == "apply";
+                    self.save_config();
+                }
+                overlay::message(&result.unwrap_or_else(|e| e));
                 true
             }
             "browser-colors" => {

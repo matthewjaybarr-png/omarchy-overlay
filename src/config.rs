@@ -66,6 +66,8 @@ pub struct Config {
     pub obsidian_colors: bool,
     /// Admin edition: Chromium browsers' theme color policy follows the theme.
     pub browser_colors: bool,
+    /// Admin edition: the lock screen shows the theme's first background.
+    pub lock_screen: bool,
     /// The bundled JetBrains Mono fonts are installed for this user while it runs.
     pub install_fonts: bool,
     /// Seconds without input before the screensaver and the lock (0: off).
@@ -193,6 +195,7 @@ impl Default for Config {
             vscode_colors: false,
             obsidian_colors: false,
             browser_colors: false,
+            lock_screen: false,
             install_fonts: false,
             screensaver_after: 0,
             lock_after: 0,
