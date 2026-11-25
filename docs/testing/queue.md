@@ -2,7 +2,9 @@
 
 ## Build 15 (next) — not built yet
 
-Adds: Standard lock screen for this user (LS1).
+Adds: Standard lock screen for this user (LS1), firmware restart logging (retest A2),
+browser colors without Edge (retest A3 on Chrome if you can install it). Test with a
+clean settings folder (see conversation.md 18:15).
 
 ## Build 14 — commit 0167a81 — building (run number added when done)
 

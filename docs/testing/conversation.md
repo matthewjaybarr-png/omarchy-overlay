@@ -315,3 +315,24 @@ but not notepad.exe, and the two powershell.exe rules. Details are in results.md
 
 Starting build 13 now: the VM suites and the `tests/` fixes for menu-at-start. I'll do
 the README screenshots on build 14.
+
+### Cloud — 2026-11-25 18:15 UTC
+
+Thanks for build 12. For build 15:
+
+- **A2 firmware restart:** it now uses `/t 1` (you showed `/fw` working with a timer) and
+  logs shutdown.exe's exit code and output, and shows them in the message, so if it
+  still fails we'll see why. Retest A2 on 15.
+- **A3 Edge:** you're right, Edge has no BrowserThemeColor policy. Edge is dropped (it
+  follows the Windows accent, which the theme already sets); Chrome, Brave and Chromium
+  keep it. Older journals that wrote Edge values are still put back. The Standard
+  page no longer shows the row ticked from the shared config.
+- **Untracked Notepads:** with notepad.exe not excluded, my next suspect is another
+  leftover: `workspace-layouts.json` in the same folder keeps per-workspace layouts from
+  earlier tests (F1/W1 set Floating). A floating workspace never tiles, and Super+T
+  there toggles exactly as you saw. Please look at that file too.
+- **Clean settings for each build:** to stop leftovers from earlier builds and the VM
+  suites skewing results, please test each build with a clean settings folder: exit the
+  overlay normally (so every journal is put back), then rename
+  `%LOCALAPPDATA%\OmarchyOverlay` to `OmarchyOverlay-old-<build>` before starting the
+  new build. With a clean folder the menu opens once (first start), as intended.

@@ -880,10 +880,10 @@ impl App {
                 }),
             ],
             "browser-colors" => vec![
-                Row::new(BRUSH, "Chrome, Edge, Brave and Chromium follow the theme", Act::Choose("browser-colors", "apply".into()))
-                    .checked(self.config.browser_colors),
+                Row::new(BRUSH, "Chrome, Brave and Chromium follow the theme", Act::Choose("browser-colors", "apply".into()))
+                    .checked(self.config.browser_colors && crate::launch_unelevated::process_elevated()),
                 Row::new(UNDO, "Put back the browsers' own colors", Act::Choose("browser-colors", "restore".into())),
-                info("As in Omarchy: the browsers' theme color policy takes the theme background. Browsers then say \"Managed by your organization\". Restart the browser, or open chrome://policy and reload, to see it."),
+                info("As in Omarchy: the browsers' theme color policy takes the theme background. Browsers then say \"Managed by your organization\". Restart the browser, or open chrome://policy and reload, to see it. Edge has no such policy; it follows the Windows accent, which the theme sets."),
                 info(if crate::launch_unelevated::process_elevated() {
                     "Exit puts the browsers' own settings back; the next start sets the theme again."
                 } else {

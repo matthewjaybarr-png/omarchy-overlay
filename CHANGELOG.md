@@ -16,9 +16,10 @@
 - The menu opens by itself only at the very first start, as a welcome; later starts
   are quiet, as in Omarchy. (After this update it opens once more, then never.)
 - **Browser colors** (Appearance > Browser colors, Admin edition), as Omarchy's
-  browser theme: Chrome, Edge, Brave and Chromium take the theme background as their
+  browser theme: Chrome, Brave and Chromium take the theme background as their
   toolbar color through the BrowserThemeColor policy, with BrowserColorScheme
-  "device". Browsers show "Managed by your organization" while it is on. The original
+  "device". Browsers show "Managed by your organization" while it is on. Edge has no
+  such policy and keeps following the Windows accent, which the theme sets. The original
   policy values are journaled and restored on exit; the next start sets them again.
 - **Admin edition:** windows running as administrator get the theme's frame colors,
   corners, materials, opacity and the focus outline too, since the elevated Admin

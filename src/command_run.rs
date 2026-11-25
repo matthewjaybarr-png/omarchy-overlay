@@ -258,9 +258,20 @@ impl App {
                 } else {
                     let windir = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
                     let tool = crate::install::system_tool(&windir, "shutdown.exe");
-                    match std::process::Command::new(tool).args(["/r", "/fw", "/t", "0"]).status() {
-                        Ok(status) if status.success() => {}
-                        _ => message("Windows did not restart into the firmware setup. This PC may not use UEFI firmware."),
+                    // A one-second delay: shutdown.exe takes /fw with a timer, as Windows'
+                    // own advanced startup does.
+                    match std::process::Command::new(&tool).args(["/r", "/fw", "/t", "1"]).output() {
+                        Ok(out) if out.status.success() => log("Restarting into the firmware setup."),
+                        Ok(out) => {
+                            let said = String::from_utf8_lossy(&out.stderr).trim().to_string()
+                                + String::from_utf8_lossy(&out.stdout).trim();
+                            log(&format!("{tool} /r /fw /t 1 exited with {:?}: {said}", out.status.code()));
+                            message(&format!("Windows did not restart into the firmware setup ({:?}). {said}", out.status.code()));
+                        }
+                        Err(error) => {
+                            log(&format!("{tool} could not start: {error}"));
+                            message(&format!("shutdown.exe could not start: {error}"));
+                        }
                     }
                 }
             }

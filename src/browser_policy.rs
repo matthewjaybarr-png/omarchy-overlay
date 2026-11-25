@@ -1,6 +1,7 @@
 //! Chromium browsers' toolbar color follows the theme, as omarchy-theme-set-browser does:
 //! the BrowserThemeColor policy (the theme background) and BrowserColorScheme "device",
-//! for Chrome, Edge, Brave and Chromium. Policy keys need administrator rights, so this
+//! for Chrome, Brave and Chromium. Edge has no such policy (edge://policy calls them
+//! "Unknown policy"), so it keeps following the Windows accent, which the theme sets. Policy keys need administrator rights, so this
 //! is for the elevated Admin edition. Browsers then say "Managed by your organization",
 //! as they do on Omarchy. The original values are journaled and put back on Remove, on
 //! exit and after a crash.
@@ -8,12 +9,13 @@ use super::*;
 use windows_sys::Win32::System::Registry::*;
 
 const RECORD: &str = "browser-policy-restore.json";
-const BROWSERS: [&str; 4] = [
+const BROWSERS: [&str; 3] = [
     "Software\\Policies\\Google\\Chrome",
-    "Software\\Policies\\Microsoft\\Edge",
     "Software\\Policies\\BraveSoftware\\Brave",
     "Software\\Policies\\Chromium",
 ];
+/// Written by builds before Edge was dropped; still put back from older journals.
+const OLDER: &str = "Software\\Policies\\Microsoft\\Edge";
 const VALUES: [&str; 2] = ["BrowserThemeColor", "BrowserColorScheme"];
 
 #[derive(Serialize, Deserialize)]
@@ -80,7 +82,7 @@ fn record(directory: &Path) -> Result<Vec<Entry>, String> {
     }
     let entries: Vec<Entry> =
         serde_json::from_str(&profile::read_text(&path)?).map_err(|e| format!("{RECORD}: {e}"))?;
-    if entries.iter().any(|e| !BROWSERS.contains(&e.key.as_str()) || !VALUES.contains(&e.value.as_str())) {
+    if entries.iter().any(|e| !(BROWSERS.contains(&e.key.as_str()) || e.key == OLDER) || !VALUES.contains(&e.value.as_str())) {
         return Err(format!("{RECORD} is not valid; it was kept."));
     }
     Ok(entries)
