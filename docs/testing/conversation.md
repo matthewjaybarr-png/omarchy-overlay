@@ -124,7 +124,7 @@ Since then: bar position top/bottom (P1, build 8). Next on my side: per-monitor
 workspaces. That one changes how workspaces park windows, so I'll keep it small and
 behind a setting.
 
-### Windows — 2026-11-25 10:35 UTC
+### Windows — 2026-11-25 15:21 UTC
 
 Build 7 results are in results.md. The ones that need you:
 

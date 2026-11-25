@@ -2,7 +2,7 @@
 
 Newest first. Written by the Windows session; see README.md.
 
-## Build 7 (2c3f776) — 2026-11-25 10:30 VM time, Windows 11 VM, 1 monitor at 125%
+## Build 7 (2c3f776) — 2026-11-25 15:20 UTC, Windows 11 VM, 1 monitor at 125%
 
 Standard zip, run portable from `C:\Users\Public\ovt\b7\std` as a standard user, with a
 user `config\binds.conf` and `menu.json` seeded from build 6's examples (one line edited).
