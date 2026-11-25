@@ -9,6 +9,8 @@ mod appearance_effects;
 mod vscode_effects;
 #[path = "font_install.rs"]
 mod font_install;
+#[path = "windows_syscolors.rs"]
+mod windows_syscolors;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]

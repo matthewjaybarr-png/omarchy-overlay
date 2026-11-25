@@ -173,6 +173,24 @@ pub fn preview(id: &str) -> Option<[u32; 4]> {
         .unwrap_or(t.surface);
     Some([t.background, t.accent, t.text, fourth].map(colorref))
 }
+/// The classic-control selection, selected-text and link colors for an accent (COLORREF): the accent as the selection, black or
+/// white text on it, whichever reads better, and the accent for links.
+pub fn syscolor_values(accent: u32) -> [u32; 3] {
+    let channel = |c: u32| {
+        let c = f64::from(c & 255) / 255.0;
+        if c <= 0.03928 {
+            c / 12.92
+        } else {
+            ((c + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    let luminance = 0.2126 * channel(accent) + 0.7152 * channel(accent >> 8) + 0.0722 * channel(accent >> 16);
+    // Contrast against white (1.0) versus black (0.0).
+    let on_white = 1.05 / (luminance + 0.05);
+    let on_black = (luminance + 0.05) / 0.05;
+    let text = if on_white >= on_black { 0x00ff_ffff } else { 0 };
+    [accent & 0xff_ffff, text, accent & 0xff_ffff]
+}
 /// The image after `current` in a theme's backgrounds, wrapping; the first when
 /// `current` is not one of them.
 pub fn next_background(list: &[PathBuf], current: Option<&Path>) -> Option<PathBuf> {
@@ -234,6 +252,12 @@ mod tests {
         // #1a1b26, #7aa2f7, #a9b1d6, #f7768e as COLORREFs.
         assert_eq!(p, [0x00261b1a, 0x00f7a27a, 0x00d6b1a9, 0x008e76f7]);
         assert!(preview("no-such-theme").is_none());
+    }
+    #[test]
+    fn selection_text_is_whichever_reads_better_on_the_accent() {
+        // Dark blue accent: white text. Pale yellow accent: black text.
+        assert_eq!(syscolor_values(0x00a04010), [0x00a04010, 0x00ffffff, 0x00a04010]);
+        assert_eq!(syscolor_values(0x0080f0ff)[1], 0);
     }
     #[test]
     fn next_background_starts_at_the_first_and_wraps() {

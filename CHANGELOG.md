@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The selection, selected-text and link colors of classic Windows controls (list
+  boxes, edit boxes, menus and older dialogs) follow the theme accent, as Omarchy's
+  GTK and Qt apps do. Window and text colors stay as they are. The originals are
+  journaled and put back on exit, Restore and after a crash.
 - **Font > Install JetBrains Mono for Windows Terminal and other apps** installs the
   bundled JetBrains Mono Nerd Fonts for this Windows user (no administrator rights),
   so the themed Terminal profile uses Omarchy's font. Like every other change it is

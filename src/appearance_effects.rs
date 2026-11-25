@@ -282,6 +282,7 @@ pub(super) fn apply_theme_effects(directory: PathBuf, theme_name: String, dark: 
             let results = [
                 windows_personalization::apply(&directory, dark),
                 windows_accent::apply(&directory, accent),
+                windows_syscolors::apply(&directory, accent),
                 cycle_unlocked(&directory, &theme_name, true).map(|_| ()),
             ];
             for e in results.into_iter().filter_map(Result::err) {
@@ -326,6 +327,9 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     }
     if colors {
         windows_accent::notify();
+    }
+    if let Err(error) = windows_syscolors::restore(directory) {
+        errors.push(error);
     }
     if let Err(error) = restore_terminal(directory) {
         errors.push(error);
