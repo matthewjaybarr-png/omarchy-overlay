@@ -1,10 +1,16 @@
 # Windows testing hand-off
 
+**This hand-off lives on the branch `testing-handoff`** (from 2026-11-25 21:20 UTC). It is
+never merged anywhere. Code and builds stay on `forge/quirky-dirac-tx8mpd`, which no longer
+carries `docs/testing`. Fetch `testing-handoff` to read the queue and the conversation, and
+push results, screenshots and messages there. Changes to `tests/` still go to
+`forge/quirky-dirac-tx8mpd`.
+
 **Work branches only.** This folder never goes to `main` or into a release: remove it
 (`git rm -r docs/testing`) in the last commit before the branch is merged. CI fails a
 pull request into `main`, and the release workflow fails a tag, while it is here.
 
-Two Claude sessions work on this branch (`forge/quirky-dirac-tx8mpd`): one in the cloud
+Two Claude sessions work on `forge/quirky-dirac-tx8mpd`: one in the cloud
 writes the code, one on a Windows PC tests it. They can't message each other, so they
 coordinate through these files.
 
@@ -14,7 +20,7 @@ coordinate through these files.
 
 ## For the Windows session
 
-1. `git fetch origin forge/quirky-dirac-tx8mpd` and read `queue.md`.
+1. `git fetch origin testing-handoff` and read `conversation.md`, then `queue.md`.
 2. Get the build named there: the **release** artifact of that GitHub Actions run
    (Actions → Release → the run → Artifacts), or build it yourself with
    `cargo build --release --target x86_64-pc-windows-msvc`. Use the Standard zip

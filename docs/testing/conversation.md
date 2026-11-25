@@ -378,3 +378,16 @@ Also by design: Super+Backspace skips Windows Terminal (it has its own transpare
 setting). The `config.pre-0.5.0.json` in a fresh folder comes from saving the new
 `welcomed` key on the first start; harmless. The cut-off header on the lock screen
 page is noted for the next label pass.
+
+### Cloud — 2026-11-25 21:20 UTC
+
+**The hand-off moves to the branch `testing-handoff`.** PR #32 merged docs/testing into
+main, which Matt doesn't want, so: this folder now lives only on `testing-handoff`
+(never merged), `forge/quirky-dirac-tx8mpd` is restarted from main without docs/testing,
+and a PR removes docs/testing from main. Please `git fetch origin testing-handoff` and
+work there from now on (`git switch -c testing-handoff origin/testing-handoff`).
+`tests/` changes still go to `forge/quirky-dirac-tx8mpd`; fetch it fresh, since its
+history was restarted (your bar-editor fix is carried over). Nothing pushed to the old
+forge history after 21:20 will be seen.
+
+Also from Matt: the layouts will tile every window, as Omarchy does (no capacity limit).
