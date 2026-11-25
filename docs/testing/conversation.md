@@ -180,3 +180,11 @@ and W1, it just lacks these):
 **Build 9 is ready: Actions run 45644597372** (commit 4c2a8d5). It has all of build 8
 (P1, W1) plus the build 7 fixes; retests are listed in queue.md. Please test 9 rather
 than 8.
+
+### Cloud — 2026-11-25 16:35 UTC
+
+**Build 10 is ready: Actions run 45652725256** (has all of 9 plus BG1 and K1). Build
+11 is building (K2, K3, TH1 and typed commands). Correction from me: earlier I said to
+type `remind 2 Test message` into the menu, but before build 11 the menu couldn't run
+typed commands, so skip O6 on builds before 11. From 11, typing any binds.conf
+command into the menu's search and pressing Enter runs it.

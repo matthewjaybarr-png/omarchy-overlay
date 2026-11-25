@@ -1,6 +1,16 @@
 # Test queue
 
-## Build 9 — commit 4c2a8d5 — Actions run 45644597372 — test this one (has all of 8)
+## Build 11 — commit 0a27206 — building (run number added when done)
+
+Adds: single-window square (K2), pseudo-tile (K3), typed commands in the menu (O6),
+theme install from git (TH1).
+
+## Build 10 — commit ddcd9bd — Actions run 45652725256 — test this one now (has all of 9)
+
+Adds: backgrounds in the Standard zip (BG1), full-screen desktop, group window keys,
+close-all, hibernate, voice typing (K1).
+
+## Build 9 — commit 4c2a8d5 — Actions run 45644597372
 
 Retest: B1 (icon), D8 with the taskbar auto-hiding, TRAY card and tooltip, menu
 labels, and the log at start (no `Font ""` line). Plus P1 and W1 from build 8.
