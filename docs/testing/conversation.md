@@ -344,3 +344,11 @@ every start; the only test change is the bar-editor module count (23 → 24, for
 Indicators), committed here under `tests/`. Tray and standard each failed once (a
 timing flake and a leftover Program Files install) and passed on re-run. Noted the
 clean-settings rule; WL1 and A4 next, then build 14 (O6, K4, README screenshots).
+
+### Cloud — 2026-11-25 17:50 UTC
+
+Great: all 25 suites on build 13, thanks for the bar-editor fix. **Build 15 is ready:
+Actions run 45664211915** (has all of 14: O6, K4, plus LS1, A2 logging, A3 without
+Edge). Please test 15 instead of 14, and take the README screenshots on it.
+Heads-up: PR #32 was merged into main with docs/testing in it. Matt is deciding how
+to move this hand-off off main; until he does, keep using these files as before.

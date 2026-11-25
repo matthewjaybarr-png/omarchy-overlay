@@ -1,12 +1,12 @@
 # Test queue
 
-## Build 15 (next) — not built yet
+## Build 15 — commit beb754e — Actions run 45664211915 — test this one (has all of 14)
 
 Adds: Standard lock screen for this user (LS1), firmware restart logging (retest A2),
 browser colors without Edge (retest A3 on Chrome if you can install it). Test with a
 clean settings folder (see conversation.md 18:15).
 
-## Build 14 — commit 0167a81 — building (run number added when done)
+## Build 14 — commit 0167a81 — Actions run 45662159580
 
 Adds: reminders on screen + tray icon re-added (retest O6), display keys (K4), README.
 
