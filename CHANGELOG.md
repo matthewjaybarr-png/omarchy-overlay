@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- More of Omarchy's keys and commands: **Super + Ctrl + Alt + F** hides the bar and
+  the gaps for a full-screen desktop, and brings them back; **Super + Alt + 1–5**
+  shows that window of the focused group; `close-all` closes every app window on this
+  workspace (each app can still ask about unsaved work); **Hibernate** in the System
+  menu; **Voice typing** in the Trigger menu opens Windows dictation.
 - The Standard zip carries Omarchy's stock theme backgrounds too, so every theme sets
   its own wallpaper in both editions.
 - **Per-monitor workspaces** (Layout > "Each monitor has its own workspaces"), off by

@@ -192,6 +192,17 @@ impl App {
         self.tick();
     }
     /// Super+Alt+Tab and Super+Ctrl+arrows: shows the next or previous window of the group.
+    /// Omarchy's Super+Alt+1..5: shows window `index` of the focused window's group.
+    pub(super) unsafe fn show_group_window(&mut self, hwnd: HWND, index: usize) {
+        let Some(g) = self.group_of(hwnd as isize) else {
+            return;
+        };
+        if index < self.groups[g].members.len() {
+            self.show_member(g, index);
+            self.feedback_for(g);
+            self.tick();
+        }
+    }
     pub(super) unsafe fn cycle_group(&mut self, hwnd: HWND, step: i32) {
         let Some(g) = self.group_of(hwnd as isize) else {
             return;

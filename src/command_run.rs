@@ -171,6 +171,43 @@ impl App {
             "lock" => {
                 LockWorkStation();
             }
+            "hibernate" => {
+                if !SetSuspendState(true, false, false) {
+                    message("Windows did not allow hibernate. It may be turned off on this PC (powercfg /hibernate on).");
+                }
+            }
+            "voice-typing" => self.queue_system_action(17),
+            "close-all" => {
+                // Omarchy's close-all: every app window on this workspace is asked to close,
+                // as its own X button would, so apps can still ask about unsaved work.
+                for task in tasks::collect() {
+                    if !self.parked.contains_key(&(task.hwnd as isize)) && self.movable(task.hwnd) {
+                        PostMessageW(task.hwnd, WM_CLOSE, 0, 0);
+                    }
+                }
+            }
+            "full-screen-desktop" => {
+                // Omarchy's Super+Ctrl+Alt+F: no bar and no gaps, or both back.
+                let mut c = self.config.clone();
+                let bare = !c.show_top_bar && c.gap == 0 && c.outer_gap == 0;
+                if bare {
+                    c.show_top_bar = true;
+                    let d = Config::default();
+                    let (gap, outer) = std::mem::take(&mut self.gaps_before);
+                    (c.gap, c.outer_gap) = if (gap, outer) == (0, 0) { (d.gap, d.outer_gap) } else { (gap, outer) };
+                } else {
+                    c.show_top_bar = false;
+                    if (c.gap, c.outer_gap) != (0, 0) {
+                        self.gaps_before = (std::mem::take(&mut c.gap), std::mem::take(&mut c.outer_gap));
+                    }
+                }
+                self.commit(c);
+            }
+            name if name.starts_with("group-window-") => {
+                if let Ok(n) = name.trim_start_matches("group-window-").parse::<usize>() {
+                    self.show_group_window(GetForegroundWindow(), n.saturating_sub(1));
+                }
+            }
             "sleep" => {
                 if !SetSuspendState(false, false, false) {
                     message("Windows did not allow sleep. Use Start → Power → Sleep.");

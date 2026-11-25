@@ -32,6 +32,7 @@
         { "label": "Toggle", "icon": "F050E", "command": "menu toggle" },
         { "label": "Emoji", "icon": "F118", "command": "emoji" },
         { "label": "Clipboard history", "icon": "F0147", "command": "clipboard" },
+        { "label": "Voice typing", "icon": "F036C", "command": "voice-typing" },
         { "label": "Capture", "icon": "F030", "command": "capture" },
         { "label": "Screen recording", "icon": "F03D", "command": "record-screen" },
         { "label": "Copy text from screen", "icon": "F031", "command": "extract-text" },
@@ -216,6 +217,7 @@
       "items": [
         { "label": "Lock", "icon": "F023", "command": "lock" },
         { "label": "Sleep", "icon": "F04B2", "command": "sleep", "confirm": true },
+        { "label": "Hibernate", "icon": "F04B2", "command": "hibernate", "confirm": true },
         { "label": "Sign out", "icon": "F0343", "command": "sign-out", "confirm": true },
         { "label": "Restart", "icon": "F0709", "command": "restart-pc", "confirm": true },
         { "label": "Shut down", "icon": "F0425", "command": "shutdown", "confirm": true }

@@ -129,6 +129,12 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   A brings A's windows back. Super+Shift+3 sends a window to workspace 3 of its own
   monitor. Turning the setting off brings every hidden window back. Exit restores all.
 
+- **K1** (build 10) Super+Ctrl+Alt+F: bar and gaps go; again: both back. In a group,
+  Super+Alt+2 shows its second window. Trigger > Voice typing opens Windows
+  dictation. System > Hibernate asks first (skip actually hibernating a VM if it can't).
+  `close-all` from the command line closes the workspace's windows, each app asking
+  about unsaved work. Standard zip has `themes\<id>\backgrounds` (BG1).
+
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run
   RECOVER.cmd: windows, taskbar, accent, wallpaper, Terminal/VS Code colours, fonts

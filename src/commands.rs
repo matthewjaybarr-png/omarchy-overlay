@@ -30,6 +30,15 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("extract-text", "Copy text from the screen (Snipping Tool)"),
     ("color-picker", "Pick a color from the screen and copy its hex value"),
     ("console", "Drop-down console: show, hide or start it"),
+    ("hibernate", "Hibernate the PC"),
+    ("voice-typing", "Windows voice typing (dictation)"),
+    ("close-all", "Close every window on this workspace"),
+    ("full-screen-desktop", "Hide the bar and the gaps, or bring them back"),
+    ("group-window-1", "Show window 1 of the group"),
+    ("group-window-2", "Show window 2 of the group"),
+    ("group-window-3", "Show window 3 of the group"),
+    ("group-window-4", "Show window 4 of the group"),
+    ("group-window-5", "Show window 5 of the group"),
     ("toggle-group", "Make the window a group, or ungroup it"),
     ("leave-group", "Take the window out of its group"),
     ("move-into-group-left", "Move the window into the group on the left"),
@@ -415,6 +424,7 @@ impl Command {
                     | "capture"
                     | "record-screen"
                     | "extract-text"
+                    | "voice-typing"
                     | "move-to-desktop"
             ),
             _ => false,
