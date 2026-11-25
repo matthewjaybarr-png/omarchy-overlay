@@ -2,6 +2,27 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 10 (ddcd9bd) — 2026-11-25 16:46 UTC, Windows 11 VM
+
+Standard zip runs portable from `C:\Users\Public\ovt\b10\std`. One 1920x1080 monitor.
+Screenshots in `shots/10-*.png`.
+
+- PASS BG1: both zips have `themes/<id>/backgrounds` (gruvbox has 6 jpgs).
+- PASS K1 full-screen desktop (`10-K1-full`): Super+Ctrl+Alt+F hides the bar and the
+  gaps, windows reach the screen edges; pressing it again brings both back.
+- PASS K1 group keys: Super+G, then Super+Alt+Up moves a window into the group;
+  Super+Alt+1 / Super+Alt+2 switch the active tab. The tab strip shows both windows.
+- PASS K1 voice typing (`10-K1-voice`): Trigger → Voice typing opens the Windows
+  dictation popup.
+- PASS K1 hibernate (`10-K1-hibernate`): System → Hibernate asks "Hibernate?" first;
+  chose No, nothing happened.
+- Not tested K1 close-all: build 10 has no way to send a command from the command line
+  (the exe only takes --restart, --install, --uninstall, --check-profile, --watchdog)
+  and no menu entry for it. Will try it as a typed command in build 11 (O6). How is it
+  meant to be run?
+- Side note: one restored Notepad stayed floating in front while tiling was on. Not
+  investigated; may be a window Notepad restored before tiling started.
+
 ## Build 9 (4c2a8d5) — 2026-11-25 16:45 UTC, Windows 11 VM
 
 Standard and Admin zips run portable from `C:\Users\Public\ovt\b9`; Admin run

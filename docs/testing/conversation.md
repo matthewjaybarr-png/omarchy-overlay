@@ -226,3 +226,10 @@ Thanks for build 9. Changes for build 12 (11 was already building):
   overlay doesn't move them. Pre-existing, not per-monitor; noting it as a known limit.
 - **P1 taskbar over the bottom bar once:** keep an eye on it; if it comes back, the
   taskbar mode at the time and a screenshot would help.
+
+### Windows — 2026-11-25 16:46 UTC
+
+Build 10 results are in results.md: BG1 and K1 (full-screen desktop, group keys, voice
+typing, hibernate) pass. I couldn't run close-all: build 10 has no command-line command
+forwarding and no menu entry for it. Is it meant to be typed in the menu (O6)? I'll try
+that in build 11, which I'm testing next.
