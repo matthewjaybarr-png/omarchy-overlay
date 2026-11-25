@@ -1,0 +1,88 @@
+# Test queue
+
+Newest build first. Test IDs stay the same across builds; a retest names the ID again.
+Standard zip unless marked Admin. Have 3–4 ordinary windows open (Notepad, File
+Explorer, a browser) before starting.
+
+## Build 6 (next) — not built yet
+
+Adds to build 5: bar status indicators (B1), multi-window scratchpad (S1).
+
+## Build 5 — commit 7fd09c4 — Actions run 45629843370
+
+Everything below, plus the per-user font install, classic-control accent colors,
+OSD card, color picker, idle screensaver and lock, and persistent reminders.
+
+## Tests
+
+### Floating layout and layout keys
+- **F1** Super+Shift+L until the card says "This workspace: Floating". Windows jump to
+  the middle, about two-thirds of the screen, staggered 24 px apart.
+- **F2** Drag a window by its title bar and with Super+drag: it stays where dropped.
+- **F3** A new Notepad opens floating in the middle, not tiled.
+- **F4** Super+2 tiles normally; Super+1 is still floating, windows where they were.
+- **F5** Cycling back to a tiling layout tiles every window again. A window floated
+  with Super+T before entering floating stays floating.
+- **F6** Super+Alt+L cycles backwards, this workspace only (workspace 2 unchanged).
+- **F7** Super+Shift+Backspace turns gaps off and back on.
+- **F8** Exit (tray → Exit): every window returns to where it was before start.
+
+### Dock (on a floating workspace)
+- **D1** Dock at the bottom centre with running apps; dot under each, wider accent
+  dot under the app in front.
+- **D2** Click brings the app forward; with two Notepads, clicking again switches to
+  the other.
+- **D3** A minimized window comes back when its app is clicked.
+- **D4** Middle-click opens a new window of the app.
+- **D5** Right-click → Keep in dock: icon stays after closing all its windows (no
+  dot); clicking it starts the app. Right-click → Remove from dock: icon goes.
+- **D6** Right-click → Close window closes it.
+- **D7** Switching the workspace to a tiling layout hides the dock.
+- **D8** Menu → Appearance → Windows taskbar: "Always" hides the dock until the
+  pointer touches the bottom edge; "No dock" removes it; set back to floating.
+- **D9** An app flashing for attention (a finished download in a background browser)
+  gets an accent ring until clicked.
+- **D10** A full-screen video hides the dock.
+
+### Theme and Windows look
+- **T1** Theme Gruvbox, then Appearance → Windows Terminal colors → Add. In Terminal's
+  Omarchy Overlay profile, `Write-Host red -ForegroundColor Red` is Gruvbox red
+  (#ea6962), not Tokyo Night pink.
+- **T2** Appearance → Window transparency: Glassy (75% + Acrylic title bars),
+  Transparent (barely), Opaque (solid). The current mode is ticked.
+- **T3** With a strong accent theme and Settings' "Show accent color on Start and
+  taskbar" on, Start and the taskbar use the theme accent shades. Exit restores them.
+- **T4** Appearance → VS Code colors → Theme VS Code: VS Code switches to "Omarchy
+  Overlay"; other settings.json lines and comments untouched; a theme switch follows;
+  Put back restores the old theme. SKIP without VS Code/Insiders/VSCodium/Cursor.
+- **T5** Appearance → Theme shows a four-colour swatch beside each theme.
+- **T6** Appearance → Font → Cascadia Mono: menus and the top bar switch to it.
+- **T7** Exit and start again: Terminal and VS Code colours come back by themselves.
+- **T8** Appearance → Font → Install JetBrains Mono: Terminal's Omarchy Overlay profile
+  uses JetBrains Mono after restarting Terminal. Exit removes the fonts again.
+- **T9** Selected text in Notepad and in an older dialog's list highlights in the theme
+  accent. Exit restores Windows' blue.
+
+### Shell
+- **O1** Volume keys and mute show a card with an icon, "Volume N%" and an accent bar.
+- **O2** Brightness keys show the same with a brightness icon (DDC monitors only).
+- **O3** Super+Print freezes the screen with a crosshair and a colour label; a click
+  copies "#rrggbb" and shows "#rrggbb copied"; Esc and right-click cancel.
+- **O4** Appearance → Screensaver and idle lock → Screensaver 2:30: after 2.5 minutes
+  idle a themed clock screen appears; moving the mouse closes it. Not during a
+  full-screen video. Set back to Off.
+- **O5** Lock after 5 minutes: the PC locks after 5 minutes idle. Set back to Off.
+- **O6** `remind 2 Test message`, exit and restart within 2 minutes: the notification
+  still comes with "Test message".
+
+### Build 6 only
+- **B1** Appearance → Top bar → Bar items: add Status indicators. Toggle Stay awake
+  (menu) and mute the mic: the bar shows the icon; tooltip lists both. With two
+  keyboard layouts the layout code shows.
+- **S1** Super+Alt+S on two windows ("In the scratchpad"); Super+S hides both, Super+S
+  again shows both; Super+Alt+S on one again takes it out.
+
+### Always
+- **R1** After any crash or kill (Task Manager → End task), start again or run
+  RECOVER.cmd: windows, taskbar, accent, wallpaper, Terminal/VS Code colours, fonts
+  and selection colours are all back to normal.
