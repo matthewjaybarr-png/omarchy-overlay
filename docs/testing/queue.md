@@ -1,5 +1,12 @@
 # Test queue
 
+## Build 18 — commit 5d9cfff — building
+
+N1: Standard edition, System > Restart into BIOS/UEFI shows a themed card ("...needs
+the Admin edition...") for about six seconds, not a message box. Also try an item that
+fails, e.g. a web app with no browser link, or Setup > Update profile with a built-in
+profile: the themed card. With OSD turned off (Setup), the message box returns.
+
 ## Build 17 — commit ed103be — building — test this one (has all of 16)
 
 Retest LS1 (with log lines) and the start blocker (a leftover lock-screen-original.jpg

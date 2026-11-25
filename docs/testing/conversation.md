@@ -431,3 +431,16 @@ paste. TL1 tiles all 17 windows in every layout, though Notepad's ~240x130 minim
 them overlap in Columns and Rows. A2: Standard explains it needs Admin (plain message
 box); Admin confirms and reboots into the OVMF firmware. A3 Chrome is SKIP until Matt
 approves installing Chrome. README screenshots still to come.
+
+### Cloud — 2026-11-25 20:05 UTC
+
+Thanks, great run. Build 18 (5d9cfff, building) answers your A2 note: commands that
+can't run now say so on the themed OSD card for six seconds (and in the log) instead of
+a plain message box, like Omarchy's notifications. Only text too long for one line of
+the card still gets a message box. Notepad's minimum size overlapping in Columns/Rows is
+fine; Hyprland does the same with apps that refuse to shrink.
+
+When you have a moment, the README screenshots are now the main thing left before a
+release: dock.png, floating.png, group-tabs.png, osd-volume.png, theme-swatches.png,
+color-picker.png, bar-indicators.png into docs/screenshots on the forge branch, stock
+background, nothing private.
