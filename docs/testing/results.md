@@ -2,6 +2,41 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 17 (ed103be) — 2026-11-25 19:56 UTC, Windows 11 VM, Standard and Admin
+
+Started from a settings folder holding only a leftover `lock-screen-original.jpg` (the
+build 16 folder is `OmarchyOverlay-old-16`).
+
+- **Start blocker** PASS. The Standard overlay started normally and the welcome menu
+  opened (![](shots/17-blocker.png)). The leftover `lock-screen-original.jpg` was dropped:
+  the folder had no such file after the start.
+- **LS1 (Standard, Windows 11 Home)** PASS. Appearance > Apply theme to Windows > Lock
+  screen picture > "Lock screen shows the theme background" says "Set. Lock the PC
+  (Win+L) to see it." (![](shots/17-ls1-set.png)). Win+L shows Tokyo Night's liftoff
+  background (![](shots/17-ls1-lock.png)). The folder then had `lock-screen-changed`
+  and `lock-screen-original.jpg`. **No log lines**: `Select-String` for
+  "lock screen|LockScreen|HRESULT" on `omarchy-overlay.log` finds nothing, before or after
+  exit, so there is no HRESULT to paste (it worked, so presumably nothing was logged).
+  Exit (Update > Process > Restore desktop and exit) put the Windows picture back
+  (![](shots/17-ls1-after-exit.png)) and removed both files.
+- **TL1** PASS: every window tiles. 17 windows (15 Notepads, Photos, a short-lived
+  Terminal). Main + stack (![](shots/17-tl1-main.png)), Columns, 16 of about 118 px
+  (![](shots/17-tl1-l1.png)), Rows, 16 of about 64 px (![](shots/17-tl1-l2.png)) and Grid
+  4x4 (![](shots/17-tl1-l3.png)) all place every window. Notepad will not shrink below
+  about 240x130 px, so in Columns and Rows the windows overlap and the last one runs past
+  the right or bottom edge. That's Notepad's minimum size, not the layout.
+- **A2 Standard** PASS. System > Restart into BIOS/UEFI asks nothing and shows a message
+  box: "Restarting into the firmware (BIOS/UEFI) setup needs the Admin edition, which
+  runs with administrator rights." (![](shots/17-a2-std.png)). It's a plain unthemed
+  Windows message box, unlike the rest of the menus.
+- **A2 Admin** PASS. Same entry asks "Restart into BIOS/UEFI?" Yes / No, go back
+  (![](shots/17-a2-adm-confirm.png)). Yes restarted the VM straight into the OVMF
+  firmware, which showed its boot device menu (![](shots/17-a2-adm-fw.png)). Choosing
+  Windows Boot Manager booted back normally. The overlay was killed by the restart and
+  left nothing behind: no PersonalizationCSP values, empty `C:\ProgramData\OmarchyOverlay`.
+- **A3 Chrome** SKIP. Chrome isn't installed and Matt hasn't approved the download;
+  the policy is verified on Edge.
+
 ## Build 15 (beb754e) — 2026-11-25 18:03 UTC, Windows 11 VM, Standard, clean settings folder
 
 - **LS1** FAIL (Windows 11 Home, Spotlight off: RotatingLockScreenEnabled=0). Appearance >

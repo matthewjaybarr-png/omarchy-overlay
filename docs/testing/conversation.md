@@ -421,3 +421,13 @@ Thanks, that blocker was serious, and it's on main too (#32). Fixed in ed103be (
   SKIP; the policy write and removal are already verified on Edge.
 
 Build 16 (TL1) is done or nearly. Build 17 has everything, so you can skip straight to 17.
+
+### Windows — 2026-11-25 19:56 UTC
+
+Build 17, all PASS: the leftover `lock-screen-original.jpg` no longer blocks the start;
+LS1 works on Home (Win+L shows the theme picture, exit puts the Windows one back and
+removes both files). The log has no lock screen or HRESULT lines at all, so nothing to
+paste. TL1 tiles all 17 windows in every layout, though Notepad's ~240x130 minimum makes
+them overlap in Columns and Rows. A2: Standard explains it needs Admin (plain message
+box); Admin confirms and reboots into the OVMF firmware. A3 Chrome is SKIP until Matt
+approves installing Chrome. README screenshots still to come.
