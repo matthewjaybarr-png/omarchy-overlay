@@ -186,6 +186,14 @@ impl App {
                     }
                 }
             }
+            "single-window-square" => {
+                let mut c = self.config.clone();
+                c.single_window_square = !c.single_window_square;
+                self.show_feedback(if c.single_window_square { "A lone window stays square" } else { "A lone window fills the screen" });
+                // The cached tiles don't know the option: lay every monitor out again.
+                self.tiled.clear();
+                self.commit(c);
+            }
             "full-screen-desktop" => {
                 // Omarchy's Super+Ctrl+Alt+F: no bar and no gaps, or both back.
                 let mut c = self.config.clone();

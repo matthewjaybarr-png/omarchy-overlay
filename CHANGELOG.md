@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Super + Ctrl + Backspace** is Omarchy's single-window aspect ratio: a workspace's
+  only tiled window stays a centred square instead of stretching across a wide screen.
+  Press it again to let it fill the screen.
 - More of Omarchy's keys and commands: **Super + Ctrl + Alt + F** hides the bar and
   the gaps for a full-screen desktop, and brings them back; **Super + Alt + 1–5**
   shows that window of the focused group; `close-all` closes every app window on this

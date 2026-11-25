@@ -135,6 +135,10 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   `close-all` from the command line closes the workspace's windows, each app asking
   about unsaved work. Standard zip has `themes\<id>\backgrounds` (BG1).
 
+- **K2** (build 11) One tiled window on a workspace, Super+Ctrl+Backspace: it becomes
+  a centred square ("A lone window stays square"); a second window tiles normally;
+  closing it brings the square back; the key again fills the screen.
+
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run
   RECOVER.cmd: windows, taskbar, accent, wallpaper, Terminal/VS Code colours, fonts

@@ -231,6 +231,17 @@ pub fn floating(area: Rect, index: usize, dpi: u32) -> Rect {
         h,
     }
 }
+/// Omarchy's single-window aspect ratio (1:1): a lone tile as the largest square that
+/// fits the area, centred, so one window doesn't stretch across a wide screen.
+pub fn square(area: Rect) -> Rect {
+    let side = area.w.min(area.h).max(1);
+    Rect {
+        x: area.x + (area.w - side) / 2,
+        y: area.y + (area.h - side) / 2,
+        w: side,
+        h: side,
+    }
+}
 pub fn transfer(window: Rect, source: Rect, target: Rect) -> Rect {
     let w = window.w.min(target.w).max(1);
     let h = window.h.min(target.h).max(1);
@@ -529,6 +540,13 @@ mod tests {
         let scaled = floating(Rect { x: 0, y: 0, w: 1920, h: 1032 }, 0, 120);
         assert_eq!((scaled.w, scaled.h), (1228, 701));
         assert!(tiny.w >= 1 && tiny.h >= 1);
+    }
+    #[test]
+    fn a_lone_tile_can_be_a_centred_square() {
+        let r = square(Rect { x: 100, y: 40, w: 3440, h: 1400 });
+        assert_eq!(r, Rect { x: 100 + (3440 - 1400) / 2, y: 40, w: 1400, h: 1400 });
+        let tall = square(Rect { x: 0, y: 0, w: 800, h: 1200 });
+        assert_eq!((tall.w, tall.h, tall.y), (800, 800, 200));
     }
     #[test]
     fn handles_empty_and_small_work_areas() {

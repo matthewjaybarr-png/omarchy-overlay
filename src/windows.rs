@@ -2808,7 +2808,10 @@ impl App {
                 let keys = group.iter().map(|(key, _, _)| *key).collect::<Vec<_>>();
                 let tree = self.dwindle.entry(monitor).or_default();
                 tree.sync(&keys, self.last_tiled_focus, *area, gap);
-                let placements = tree.rects(*area, gap);
+                let mut placements = tree.rects(*area, gap);
+                if placements.len() == 1 && self.config.single_window_square {
+                    placements[0].1 = layout::square(*area);
+                }
                 self.tiled.insert(
                     monitor,
                     resize::TiledGroup {
@@ -2881,7 +2884,11 @@ impl App {
                     mode: mode.clone(),
                     gap,
                     ratio: self.config.main_ratio,
-                    rects: layout::arrange(*area, count, gap, self.config.main_ratio, &mode),
+                    rects: if count == 1 && self.config.single_window_square && mode != "monocle" {
+                        vec![layout::square(*area)]
+                    } else {
+                        layout::arrange(*area, count, gap, self.config.main_ratio, &mode)
+                    },
                 };
             }
             let rects = cached.rects.clone();
