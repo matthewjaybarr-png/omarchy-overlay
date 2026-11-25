@@ -3,7 +3,7 @@
 ## Build 7 (next) — not built yet
 
 Adds: new default keys and menu entries merged into existing `config\binds.conf` and
-`menu.json` (M1).
+`menu.json` (M1), group tabs (G1).
 
 - **M1** Before starting build 7, note `config\binds.conf`. After the first start:
   new keys (Super+Print, Super+`) are at the end under "# Added by Omarchy Overlay";
@@ -102,6 +102,11 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
 - **C1** Super+` starts the terminal over the top half of the screen, on top; Super+`
   hides it and shows it again; it stays out of the tiles. Exit: it is no longer
   always on top.
+
+- **G1** Super+G on a tiled window, then Super+Alt+arrow to move a neighbour into
+  the group: a tab row appears at the top of the tile, the shown window's tab in the
+  accent colour; clicking the other tab shows that window; Super+G again ungroups and
+  the tile is full height again.
 
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run

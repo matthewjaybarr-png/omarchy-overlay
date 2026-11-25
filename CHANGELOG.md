@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Group tabs**, Omarchy's groupbar: a grouped tile gives up a 24 px row at its top
+  for a tab per window, the shown one in the accent color. Clicking a tab shows that
+  window.
 - **New defaults reach your own config files.** When a version adds keys to
   binds.conf or entries to menu.json, they are merged into your copies at start: new
   keys and entries are added, lines you never changed follow the new defaults, and

@@ -17,6 +17,8 @@ mod color_picker;
 mod idle;
 #[path = "console.rs"]
 mod console;
+#[path = "groupbar.rs"]
+mod groupbar;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]
@@ -370,6 +372,9 @@ struct App {
     widths: HashMap<isize, i32>,
     /// Omarchy's window groups (Super+G): one tile, one window shown at a time.
     groups: Vec<groups::Group>,
+    /// Where each group's tab bar goes (by shown window), and which windows its tabs are.
+    groupbar_rects: HashMap<isize, Rect>,
+    groupbar_targets: Vec<Vec<isize>>,
     /// Due times of the reminders set with `remind <minutes>`.
     reminders: Vec<reminders::Reminder>,
     workspace_focus: HashMap<usize, isize>,
@@ -1500,6 +1505,8 @@ pub fn run() {
             full_screen: HashMap::new(),
             widths: HashMap::new(),
             groups: Vec::new(),
+            groupbar_rects: HashMap::new(),
+            groupbar_targets: vec![],
             reminders: saved_reminders,
             workspace_focus: HashMap::new(),
             seen_foreground: 0,
@@ -1731,6 +1738,7 @@ pub fn run() {
         }
         bar::stop();
         dock_ui::stop();
+        groupbar::stop();
         APP.with(|cell| {
             if let Some(mut app) = cell.borrow_mut().take() {
                 app.restore();
@@ -3523,6 +3531,10 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 app.shell_event(w, l as HWND);
                 Some(0)
             }
+            groupbar::CLICK => {
+                app.groupbar_click(w, l as usize);
+                Some(0)
+            }
             color_picker::PICKED => {
                 app.show_card(Some('\u{F020A}'), &format!("{} copied", color_picker::hex(w as u32)), None);
                 Some(0)
@@ -3548,6 +3560,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 app.idle_tick();
                 app.update_indicators();
                 app.console_tick();
+                app.groupbar_poll();
                 app.tasks.refresh();
                 app.update_dashboard();
                 Some(0)
