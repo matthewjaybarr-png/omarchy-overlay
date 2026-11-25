@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Typed commands in the menu:** type any binds.conf command into the menu's search
+  and press Enter, as in Omarchy, for example `remind 25 Stretch`.
+- **Install themes from git**, as omarchy-theme-install: `theme-install owner/repo`
+  (GitHub) or an https:// git address downloads the theme with git, keeps only its
+  colors.toml and background pictures in `config\themes\<id>`, and switches to it.
+  Nothing that runs code is copied. Needs Git for Windows.
 - **Super + P** is Omarchy's pseudo-tile: the focused window keeps its own size,
   centred in its tile, until you press it again. It takes Windows' Super + P (Project);
   display projection stays in Settings > Display.

@@ -449,6 +449,13 @@ mode = "dark"
 `scripts/import_omarchy_themes.py` refreshes the embedded themes from an
 Omarchy install; `--out DIR` also writes theme folders to copy to a PC.
 
+
+To install a theme from its git repository, as Omarchy does, open the menu, type
+`theme-install owner/repo` (for example `theme-install bjarneo/omarchy-ash-theme`) and
+press Enter. Omarchy Overlay downloads it with git (Git for Windows must be
+installed), keeps only `colors.toml` and the background pictures in
+`config\themes\<id>`, and switches to it.
+
 ### Commands
 
 Used in binds.conf and menu.json.

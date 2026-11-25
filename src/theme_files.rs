@@ -162,6 +162,29 @@ pub fn resolve(id: &str) -> Option<Theme> {
 pub fn loaded() -> Vec<Theme> {
     LOADED.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
+/// The repository an Omarchy theme is installed from, and the theme id it gives, as
+/// omarchy-theme-install names it: `owner/repo` means GitHub; the id drops "omarchy-"
+/// and "-theme" and is lowercase. Only https and GitHub shorthand are accepted.
+pub fn theme_repo(text: &str) -> Option<(String, String)> {
+    let text = text.trim().trim_end_matches('/');
+    let url = if text.starts_with("https://") {
+        text.to_string()
+    } else if text.split('/').count() == 2 && !text.contains(':') && !text.starts_with('.') {
+        format!("https://github.com/{text}")
+    } else {
+        return None;
+    };
+    if url.chars().any(|c| c.is_whitespace() || c.is_control() || c == '"') || url.len() > 300 {
+        return None;
+    }
+    let last = url.rsplit('/').next()?.trim_end_matches(".git").to_lowercase();
+    let id = last
+        .strip_prefix("omarchy-")
+        .unwrap_or(&last)
+        .trim_end_matches("-theme")
+        .replace(['_', '.', '+'], "-");
+    valid_name(&id).then_some((url, id))
+}
 /// A theme's preview swatch as COLORREFs: background, accent, foreground, and its
 /// red or a second color, so themes with the same background still look different.
 pub fn preview(id: &str) -> Option<[u32; 4]> {
@@ -245,6 +268,18 @@ mod tests {
         }
         assert_eq!(&p[28..], &[0xf7, 0x63, 0x0c, 0]);
         assert!(p.iter().skip(3).step_by(4).take(7).all(|&a| a == 0));
+    }
+    #[test]
+    fn theme_repos_name_themes_as_omarchy_does() {
+        assert_eq!(
+            theme_repo("bjarneo/omarchy-ash-theme"),
+            Some(("https://github.com/bjarneo/omarchy-ash-theme".into(), "ash".into()))
+        );
+        assert_eq!(theme_repo("https://github.com/a/Omarchy-Pine_Forest.git").unwrap().1, "pine-forest");
+        assert_eq!(theme_repo("https://codeberg.org/a/b/").unwrap().1, "b");
+        for bad in ["git@github.com:a/b", "file:///c/x", "a/b/c", "", "http://x/y", "https://x/a b"] {
+            assert!(theme_repo(bad).is_none(), "{bad}");
+        }
     }
     #[test]
     fn preview_uses_background_accent_foreground_and_red() {

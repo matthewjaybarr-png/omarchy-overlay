@@ -101,8 +101,9 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   idle a themed clock screen appears; moving the mouse closes it. Not during a
   full-screen video. Set back to Off.
 - **O5** Lock after 5 minutes: the PC locks after 5 minutes idle. Set back to Off.
-- **O6** `remind 2 Test message`, exit and restart within 2 minutes: the notification
-  still comes with "Test message".
+- **O6** (build 11 or later) Menu (Super+Space), type `remind 2 Test message`, Enter.
+  Exit and restart within 2 minutes: the notification still comes with "Test
+  message". Earlier builds had no way to type a command; skip O6 there.
 
 ### Build 6 only
 - **B1** Appearance → Top bar → Bar items: add Status indicators. Toggle Stay awake
@@ -141,6 +142,11 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
 
 - **K3** (build 11) Super+P on a tiled Notepad: it returns to its own size, centred in
   its tile; Super+P again fills the tile. Exit restores it as usual.
+
+- **TH1** (build 11) With Git for Windows installed: menu, type
+  `theme-install bjarneo/omarchy-ash-theme`, Enter. "Installing…", then the theme
+  switches; `config\themes\ash` holds only colors.toml and backgrounds\. Without git:
+  a message saying to install it.
 
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run

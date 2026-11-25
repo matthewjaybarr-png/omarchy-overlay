@@ -1179,6 +1179,15 @@ fn key(o: &mut Overlay, vk: u16) -> Option<Act> {
             if vk == VK_RIGHT && !o.filter.is_empty() {
                 return None;
             }
+            // Typed commands, as Omarchy's menu takes them: "remind 25 Stretch",
+            // "theme-install owner/repo". Any command binds.conf accepts; those that ask
+            // first still ask.
+            let typed = o.filter.trim();
+            if vk == VK_RETURN && (o.filtered.is_empty() || typed.contains(' ')) {
+                if let Ok(command) = crate::commands::parse(typed) {
+                    return Some(Act::Run(command));
+                }
+            }
             // An information row does nothing; returning None keeps the selection.
             return o
                 .filtered

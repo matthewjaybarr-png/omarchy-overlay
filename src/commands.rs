@@ -225,6 +225,8 @@ pub enum Command {
     /// Shows a reminder after this many minutes, `remind 15`.
     Remind(u32, String),
     Theme(String),
+    /// Installs an Omarchy theme from its git repository, `theme-install owner/repo`.
+    ThemeInstall(String),
     /// A Windows Settings page, `settings sound` opens ms-settings:sound.
     Settings(String),
     App(&'static str),
@@ -340,6 +342,12 @@ pub fn parse(text: &str) -> Result<Command, String> {
             } else {
                 Err("Theme names use letters, digits and dashes.".into())
             }
+        }
+        "theme-install" => {
+            need("a theme repository, as in theme-install bjarneo/omarchy-ash-theme")?;
+            crate::theme_files::theme_repo(argument)
+                .map(|_| Command::ThemeInstall(argument.trim().to_string()))
+                .ok_or_else(|| "theme-install takes owner/repo or an https:// git address.".into())
         }
         "settings" => {
             // An empty argument opens the Settings home page.

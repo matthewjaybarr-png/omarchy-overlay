@@ -19,6 +19,8 @@ mod idle;
 mod console;
 #[path = "groupbar.rs"]
 mod groupbar;
+#[path = "theme_install.rs"]
+mod theme_install;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]
@@ -3549,6 +3551,10 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             }
             m if m != 0 && m == app.shell_hook => {
                 app.shell_event(w, l as HWND);
+                Some(0)
+            }
+            theme_install::DONE if l != 0 => {
+                app.theme_installed(l as *mut Result<String, String>);
                 Some(0)
             }
             groupbar::CLICK => {
