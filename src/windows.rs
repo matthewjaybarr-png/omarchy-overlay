@@ -347,7 +347,8 @@ struct App {
     layout_all_desktops: bool,
     layout_monitor: String,
     layout_desktop: String,
-    scratchpads: HashMap<String, window_actions::Scratchpad>,
+    /// Each workspace's scratchpad windows (Omarchy's special workspace).
+    scratchpads: HashMap<String, Vec<window_actions::Scratchpad>>,
     menu_target: Option<tasks::Task>,
     layout_sessions: HashMap<String, LayoutSession>,
     drag: Option<resize::Drag>,
@@ -2657,6 +2658,7 @@ impl App {
             if self
                 .scratchpads
                 .values()
+                .flatten()
                 .any(|pad| pad.task.hwnd as isize == key && pad.task.valid())
             {
                 return false;

@@ -334,7 +334,7 @@ pub const ACTIONS: &[Action] = &[
     },
     Action {
         id: "assign-scratchpad",
-        label: "Assign focused window as scratchpad",
+        label: "Add the focused window to the scratchpad, or take it out",
         key: "Ctrl+Win+P",
         shift: false,
     },

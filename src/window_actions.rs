@@ -222,6 +222,8 @@ impl App {
         self.selected = hwnd;
         self.update_appearance();
     }
+    /// Omarchy's Super+Alt+S: adds the window to this workspace's scratchpad, or takes
+    /// it out again. A scratchpad holds up to eight windows, shown and hidden together.
     pub(super) unsafe fn assign_scratchpad(&mut self, hwnd: HWND) {
         if !self.movable(hwnd) {
             return;
@@ -229,49 +231,68 @@ impl App {
         let Some(desktop) = workspace_ui::current_desktop() else {
             return;
         };
-        let Some(task) = tasks::collect().into_iter().find(|task| task.hwnd == hwnd) else {
-            return;
-        };
-        if let Some(old) = self.scratchpads.remove(&desktop) {
-            if old.hidden_by_us && old.task.valid() {
-                ShowWindowAsync(old.task.hwnd, SW_RESTORE);
+        let pads = self.scratchpads.entry(desktop).or_default();
+        pads.retain(|pad| pad.task.valid() || IsIconic(pad.task.hwnd) != 0);
+        if let Some(at) = pads.iter().position(|pad| pad.task.hwnd == hwnd) {
+            pads.remove(at);
+            self.show_feedback("Out of the scratchpad");
+        } else {
+            if pads.len() >= 8 {
+                self.show_feedback("A scratchpad holds up to 8 windows");
+                return;
             }
-        }
-        self.floating.remove(&(hwnd as isize));
-        self.restore_one(hwnd as isize);
-        self.scratchpads.insert(
-            desktop,
-            Scratchpad {
+            let Some(task) = tasks::collect().into_iter().find(|task| task.hwnd == hwnd) else {
+                return;
+            };
+            self.scratchpads.entry(workspace_ui::current_desktop().unwrap_or_default()).or_default().push(Scratchpad {
                 task,
                 hidden_by_us: false,
-            },
-        );
+            });
+            self.floating.remove(&(hwnd as isize));
+            self.restore_one(hwnd as isize);
+            self.show_feedback("In the scratchpad");
+        }
         self.dirty = true;
         self.tick();
     }
+    /// Omarchy's Super+S: shows this workspace's scratchpad windows over everything, or
+    /// hides them again when one of them is in front.
     pub(super) unsafe fn toggle_scratchpad(&mut self) {
         let Some(desktop) = workspace_ui::current_desktop() else {
             return;
         };
-        let Some(pad) = self.scratchpads.get_mut(&desktop) else {
-            message("No scratchpad is assigned on this Windows desktop. Focus a utility window and use Assign scratchpad.");
+        let Some(pads) = self.scratchpads.get_mut(&desktop) else {
+            message("No scratchpad on this workspace yet. Focus a window and press Super + Alt + S to add it.");
             return;
         };
-        if !pad.task.valid() {
+        pads.retain(|pad| pad.task.valid() || IsIconic(pad.task.hwnd) != 0);
+        if pads.is_empty() {
             self.scratchpads.remove(&desktop);
-            message("That scratchpad window is no longer available. Assign another window on this desktop.");
+            message("The scratchpad windows were closed. Add another with Super + Alt + S.");
             return;
         }
-        if IsIconic(pad.task.hwnd) != 0 || GetForegroundWindow() != pad.task.hwnd {
-            pad.hidden_by_us = false;
-            tasks::activate(&pad.task, false);
+        let front = GetForegroundWindow();
+        let shown = pads.iter().any(|pad| pad.task.hwnd == front && IsIconic(front) == 0);
+        if shown {
+            for pad in pads.iter_mut() {
+                pad.hidden_by_us = true;
+                ShowWindowAsync(pad.task.hwnd, SW_MINIMIZE);
+            }
         } else {
-            pad.hidden_by_us = true;
-            ShowWindowAsync(pad.task.hwnd, SW_MINIMIZE);
+            for pad in pads.iter_mut() {
+                pad.hidden_by_us = false;
+                if IsIconic(pad.task.hwnd) != 0 {
+                    ShowWindowAsync(pad.task.hwnd, SW_RESTORE);
+                }
+            }
+            // The first one added comes to the front, as the main scratchpad window.
+            if let Some(first) = pads.first() {
+                tasks::activate(&first.task, false);
+            }
         }
     }
     pub(super) unsafe fn restore_scratchpads(&mut self) {
-        for pad in self.scratchpads.values() {
+        for pad in self.scratchpads.values().flatten() {
             let mut pid = 0;
             GetWindowThreadProcessId(pad.task.hwnd, &mut pid);
             if pad.hidden_by_us && IsWindow(pad.task.hwnd) != 0 && pid == pad.task.pid {

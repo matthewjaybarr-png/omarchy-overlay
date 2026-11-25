@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The scratchpad holds up to eight windows per workspace, like Omarchy's special
+  workspace: **Super + Alt + S** adds the focused window or takes it out again, and
+  **Super + S** shows them all or hides them all.
 - **Status indicators** on the bar, as Omarchy's: Stay awake, pending reminders,
   microphone off and (with more than one keyboard layout) the current layout. The
   icon shows the most urgent one and the tooltip lists them all; nothing shows when

@@ -516,6 +516,7 @@ impl App {
                 } else if self
                     .scratchpads
                     .values()
+                    .flatten()
                     .any(|p| p.task.hwnd == h && p.task.valid())
                 {
                     "Assigned as a scratchpad; it stays floating.".into()
