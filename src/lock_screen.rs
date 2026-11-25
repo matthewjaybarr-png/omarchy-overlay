@@ -117,14 +117,20 @@ pub(super) unsafe fn apply(directory: &Path, theme_name: &str) -> Result<(), Str
     Ok(())
 }
 /// Puts the lock screen settings back as they were.
+/// Never fatal for the rest of recovery: a lock screen Windows won't change back is
+/// logged and retried at the next exit, and never stops Omarchy Overlay from starting.
 pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
-    let user = user::restore(directory);
+    if let Err(error) = user::restore(directory) {
+        log(&format!("Lock screen: {error}; it is tried again at the next exit."));
+    }
     let record = directory.join(RECORD);
     if !record.exists() {
-        return user;
+        return Ok(());
     }
     if !crate::launch_unelevated::process_elevated() {
-        return Err("The lock screen from the Admin edition can only be put back by the Admin edition.".into());
+        // The Admin edition's all-users lock screen: only it can put that back.
+        log("Lock screen: the Admin edition's setting is left for the Admin edition to put back.");
+        return Ok(());
     }
     let before: Record = serde_json::from_str(&profile::read_text(&record)?).map_err(|e| format!("{RECORD}: {e}"))?;
     if before.paths.len() != PATHS.len() {
@@ -151,6 +157,8 @@ pub(super) mod user {
         Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED},
     };
     const ORIGINAL: &str = "lock-screen-original.jpg";
+    /// Written once Windows has taken a new picture: only then is there anything to put back.
+    const CHANGED: &str = "lock-screen-changed";
 
     /// Runs `work` on a thread of its own in the multithreaded apartment, where Windows'
     /// asynchronous calls can be waited for, and waits for it.
@@ -167,21 +175,30 @@ pub(super) mod user {
         .map_err(|_| "The lock screen change stopped unexpectedly.".to_string())?
     }
     fn set(path: PathBuf) -> Result<(), String> {
-        let text = |e: ::windows::core::Error| e.message();
-        if !UserProfilePersonalizationSettings::IsSupported().map_err(text)? {
-            return Err("Windows does not let apps change this user's lock screen here.".into());
-        }
+        let text = |e: ::windows::core::Error| format!("{} ({:#010X})", e.message(), e.code().0);
         let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path.to_string_lossy().as_ref()))
             .and_then(|o| o.get())
             .map_err(text)?;
-        let done = UserProfilePersonalizationSettings::Current()
-            .and_then(|s| s.TrySetLockScreenImageAsync(&file))
-            .and_then(|o| o.get())
-            .map_err(text)?;
-        if done {
-            Ok(())
-        } else {
-            Err("Windows did not change the lock screen picture.".into())
+        // First the personalization API, then LockScreen itself: Windows editions differ
+        // in which one an app outside the Store may use.
+        let first = match UserProfilePersonalizationSettings::IsSupported() {
+            Ok(true) => match UserProfilePersonalizationSettings::Current()
+                .and_then(|s| s.TrySetLockScreenImageAsync(&file))
+                .and_then(|o| o.get())
+            {
+                Ok(true) => return Ok(()),
+                Ok(false) => "the personalization API said no".to_string(),
+                Err(e) => text(e),
+            },
+            Ok(false) => "the personalization API is not supported".to_string(),
+            Err(e) => text(e),
+        };
+        match LockScreen::SetImageFileAsync(&file).and_then(|a| a.get()) {
+            Ok(()) => Ok(()),
+            Err(e) => Err(format!(
+                "Windows did not change the lock screen picture ({first}; LockScreen: {}).",
+                text(e)
+            )),
         }
     }
     /// Copies the picture the lock screen shows now, to put it back later.
@@ -200,19 +217,36 @@ pub(super) mod user {
             return Err("This theme has no backgrounds for the lock screen.".into());
         };
         let original = directory.join(ORIGINAL);
+        let changed = directory.join(CHANGED);
         if !original.exists() {
             let target = original.clone();
             on_mta(move || save_current(target))?;
         }
-        on_mta(move || set(picture))
+        match on_mta(move || set(picture)) {
+            Ok(()) => fs::write(&changed, b"").map_err(|e| e.to_string()),
+            Err(error) => {
+                // Nothing changed, so there is nothing to put back later.
+                if !changed.exists() {
+                    let _ = fs::remove_file(&original);
+                }
+                Err(error)
+            }
+        }
     }
     pub(in super::super) fn restore(directory: &Path) -> Result<(), String> {
         let original = directory.join(ORIGINAL);
+        let changed = directory.join(CHANGED);
+        if !changed.exists() {
+            let _ = fs::remove_file(&original);
+            return Ok(());
+        }
         if !original.exists() {
+            let _ = fs::remove_file(&changed);
             return Ok(());
         }
         let path = original.clone();
         on_mta(move || set(path))?;
+        let _ = fs::remove_file(&changed);
         fs::remove_file(original).map_err(|e| e.to_string())
     }
 }

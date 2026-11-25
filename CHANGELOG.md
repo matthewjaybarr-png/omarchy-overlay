@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Fixed: when Windows refused the Standard edition's lock screen picture, every later
+  start stopped with "Recovery needs attention" and quit. A picture that was never
+  changed is no longer put back, and the lock screen, browser colors, VS Code, Obsidian
+  and font clean-ups never stop Omarchy Overlay from starting: a failure is logged and
+  retried at the next exit. The Standard lock screen also tries Windows' LockScreen API
+  when the personalization API refuses, and logs Windows' error codes.
 - **Every window is tiled**, as in Omarchy: the layouts no longer stop at a capacity
   (5 windows in Main + stack at 1080p) and leave the rest where they were; panes get
   as thin as needed.
