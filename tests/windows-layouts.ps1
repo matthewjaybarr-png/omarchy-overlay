@@ -199,10 +199,10 @@ try {
  Check 'Side columns stack two windows each' ((@($left|Sort-Object t)[0].b -le @($left|Sort-Object t)[1].t+20) -and (@($right|Sort-Object t)[0].b -le @($right|Sort-Object t)[1].t+20)) $detail
  Screen-Shot 'layout-centered.png'
 
- # Settings reads the layout from the shared list and can switch to monocle.
+# Settings reads the layout from the shared list (nine with floating) and can switch to monocle.
  Click ([RecoverTest]::MainWindow()) 3;$settings=[RecoverTest]::Settings()
  $combo=[RecoverTest]::GetDlgItem($settings,60)
- Check 'Settings layout list includes the two new layouts' ([RecoverTest]::SendMessage($combo,0x146,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32() -eq 8)
+ Check 'Settings layout list lists all nine layouts' ([RecoverTest]::SendMessage($combo,0x146,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32() -eq 9)
  Check 'Settings shows centered as the current layout' ([RecoverTest]::SendMessage($combo,0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32() -eq 6)
  Select-Index $settings 60 7;Click $settings 64;Pump 1500
  Check 'Settings saves monocle' ((Read-Profile $folder).settings.layout -eq 'monocle')
