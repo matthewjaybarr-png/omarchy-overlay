@@ -121,7 +121,7 @@ impl App {
             Command::Resize { width, pixels } => {
                 self.resize_keyboard(GetForegroundWindow(), *width, *pixels)
             }
-            Command::Remind(minutes) => self.remind(*minutes),
+            Command::Remind(minutes, text) => self.remind(*minutes, text),
             Command::Theme(name) => {
                 let mut c = self.config.clone();
                 c.theme = name.clone();

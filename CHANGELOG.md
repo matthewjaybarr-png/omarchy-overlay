@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Reminders survive a restart or sign-out, as Omarchy's do: they are kept in
+  `reminders.json` and come late if the PC was off. `remind 25 Stretch` adds a
+  message to show instead of "25 minutes are up."
 - **Screensaver and idle lock** (Appearance > Screensaver and idle lock), Omarchy's
   idle settings: a themed screensaver with a large clock, and locking the PC, each
   after a chosen time without input. Both are off by default, since Windows has its

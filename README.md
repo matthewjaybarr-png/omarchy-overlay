@@ -518,7 +518,7 @@ Used in binds.conf and menu.json.
 | `theme <name>` | Switches theme, for example `theme tokyo-night` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |
 | `resize width\|height <pixels>` | Resizes the focused tile, for example `resize width -100` |
-| `remind <minutes>` | Shows a Windows notification after 1 to 1440 minutes, for example `remind 15` |
+| `remind <minutes> [message]` | Shows a Windows notification after 1 to 1440 minutes, for example `remind 15` or `remind 25 Stretch`. Reminders are kept across restarts |
 | `action <id>` | Runs a window action, for example `action close-window` |
 | `launch <file> [arguments]` | Runs a program or script stored inside the config folder, as you |
 

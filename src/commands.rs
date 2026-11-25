@@ -210,7 +210,7 @@ pub enum Command {
     /// Resizes the focused tile by `pixels`, wider/taller when positive, `resize width -100`.
     Resize { width: bool, pixels: i32 },
     /// Shows a reminder after this many minutes, `remind 15`.
-    Remind(u32),
+    Remind(u32, String),
     Theme(String),
     /// A Windows Settings page, `settings sound` opens ms-settings:sound.
     Settings(String),
@@ -308,12 +308,17 @@ pub fn parse(text: &str) -> Result<Command, String> {
         }
         "remind" => {
             need("a number of minutes")?;
-            argument
+            let (minutes, message) = argument.split_once(char::is_whitespace).unwrap_or((argument, ""));
+            let message = message.trim();
+            if message.chars().count() > 200 || message.chars().any(char::is_control) {
+                return Err("A reminder message is one line of up to 200 characters.".into());
+            }
+            minutes
                 .parse::<u32>()
                 .ok()
                 .filter(|n| (1..=1440).contains(n))
-                .map(Command::Remind)
-                .ok_or_else(|| "remind needs minutes from 1 to 1440, as in remind 15.".into())
+                .map(|n| Command::Remind(n, message.to_string()))
+                .ok_or_else(|| "remind needs minutes from 1 to 1440, as in remind 15 or remind 15 Stretch.".into())
         }
         "theme" => {
             need("a theme name")?;
@@ -487,7 +492,8 @@ mod tests {
             parse("Resize HEIGHT 25"),
             Ok(Command::Resize { width: false, pixels: 25 })
         );
-        assert_eq!(parse("remind 15"), Ok(Command::Remind(15)));
+        assert_eq!(parse("remind 15"), Ok(Command::Remind(15, String::new())));
+        assert_eq!(parse("remind 20  Take a break "), Ok(Command::Remind(20, "Take a break".into())));
         for bad in ["remind", "remind 0", "remind 1441", "remind soon"] {
             assert!(parse(bad).is_err(), "{bad}");
         }

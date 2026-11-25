@@ -368,7 +368,7 @@ struct App {
     /// Omarchy's window groups (Super+G): one tile, one window shown at a time.
     groups: Vec<groups::Group>,
     /// Due times of the reminders set with `remind <minutes>`.
-    reminders: Vec<(std::time::Instant, u32)>,
+    reminders: Vec<reminders::Reminder>,
     workspace_focus: HashMap<usize, isize>,
     seen_foreground: isize,
     floating: HashSet<isize>,
@@ -1424,6 +1424,7 @@ pub fn run() {
         for (i, c) in wide("Omarchy Overlay — paused").iter().enumerate() {
             tray.szTip[i] = *c;
         }
+        let saved_reminders = reminders::load(&directory);
         let mut app = App {
             main,
             launcher,
@@ -1487,7 +1488,7 @@ pub fn run() {
             full_screen: HashMap::new(),
             widths: HashMap::new(),
             groups: Vec::new(),
-            reminders: Vec::new(),
+            reminders: saved_reminders,
             workspace_focus: HashMap::new(),
             seen_foreground: 0,
             floating: HashSet::new(),
