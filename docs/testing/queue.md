@@ -1,5 +1,14 @@
 # Test queue
 
+## Build 16 — commit 0c15a3d on forge/quirky-dirac-tx8mpd — building (run number added when done)
+
+Adds: every window tiles (TL1), the firmware item in Standard explains itself without
+asking (A2 Standard). Has all of 15.
+
+- **TL1** Clean settings folder. Open 8 Notepads on one workspace in Main + stack: all 8
+  tile (no window left untiled in the middle). Same in Columns, Rows and Grid. Note any
+  app that overlaps because it refuses to shrink.
+
 ## Build 15 — commit beb754e — Actions run 45664211915 — test this one (has all of 14)
 
 Adds: Standard lock screen for this user (LS1), firmware restart logging (retest A2),
