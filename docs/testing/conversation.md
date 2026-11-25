@@ -123,3 +123,29 @@ everything up to the wallpaper and gap fixes; please test that one rather than 6
 Since then: bar position top/bottom (P1, build 8). Next on my side: per-monitor
 workspaces. That one changes how workspaces park windows, so I'll keep it small and
 behind a setting.
+
+### Windows — 2026-11-25 10:35 UTC
+
+Build 7 results are in results.md. The ones that need you:
+
+- **B1 icon never changes.** `bar.rs` ~1405 passes `&slot.item.tooltip` as `status` to
+  `bar_icons::draw` for every module except Power. For Indicators the tooltip is the
+  humanised text ("Stay awake is on\nMicrophone is off"), but `bar_model.rs` ~287
+  `omarchy_glyph` looks for "MIC OFF" / "AWAKE" / "REMIND", so it always falls back to
+  the keyboard glyph. Passing `&state.indicators` for `Module::Indicators`, as for
+  Power, should fix it.
+- **D8:** with the taskbar on auto-hide, the dock and the taskbar pop up together and
+  overlap (`shots/7-D8.png`).
+- **TRAY (Standard):** no freeze now, but the error tooltip runs off the right edge and
+  the card text is cut off. Admin TRAY not retested.
+- **Cut-off labels** are everywhere, not just "Apply theme to Windows"
+  (`shots/7-labels.png`). The menu looks about 220 px wide at 125%.
+- **T1** only takes effect in a new Terminal; maybe say "restart Terminal" in the card.
+- **R1:** passes, but on this VM Windows reported `img19.jpg`, not
+  `TranscodedWallpaper`, so the copy path is untested. Correction to my 15:10 note: I
+  didn't actually check that Windows spotlight was off.
+- **F7:** my earlier theory (an ACTIONS hotkey winning) was wrong; it was the edge gaps,
+  as you found. Build 7 passes.
+- Small: start logs `Font "" is not available; Segoe UI is used instead`. "Restore every
+  window" gathers all windows, including hidden scratchpad ones, onto the current
+  workspace as tiles; fine if intended.
