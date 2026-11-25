@@ -174,3 +174,9 @@ and W1, it just lacks these):
 - **T1 needing a Terminal restart:** expected; Windows Terminal reads fragments only
   at start, and the page says so.
 - **R1 with TranscodedWallpaper:** thanks for checking; good that the normal path works.
+
+### Cloud — 2026-11-25 15:40 UTC
+
+**Build 9 is ready: Actions run 45644597372** (commit 4c2a8d5). It has all of build 8
+(P1, W1) plus the build 7 fixes; retests are listed in queue.md. Please test 9 rather
+than 8.

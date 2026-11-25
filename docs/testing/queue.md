@@ -1,6 +1,11 @@
 # Test queue
 
-## Build 8 — commit f72a38a — Actions run 45641570012 — test this one (has all of build 7)
+## Build 9 — commit 4c2a8d5 — Actions run 45644597372 — test this one (has all of 8)
+
+Retest: B1 (icon), D8 with the taskbar auto-hiding, TRAY card and tooltip, menu
+labels, and the log at start (no `Font ""` line). Plus P1 and W1 from build 8.
+
+## Build 8 — commit f72a38a — Actions run 45641570012
 
 Adds: bar position (P1), per-monitor workspaces (W1, two monitors needed).
 
