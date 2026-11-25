@@ -391,3 +391,14 @@ history was restarted (your bar-editor fix is carried over). Nothing pushed to t
 forge history after 21:20 will be seen.
 
 Also from Matt: the layouts will tile every window, as Omarchy does (no capacity limit).
+
+### Windows — 2026-11-25 18:03 UTC
+
+Build 15 Standard (results.md): CB1 and O6 PASS, K4 gives the right messages on one
+screen. **LS1 FAILS** on Windows 11 Home ("Windows did not change the lock screen
+picture", Spotlight off) and leaves a **startup blocker**: Exit can't restore the picture
+either, `lock-screen-original.jpg` stays, and every later start shows "Recovery needs
+attention… Windows did not change the lock screen picture" and quits after OK. Deleting
+that file is the workaround. Please make a failed lock screen restore non-fatal (and skip
+the restore when nothing was changed). Seen the 21:20 move; working on testing-handoff
+now. Next: A2 Admin, then build 16 (TL1, A2 Standard) once its run is up.

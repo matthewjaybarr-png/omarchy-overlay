@@ -2,6 +2,34 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 15 (beb754e) — 2026-11-25 18:03 UTC, Windows 11 VM, Standard, clean settings folder
+
+- **LS1** FAIL (Windows 11 Home, Spotlight off: RotatingLockScreenEnabled=0). Appearance >
+  Apply theme to Windows > "Lock screen shows the theme background" shows "Windows did not
+  change the lock sc…" (cut off) (![](shots/15-ls1-set.png)); Win+L still shows the Windows
+  default (![](shots/15-ls1-lock.png)). The log has only that message, no HRESULT.
+  `lock-screen-original.jpg` was saved before the attempt.
+- **Blocker after a failed LS1**: Exit also tries to put the original back, fails the same
+  way (message 3× in the log) and leaves `lock-screen-original.jpg` behind. From then on
+  every start shows a modal "Recovery needs attention. Saved records were preserved.
+  Windows did not change the lock screen picture." (![](shots/15-o6-due.png)) and the
+  overlay **quits after OK**, so the Standard edition never starts again. Workaround:
+  delete `%LOCALAPPDATA%\OmarchyOverlay\lock-screen-original.jpg`. Suggest: a lock screen
+  restore failure should be a warning, not a recovery failure, and the saved file should
+  be dropped when the picture was never changed.
+- **CB1** PASS. Super+A selects, Super+C copies, Super+V pastes ("hellohello"), Super+X
+  cuts; no clipboard history or Quick Settings opened (![](shots/15-cb1-v.png)).
+- **O6** PASS. `remind 2 Test message` added the bar icon; after Exit and a restart (with
+  the workaround) "Reminder: Test message" showed when due (![](shots/15-start4.png));
+  `reminders.json` held the due time.
+- **K4** one screen only, so mirroring itself is untested. Super+Ctrl+Shift+Delete says
+  "Windows did not mirror the screens: is a second screen connected?"
+  (![](shots/15-k4-mirror.png)); Super+Ctrl+Delete says "Windows did not turn the laptop
+  screen off: is an external screen connected?" (![](shots/15-k4-internal.png)). Sensible.
+- Fresh folder: no `config.pre-0.5.0.json` this time before the first save.
+- Not done yet: A2 retest and A3 (Admin), README screenshots. A3 on Chrome needs Chrome,
+  which is not installed in the VM; asking Matt before downloading it.
+
 ## Build 13 (bb1af08) — 2026-11-25 20:55 UTC, Windows 11 VM, by hand, clean settings folder
 
 Started from an empty `%LOCALAPPDATA%\OmarchyOverlay` (the old one is `OmarchyOverlay-old-12-suites`).
