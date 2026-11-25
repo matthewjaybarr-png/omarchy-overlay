@@ -47,14 +47,28 @@ Admin on your own PC when its keys must also work in apps running as administrat
   it. Switching the workspace back to a tiling layout tiles them again.
   **Super + Shift + L** and **Super + Alt + L** cycle the layout of the workspace
   in front only; the default for other workspaces stays as it is.
-- **Super keys:** an app grid, a command menu, a keybind list and window
-  actions, defined in `config\binds.conf`.
-- **Top bar:** ten workspaces of its own, the active app, a clock,
-  a tray and modules.
+- **Dock:** Omarchy's dock on floating workspaces (or always, auto-hiding): pinned
+  apps, running apps, click to cycle an app's windows, an accent ring for an app that
+  wants attention.
+- **Workspaces like Omarchy's:** ten of them, optionally per monitor; groups with
+  tabs; a scratchpad of several windows; a drop-down console on Super + `; pseudo-tile
+  and a square single window.
+- **Super keys:** an app grid, a command menu (type any command into it), a keybind
+  list and window actions, defined in `config\binds.conf`. New default keys reach
+  your own binds.conf by themselves.
+- **Top bar:** at the top or bottom, ten workspaces of its own, the active app, a
+  clock, a tray, status indicators and modules.
 - **Themes:** every stock Omarchy theme (Tokyo Night, the default, Catppuccin,
-  Gruvbox, Nord and more) built in, plus a few extra themes, Mica and
-  Acrylic materials and window opacity. It can apply the theme to Windows'
-  own settings and puts the originals back on exit.
+  Gruvbox, Nord and more) built in with its backgrounds, plus a few extra themes and
+  any theme installed from git. The theme also colors Windows (accent, accent shades,
+  dark mode, selection colors, wallpaper), Windows Terminal, VS Code and Obsidian,
+  with one font throughout, Mica and Acrylic materials and Omarchy's opaque,
+  transparent and glassy modes. Everything it changes is put back on exit.
+- **Omarchy's utilities:** a color picker, an on-screen card for volume and
+  brightness, reminders that survive a restart, an idle screensaver and lock.
+- **Admin edition extras:** keys and theme colors over apps running as
+  administrator, the browsers' toolbar color, the lock screen picture and restart
+  into BIOS/UEFI.
 - **Runs from a flash drive:** the Standard edition needs no install, so it can
   run from a USB stick and take your settings with it. See below.
 - **Recovery:** if the program exits or crashes, it restores the taskbar,
