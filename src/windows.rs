@@ -364,6 +364,8 @@ struct App {
     /// Per-monitor workspaces: what each monitor shows, and the monitor in use.
     monitor_workspace: HashMap<isize, usize>,
     focus_monitor: isize,
+    /// A bar button asked this monitor to show this workspace.
+    monitor_request: Option<(isize, usize)>,
     drag: Option<resize::Drag>,
     mouse_drag: Option<resize::MouseDrag>,
     /// The gap toggle-gaps turned off, to put back.
@@ -1508,6 +1510,7 @@ pub fn run() {
             layout_sessions: HashMap::new(),
             monitor_workspace: HashMap::new(),
             focus_monitor: 0,
+            monitor_request: None,
             drag: None,
             mouse_drag: None,
             gaps_before: (0, 0),
@@ -3567,6 +3570,10 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             }
             m if m != 0 && m == app.shell_hook => {
                 app.shell_event(w, l as HWND);
+                Some(0)
+            }
+            bar::BAR_WORKSPACE => {
+                app.workspace_clicked(w, l);
                 Some(0)
             }
             theme_install::DONE if l != 0 => {

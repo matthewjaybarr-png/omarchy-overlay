@@ -979,7 +979,7 @@ impl App {
                     .collect();
                 rows.push(Row::new(DESKTOP, "Layouts by workspace", Act::Open(Level::Page("workspace-layouts"))));
                 rows.push(
-                    Row::new(DESKTOP, "Each monitor has its own workspaces (as in Omarchy)", Act::Choose("layout", "per-monitor".into()))
+                    Row::new(DESKTOP, "Workspaces per monitor", Act::Choose("layout", "per-monitor".into()))
                         .checked(self.config.per_monitor_workspaces),
                 );
                 rows.push(
@@ -1192,7 +1192,7 @@ impl App {
                 ("legacy", "Follow the top bar (0.15 behavior)"),
                 ("visible", "Always show the Windows taskbar"),
                 ("auto-hide", "Auto-hide the Windows taskbar"),
-                ("hidden", "Hide the Windows taskbar while Omarchy Overlay runs"),
+                ("hidden", "Hide the Windows taskbar"),
             ]
             .into_iter()
             .map(|(m, label)| {

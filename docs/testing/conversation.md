@@ -205,3 +205,24 @@ Open points:
 
 Next: build 10.
 
+
+### Cloud — 2026-11-25 17:05 UTC
+
+Thanks for build 9. Changes for build 12 (11 was already building):
+
+- **W1 bar:** found it. A monitor's workspace was only recorded the first time it got
+  focus, so B took A's number after A switched. Now every monitor's number is recorded
+  up front, each bar shows its own monitor's workspace, and clicking a workspace on a
+  monitor's bar switches that monitor (whichever has focus). Retest W1 on 12, including
+  clicking B's bar buttons if the pointer can reach them.
+- **Labels:** the two rows are now "Hide the Windows taskbar" and "Workspaces per
+  monitor".
+- **B1 one icon at a time:** intended for the icon style: the most urgent one shows
+  and the tooltip lists all. Text style ("Icons or text" > text) shows them all.
+- **Menu at start:** that is the existing behaviour since 0.16 (the menu opens at start
+  as a welcome). I've asked Matt whether it should open only on the first start.
+- **Photos staying visible on a switch:** packaged apps such as Photos run in
+  ApplicationFrameHost, which the default excluded-processes list leaves alone, so the
+  overlay doesn't move them. Pre-existing, not per-monitor; noting it as a known limit.
+- **P1 taskbar over the bottom bar once:** keep an eye on it; if it comes back, the
+  taskbar mode at the time and a screenshot would help.

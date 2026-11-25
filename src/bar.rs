@@ -12,6 +12,8 @@ use windows_sys::Win32::{
 const CLASS: &str = "OmarchyOverlay.TopBar";
 const CALLBACK: u32 = WM_APP + 30;
 const RELAYOUT: u32 = WM_APP + 31;
+/// A workspace button was clicked: wParam the workspace, lParam the bar's monitor.
+pub(super) const BAR_WORKSPACE: u32 = WM_APP + 79;
 
 struct Panel {
     hwnd: HWND,
@@ -53,6 +55,8 @@ struct State {
     opacity: u8,
     config: BarConfig,
     desktop: Option<crate::desktops::Snapshot>,
+    /// Per-monitor workspaces: what each monitor shows, so each bar shows its own.
+    monitor_workspaces: HashMap<isize, usize>,
     tasks: Vec<tasks::Task>,
 }
 thread_local! { static BAR: RefCell<Option<State>> = const { RefCell::new(None) }; }
@@ -165,6 +169,7 @@ pub(super) unsafe fn start(
         opacity,
         config: config.clone(),
         desktop: desktops::poll(),
+        monitor_workspaces: HashMap::new(),
         tasks: vec![],
     };
     state.rebuild();
@@ -202,6 +207,18 @@ pub(super) unsafe fn stop() {
             DeleteObject(state.brush);
             if state.brush != state.class_brush {
                 DeleteObject(state.class_brush);
+            }
+        }
+    });
+}
+/// Per-monitor workspaces: the workspace each monitor shows (empty when they all show
+/// the same one).
+pub(super) unsafe fn set_monitor_workspaces(map: HashMap<isize, usize>) {
+    BAR.with(|cell| {
+        if let Some(state) = cell.borrow_mut().as_mut() {
+            if state.monitor_workspaces != map {
+                state.monitor_workspaces = map;
+                state.redraw();
             }
         }
     });
@@ -618,16 +635,17 @@ impl State {
             }
             if module == Workspaces {
                 if let Some(s) = &self.desktop {
+                    let current = self.monitor_workspaces.get(&(monitor as isize)).copied().unwrap_or(s.current);
                     let page = self.config.workspace_labels.len().min(4);
-                    let start = s.current / page * page;
-                    for i in start..(start + page).min(s.ids.len()) {
+                    let start = current / page * page;
+                    for i in start..(start + page).min(s.ids.len().max(current + 1)) {
                         let label = self
                             .config
                             .workspace_labels
                             .get(i)
                             .cloned()
                             .unwrap_or_else(|| (i + 1).to_string());
-                        items.push(item(module, label, 100 + i, i == s.current));
+                        items.push(item(module, label, 100 + i, i == current));
                     }
                 } else {
                     items.push(item(module, "DESKTOPS".into(), 90, false));
@@ -1260,9 +1278,9 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                             }
                         }
                         100..=163 => {
-                            if desktops::select(slot.item.action - 100) {
-                                PostMessageW(state.owner, WM_TIMER, 1, 0);
-                            }
+                            // The owner switches: with per-monitor workspaces it is this
+                            // bar's monitor that switches, not the one in focus.
+                            PostMessageW(state.owner, BAR_WORKSPACE, slot.item.action - 100, panel.monitor as isize);
                         }
                         90 => desktops::task_view(),
                         91 => {

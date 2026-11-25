@@ -1,6 +1,10 @@
 # Test queue
 
-## Build 11 — commit 0a27206 — building (run number added when done)
+## Build 12 (next) — not built yet
+
+Adds: Obsidian colors (OB1), Admin items (A1–A3), W1 bar per monitor, shorter labels.
+
+## Build 11 — commit 0a27206 — Actions run 45655209456
 
 Adds: single-window square (K2), pseudo-tile (K3), typed commands in the menu (O6),
 theme install from git (TH1).
@@ -134,7 +138,7 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
 - **P1** (build 8) Appearance > Top bar > Bar position > bottom: the bar moves to the
   bottom of every monitor, tiles end above it, the dock sits above it; back to top.
 
-- **W1** (build 8, two monitors) Layout > "Each monitor has its own workspaces" on.
+- **W1** (build 8, two monitors) Layout > "Workspaces per monitor" on.
   With windows on both monitors, focus monitor A and press Super+2: only A's windows
   go; B is unchanged. Click a window on B: the bar shows B's workspace (1). Super+1 on
   A brings A's windows back. Super+Shift+3 sends a window to workspace 3 of its own
@@ -177,8 +181,7 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   the Admin edition.
 
 ### Before hiding the taskbar by default
-- **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar while Omarchy
-  Overlay runs", dock on floating workspaces. Then check each and note PASS/FAIL:
+- **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar", dock on floating workspaces. Then check each and note PASS/FAIL:
   the Win key opens Start; Win+N opens notifications; Win+A Quick Settings; a toast
   (e.g. `remind 1`) appears; the bar's tray button opens the tray icons; a flashing
   app rings in the dock; Alt+Tab works; the taskbar comes back on Exit and after

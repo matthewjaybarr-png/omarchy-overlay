@@ -36,11 +36,11 @@
   menu; **Voice typing** in the Trigger menu opens Windows dictation.
 - The Standard zip carries Omarchy's stock theme backgrounds too, so every theme sets
   its own wallpaper in both editions.
-- **Per-monitor workspaces** (Layout > "Each monitor has its own workspaces"), off by
+- **Per-monitor workspaces** (Layout > "Workspaces per monitor"), off by
   default: as in Omarchy, switching workspace changes only the monitor in use, and
   moving to another monitor shows its workspace. Layout choices follow each monitor's
-  own workspace. Turning it on or off brings every hidden window back first. The bar
-  shows the workspace of the monitor in use on every monitor.
+  own workspace. Turning it on or off brings every hidden window back first. Each
+  monitor's bar shows that monitor's workspace, and its buttons switch that monitor.
 - **Bar position** (Appearance > Top bar > Bar position): the bar can sit at the
   bottom of the screen, as Omarchy's can. Windows and the dock stay clear of it.
 - Exit puts back the stock or Settings-chosen wallpaper instead of leaving the

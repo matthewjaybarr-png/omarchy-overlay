@@ -108,6 +108,17 @@ impl App {
             self.workspace
         }
     }
+    /// A workspace button on a bar: that monitor switches (per-monitor workspaces), or
+    /// every monitor does.
+    pub(super) unsafe fn workspace_clicked(&mut self, workspace: usize, monitor: isize) {
+        if self.config.per_monitor_workspaces {
+            self.monitor_request = Some((monitor, workspace));
+            self.tick();
+        } else if crate::desktops::select(workspace) {
+            self.tick();
+        }
+        bar::poll();
+    }
     /// Per-monitor workspaces turned on or off: every window comes back, every monitor
     /// starts on the workspace shown now.
     pub(super) unsafe fn reset_workspaces(&mut self) {
@@ -118,6 +129,7 @@ impl App {
         self.monitor_workspace.clear();
         self.focus_monitor = 0;
         self.report_occupied();
+        bar::set_monitor_workspaces(HashMap::new());
         self.dirty = true;
     }
     pub(super) unsafe fn focus_or_desktop(&mut self, target: Option<isize>) {
@@ -155,12 +167,28 @@ impl App {
                 }
             }
         }
-        let next = crate::desktops::current();
+        let mut next = crate::desktops::current();
         // Per-monitor workspaces (Omarchy's model): only the monitor in use switches, and
         // moving to another monitor shows its workspace without switching anything.
         let per_monitor = self.config.per_monitor_workspaces;
-        let monitor = if per_monitor { self.focus_monitor_now() } else { 0 };
-        if per_monitor && monitor != self.focus_monitor {
+        if per_monitor {
+            // Every monitor starts out showing the workspace shown now, so one that was
+            // never focused keeps its own number when another switches.
+            for display in settings::displays() {
+                self.monitor_workspace.entry(display.monitor as isize).or_insert(self.workspace);
+            }
+        }
+        let request = self.monitor_request.take().filter(|_| per_monitor);
+        let mut monitor = if per_monitor { self.focus_monitor_now() } else { 0 };
+        if let Some((asked, workspace)) = request {
+            // A bar button: that bar's monitor switches, whichever monitor has focus.
+            monitor = asked;
+            self.focus_monitor = asked;
+            self.workspace = self.workspace_of(asked);
+            next = workspace;
+            crate::desktops::select_quiet(workspace);
+        }
+        if per_monitor && request.is_none() && monitor != self.focus_monitor {
             self.focus_monitor = monitor;
             let shown = *self.monitor_workspace.entry(monitor).or_insert(self.workspace);
             let requested = next != self.workspace;
@@ -211,6 +239,15 @@ impl App {
             .or(back.iter().copied().find(|&key| IsIconic(key as HWND) == 0));
         self.focus_or_desktop(target);
         self.report_occupied();
+        self.share_monitor_workspaces();
+    }
+    /// Tells the bar what each monitor shows, so each monitor's bar shows its own.
+    pub(super) unsafe fn share_monitor_workspaces(&self) {
+        bar::set_monitor_workspaces(if self.config.per_monitor_workspaces {
+            self.monitor_workspace.clone()
+        } else {
+            HashMap::new()
+        });
     }
     /// Omarchy's Super+Shift+number: sends the focused window to a workspace and, unless
     /// `silent`, goes there with it.
