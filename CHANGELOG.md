@@ -22,6 +22,11 @@
   keys and entries are added, lines you never changed follow the new defaults, and
   anything you changed or deleted stays as it is. Your file from before is kept as
   `binds.conf.before-<version>` / `menu.json.before-<version>`.
+- Fixes from the build 7 test run: the status indicators icon follows the most urgent
+  indicator; the dock sits above the taskbar whenever Windows auto-hides it, whichever
+  setting does that; the on-screen card widens to fit its text; long bar tooltips wrap;
+  menus widen to fit their longest label (up to 560 px) instead of cutting labels off;
+  no "Font \"\" is not available" line in the log at start.
 - Fixes from testing on Windows: floating windows use Omarchy's sizes in logical
   pixels, so they are 64% wide at 125% scaling, not 57%; the Terminal scheme takes
   black, white, bright black and bright white from the theme as Omarchy does;

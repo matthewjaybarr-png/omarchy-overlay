@@ -90,7 +90,8 @@ pub(super) unsafe fn paint(hwnd: HWND) {
         DeleteObject(font as HGDIOBJ);
         left += unit(40);
     }
-    let font = fonts::create(&card.font, 12, true, dpi);
+    let family = if card.font.is_empty() { crate::font_names::NL_FAMILY } else { card.font.as_str() };
+    let font = fonts::create(family, 12, true, dpi);
     let old = SelectObject(dc, font as HGDIOBJ);
     SetTextColor(dc, p.text);
     let text = wide(&card.text);
@@ -150,7 +151,23 @@ impl App {
         let (mut dpi, mut unused) = (96u32, 96u32);
         GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut dpi, &mut unused);
         let unit = |v: i32| v * dpi.max(96) as i32 / 96;
-        let (w, h) = (unit(WIDTH), unit(HEIGHT));
+        // Wide enough for the text, up to most of the screen; longer text ends in "…".
+        let text_width = {
+            let dc = GetDC(null_mut());
+            let family = if self.config.menu_font.is_empty() { crate::font_names::NL_FAMILY } else { self.config.menu_font.as_str() };
+            let font = fonts::create(family, 12, true, dpi.max(96));
+            let old = SelectObject(dc, font as HGDIOBJ);
+            let mut size: SIZE = zeroed();
+            let wide_text: Vec<u16> = text.encode_utf16().collect();
+            GetTextExtentPoint32W(dc, wide_text.as_ptr(), wide_text.len() as i32, &mut size);
+            SelectObject(dc, old);
+            DeleteObject(font as HGDIOBJ);
+            ReleaseDC(null_mut(), dc);
+            size.cx
+        };
+        let most = (info.rcWork.right - info.rcWork.left) * 8 / 10;
+        let w = (text_width + unit(16 + 40 + 16)).clamp(unit(WIDTH), most.max(unit(WIDTH)));
+        let h = unit(HEIGHT);
         SetWindowPos(
             self.osd,
             HWND_TOPMOST,

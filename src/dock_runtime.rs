@@ -190,7 +190,12 @@ impl App {
             });
         }
         // An auto-hiding taskbar pops up over the bottom edge: sit above it.
-        let above_taskbar = self.config.taskbar_mode == "auto-hide";
+        let above_taskbar = {
+            // The taskbar's own state: "Follow the top bar" can auto-hide it too.
+            let mut data = APPBARDATA { cbSize: size_of::<APPBARDATA>() as u32, ..zeroed() };
+            SHAppBarMessage(ABM_GETSTATE, &mut data) as u32 & ABS_AUTOHIDE != 0
+                && self.config.taskbar_mode != "hidden"
+        };
         dock_ui::update(self.main, views, monitors, mode == "always", above_taskbar);
     }
     unsafe fn dock_launch(&mut self, key: &str) -> bool {

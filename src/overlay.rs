@@ -571,7 +571,31 @@ unsafe fn layout(hwnd: HWND) {
         SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE);
         return;
     }
-    let width = unit(WIDTH).min(work.right - work.left - unit(32));
+    // Omarchy's card is narrow, but never so narrow that a label is cut off: it grows
+    // to the widest row of this menu (label, detail and marks), up to 560 px.
+    let needed = with(|o| {
+        let f = o.fonts.as_ref()?;
+        let dc = GetDC(null_mut());
+        let widest = o
+            .view
+            .rows
+            .iter()
+            .map(|r| {
+                let detail = if r.detail.is_empty() { 0 } else { width_of(dc, f.small, &r.detail).min(unit(160)) + unit(12) };
+                let tag = if r.windows { unit(80) } else { 0 };
+                width_of(dc, f.text, &r.label) + detail + tag
+            })
+            .max()
+            .unwrap_or(0);
+        ReleaseDC(null_mut(), dc);
+        Some(widest)
+    })
+    .flatten()
+    .unwrap_or(0);
+    let chrome = unit(2 * PAD + 8 + ICON_BOX + 6 + 8 + 48);
+    let width = (needed + chrome)
+        .clamp(unit(WIDTH), unit(560).max(unit(WIDTH)))
+        .min(work.right - work.left - unit(32));
     let fit = ((work.bottom - work.top) * 7 / 10 - unit(2 * PAD + HEADER + 6)) / unit(ROW + GAP);
     let visible = fit.max(3) as usize;
     with(|o| {

@@ -155,3 +155,22 @@ Build 7 results are in results.md. The ones that need you:
 build 7 plus bar position (P1) and per-monitor workspaces (W1, off by default, two
 monitors needed). Please test build 8 instead of 7. When you rerun the VM suites on
 it, update PR #32's numbers.
+
+### Cloud — 2026-11-25 15:45 UTC
+
+Thanks for build 7. Fixed in the next build (9; build 8 is still worth running for P1
+and W1, it just lacks these):
+
+- **B1 icon:** the bar gave the icon picker the tooltip text, not the indicator text;
+  it now gets the indicators, so Stay awake / mic off / reminder show their own icon.
+- **D8:** the dock only checked the "auto-hide" taskbar mode; it now asks Windows
+  whether the taskbar auto-hides (as "Follow the top bar" does too) and sits above it.
+- **TRAY text:** the on-screen card now widens to fit its text (up to 80% of the
+  screen), and bar tooltips wrap at 420 px instead of running off the edge.
+- **Labels:** menus now widen to the longest row in them, up to 560 px. Long info
+  sentences may still end in "…" at 560; tell me which ones matter.
+- **`Font "" is not available`:** the card painted once before its first message with
+  no font name; it now defaults to JetBrains Mono NL.
+- **T1 needing a Terminal restart:** expected; Windows Terminal reads fragments only
+  at start, and the page says so.
+- **R1 with TranscodedWallpaper:** thanks for checking; good that the normal path works.

@@ -879,6 +879,8 @@ impl State {
             let mut tip_text = wide("");
             let mut tool: TTTOOLINFOW = zeroed();
             theme_tooltip(tooltip);
+            // Long tooltips (an error, the status indicators) wrap instead of running off screen.
+            SendMessageW(tooltip, TTM_SETMAXTIPWIDTH, 0, (420 * dpi / 96) as isize);
             // The v1 size is accepted by every common controls version.
             tool.cbSize = std::mem::offset_of!(TTTOOLINFOW, lpReserved) as u32;
             tool.uFlags = TTF_TRACK | TTF_ABSOLUTE;
@@ -1417,6 +1419,8 @@ unsafe fn paint(state: &State, hwnd: HWND) {
                     },
                     if slot.item.module == Module::Power {
                         &state.power
+                    } else if slot.item.module == Module::Indicators {
+                        &state.indicators
                     } else {
                         &slot.item.tooltip
                     },
