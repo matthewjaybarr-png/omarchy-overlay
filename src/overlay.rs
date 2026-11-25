@@ -67,6 +67,22 @@ pub(super) enum Glyph {
     Char(char),
     Task(Rc<tasks::Identity>),
     Icon(Rc<picker_ui::Icon>),
+    /// A theme preview: four COLORREF colors drawn as a 2 x 2 swatch.
+    Swatch([u32; 4]),
+}
+/// Draws a 2 x 2 color swatch in `size` square at (x, y), with a hairline frame.
+unsafe fn swatch(hdc: HDC, x: i32, y: i32, size: i32, colors: &[u32; 4], frame: u32) {
+    let half = size / 2;
+    for (i, &color) in colors.iter().enumerate() {
+        let (cx, cy) = (x + (i as i32 % 2) * half, y + (i as i32 / 2) * half);
+        fill(hdc, &RECT { left: cx, top: cy, right: cx + half, bottom: cy + half }, color);
+    }
+    SetDCBrushColor(hdc, frame);
+    FrameRect(
+        hdc,
+        &RECT { left: x, top: y, right: x + 2 * half, bottom: y + 2 * half },
+        GetStockObject(DC_BRUSH) as HBRUSH,
+    );
 }
 
 #[derive(Clone)]
@@ -848,6 +864,16 @@ unsafe fn paint(hwnd: HWND, target: HDC) {
                         DI_NORMAL,
                     );
                 }
+                Glyph::Swatch(colors) => {
+                    swatch(
+                        hdc,
+                        x + (icon_box - picture) / 2,
+                        y + (unit(ROW) - picture) / 2,
+                        picture,
+                        colors,
+                        blend(p.text, p.background, 0.6),
+                    );
+                }
                 _ => {}
             }
             x += icon_box + unit(6);
@@ -1050,6 +1076,10 @@ unsafe fn grid(hdc: HDC, o: &Overlay, f: &Fonts, client: &RECT) {
         let icon = match &row.icon {
             Glyph::Icon(icon) => icon.0,
             Glyph::Task(identity) => identity.icon,
+            Glyph::Swatch(colors) => {
+                swatch(hdc, ix, iy, picture, colors, blend(p.text, p.background, 0.6));
+                null_mut()
+            }
             Glyph::Char(c) => {
                 if fonts::available() {
                     let mut r = RECT {

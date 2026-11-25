@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The theme list shows a colour swatch for each theme (background, accent, text and
+  red), as Omarchy's theme switcher shows a preview.
 - The theme also sets the Windows accent palette, the lighter and darker shades of
   the accent that Start and the taskbar use, so they match the theme instead of
   Windows' last accent. It has its own journal and is restored with the accent.

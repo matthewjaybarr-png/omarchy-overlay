@@ -162,6 +162,17 @@ pub fn resolve(id: &str) -> Option<Theme> {
 pub fn loaded() -> Vec<Theme> {
     LOADED.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
+/// A theme's preview swatch as COLORREFs: background, accent, foreground, and its
+/// red or a second color, so themes with the same background still look different.
+pub fn preview(id: &str) -> Option<[u32; 4]> {
+    let t = resolve(id)?;
+    let colorref = |v: u32| ((v & 255) << 16) | (v & 0xff00) | ((v >> 16) & 255);
+    let fourth = ["red", "green", "magenta", "yellow"]
+        .iter()
+        .find_map(|k| t.colors.get(*k).copied())
+        .unwrap_or(t.surface);
+    Some([t.background, t.accent, t.text, fourth].map(colorref))
+}
 /// The image after `current` in a theme's backgrounds, wrapping; the first when
 /// `current` is not one of them.
 pub fn next_background(list: &[PathBuf], current: Option<&Path>) -> Option<PathBuf> {
@@ -216,6 +227,13 @@ mod tests {
         }
         assert_eq!(&p[28..], &[0xf7, 0x63, 0x0c, 0]);
         assert!(p.iter().skip(3).step_by(4).take(7).all(|&a| a == 0));
+    }
+    #[test]
+    fn preview_uses_background_accent_foreground_and_red() {
+        let p = preview("tokyo-night").unwrap();
+        // #1a1b26, #7aa2f7, #a9b1d6, #f7768e as COLORREFs.
+        assert_eq!(p, [0x00261b1a, 0x00f7a27a, 0x00d6b1a9, 0x008e76f7]);
+        assert!(preview("no-such-theme").is_none());
     }
     #[test]
     fn next_background_starts_at_the_first_and_wraps() {

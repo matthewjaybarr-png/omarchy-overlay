@@ -658,9 +658,13 @@ impl App {
                 }
                 list.into_iter()
                     .map(|(name, label, dark)| {
-                        Row::new(BRUSH, label, Act::Choose("theme", name.clone()))
+                        let mut row = Row::new(BRUSH, label, Act::Choose("theme", name.clone()))
                             .detail(if dark { "dark" } else { "light" })
-                            .checked(self.config.theme == name)
+                            .checked(self.config.theme == name);
+                        if let Some(colors) = crate::theme_files::preview(&name) {
+                            row.icon = overlay::Glyph::Swatch(colors);
+                        }
+                        row
                     })
                     .collect()
             }
