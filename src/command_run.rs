@@ -185,7 +185,7 @@ impl App {
             }
             "hibernate" => {
                 if !SetSuspendState(true, false, false) {
-                    message("Windows did not allow hibernate. It may be turned off on this PC (powercfg /hibernate on).");
+                    self.notice("Windows did not allow hibernate. It may be turned off on this PC (powercfg /hibernate on).");
                 }
             }
             "voice-typing" => self.queue_system_action(17),
@@ -241,12 +241,12 @@ impl App {
             }
             "sleep" => {
                 if !SetSuspendState(false, false, false) {
-                    message("Windows did not allow sleep. Use Start → Power → Sleep.");
+                    self.notice("Windows did not allow sleep. Use Start → Power → Sleep.");
                 }
             }
             "sign-out" => {
                 if ExitWindowsEx(EWX_LOGOFF, 0) == 0 {
-                    message("Windows did not allow sign-out. Use Start → your name → Sign out.");
+                    self.notice("Windows did not allow sign-out. Use Start → your name → Sign out.");
                 }
             }
             "restart-to-firmware" => {
@@ -254,7 +254,7 @@ impl App {
                 // rights, so it runs here, from the elevated Admin edition, not through the
                 // unelevated launch every app gets.
                 if !crate::launch_unelevated::process_elevated() {
-                    message("Restarting into the firmware (BIOS/UEFI) setup needs the Admin edition, which runs with administrator rights.");
+                    self.notice("Restarting into the firmware (BIOS/UEFI) setup needs the Admin edition, which runs with administrator rights.");
                 } else {
                     let windir = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
                     let tool = crate::install::system_tool(&windir, "shutdown.exe");
@@ -266,11 +266,11 @@ impl App {
                             let said = String::from_utf8_lossy(&out.stderr).trim().to_string()
                                 + String::from_utf8_lossy(&out.stdout).trim();
                             log(&format!("{tool} /r /fw /t 1 exited with {:?}: {said}", out.status.code()));
-                            message(&format!("Windows did not restart into the firmware setup ({:?}). {said}", out.status.code()));
+                            self.notice(&format!("Windows did not restart into the firmware setup ({:?}). {said}", out.status.code()));
                         }
                         Err(error) => {
                             log(&format!("{tool} could not start: {error}"));
-                            message(&format!("shutdown.exe could not start: {error}"));
+                            self.notice(&format!("shutdown.exe could not start: {error}"));
                         }
                     }
                 }
@@ -278,7 +278,7 @@ impl App {
             "restart-pc" | "shutdown" => {
                 let switch = if name == "shutdown" { "/s /t 0" } else { "/r /t 0" };
                 if !shell(Path::new("shutdown.exe"), switch) {
-                    message("Windows did not start the shutdown. Use Start → Power.");
+                    self.notice("Windows did not start the shutdown. Use Start → Power.");
                 }
             }
             "task-view" => self.queue_system_action(6),
@@ -440,7 +440,7 @@ impl App {
                     self.save_config();
                     self.show_feedback("Original Windows appearance restored.")
                 }
-                Err(error) => message(&error),
+                Err(error) => self.notice(&error),
             },
             "update-profile" => self.update_profile(),
             "guide" => {
@@ -449,7 +449,7 @@ impl App {
                     .and_then(|exe| exe.parent().map(|d| d.join("README.md")))
                     .unwrap_or_else(|| PathBuf::from("README.md"));
                 if !shell(Path::new("notepad.exe"), &format!("\"{}\"", guide.display())) {
-                    message(&format!("The guide could not be opened: {}", guide.display()));
+                    self.notice(&format!("The guide could not be opened: {}", guide.display()));
                 }
             }
             "log" => {
@@ -461,7 +461,7 @@ impl App {
                 let _ = fs::create_dir_all(&folder);
                 shell(&folder, "");
             }
-            "releases-folder" => message(
+            "releases-folder" => self.notice(
                 "Omarchy Overlay releases are the zips you downloaded. \
                  Each zip has SHA256SUMS.txt beside it. Omarchy Overlay never downloads or installs updates.",
             ),
@@ -479,7 +479,7 @@ impl App {
                 Ok(()) => self.show_feedback(
                     "All settings are back to their defaults. A backup is in profile-backup.json.",
                 ),
-                Err(error) => message(&format!("Reset failed: {error}")),
+                Err(error) => self.notice(&format!("Reset failed: {error}")),
             },
             "restore-desktop" => {
                 self.restore();
@@ -526,7 +526,7 @@ impl App {
     /// Starts a new copy of Omarchy Overlay that waits for this one to restore and exit.
     unsafe fn restart_overlay(&mut self) {
         let Ok(exe) = std::env::current_exe() else {
-            message("Omarchy Overlay could not find its own program file.");
+            self.notice("Omarchy Overlay could not find its own program file.");
             return;
         };
         let mut arguments = format!("--restart {}", GetCurrentProcessId());
@@ -543,14 +543,14 @@ impl App {
         if shell_direct(&exe, &arguments, exe.parent()) {
             PostQuitMessage(0);
         } else {
-            message("Omarchy Overlay could not start a new copy of itself.");
+            self.notice("Omarchy Overlay could not start a new copy of itself.");
         }
     }
 
     /// Stores the current look in the profile that was last applied from the menu.
     unsafe fn update_profile(&mut self) {
         let Some(name) = self.last_profile.clone() else {
-            message("Apply or save a profile from Setup → Profiles first. Built-in profiles cannot be changed.");
+            self.notice("Apply or save a profile from Setup → Profiles first. Built-in profiles cannot be changed.");
             return;
         };
         let mut c = self.config.clone();
@@ -559,7 +559,7 @@ impl App {
             .iter_mut()
             .find(|p| p.name.eq_ignore_ascii_case(&name))
         else {
-            message(&format!("\"{name}\" is a built-in profile. Save a copy under Setup → Profiles to change it."));
+            self.notice(&format!("\"{name}\" is a built-in profile. Save a copy under Setup → Profiles to change it."));
             return;
         };
         *profile = crate::appearance_profiles::Profile::capture(&self.config, name.clone());
@@ -624,7 +624,7 @@ impl App {
                 .iter()
                 .find(|(id, _)| *id == role)
                 .map_or(role, |(_, label)| label);
-            message(&format!("{label} could not be opened on this PC."));
+            self.notice(&format!("{label} could not be opened on this PC."));
         }
     }
 
@@ -641,7 +641,7 @@ impl App {
         };
         if confirmed {
             if !shell(Path::new(&app.url), "") {
-                message(&format!("{} could not be opened.", app.url));
+                self.notice(&format!("{} could not be opened.", app.url));
             }
             return;
         }
@@ -687,18 +687,18 @@ impl App {
                 .components()
                 .any(|c| !matches!(c, std::path::Component::Normal(_)))
         {
-            message(&format!(
+            self.notice(&format!(
                 "launch {program}: only files inside the config folder can be started."
             ));
             return;
         }
         let path = folder.join(relative);
         if !path.is_file() {
-            message(&format!("launch: {} does not exist.", path.display()));
+            self.notice(&format!("launch: {} does not exist.", path.display()));
             return;
         }
         if !shell_in(&path, arguments, Some(&folder)) {
-            message(&format!("launch: {} could not be started.", path.display()));
+            self.notice(&format!("launch: {} could not be started.", path.display()));
         }
     }
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Menu commands that cannot run (sleep refused, a link that does not open, an Admin-only
+  item in the Standard edition) say so on the themed card for six seconds, as Omarchy's
+  notifications do, instead of a plain Windows message box. Text too long for the card
+  still uses a message box.
 - Fixed: when Windows refused the Standard edition's lock screen picture, every later
   start stopped with "Recovery needs attention" and quit. A picture that was never
   changed is no longer put back, and the lock screen, browser colors, VS Code, Obsidian

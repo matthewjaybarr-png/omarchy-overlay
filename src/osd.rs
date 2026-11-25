@@ -127,6 +127,42 @@ impl App {
     pub(super) unsafe fn show_feedback(&self, text: &str) {
         self.show_card(Some(INFO), text, None);
     }
+    /// The text's width on the card, in pixels at `dpi`.
+    unsafe fn card_text_width(&self, text: &str, dpi: u32) -> i32 {
+        let dc = GetDC(null_mut());
+        let family = if self.config.menu_font.is_empty() { crate::font_names::NL_FAMILY } else { self.config.menu_font.as_str() };
+        let font = fonts::create(family, 12, true, dpi.max(96));
+        let old = SelectObject(dc, font as HGDIOBJ);
+        let mut size: SIZE = zeroed();
+        let wide_text: Vec<u16> = text.encode_utf16().collect();
+        GetTextExtentPoint32W(dc, wide_text.as_ptr(), wide_text.len() as i32, &mut size);
+        SelectObject(dc, old);
+        DeleteObject(font as HGDIOBJ);
+        ReleaseDC(null_mut(), dc);
+        size.cx
+    }
+    /// A notice for the user, as Omarchy's notifications: the themed card for six
+    /// seconds, and the log. Text too long for one line of the card, or with the card
+    /// turned off, falls back to a Windows message box so nothing is lost.
+    pub(super) unsafe fn notice(&self, text: &str) {
+        log(text);
+        let monitor = MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTONEAREST);
+        let mut info: MONITORINFO = zeroed();
+        info.cbSize = size_of::<MONITORINFO>() as u32;
+        use windows_sys::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
+        let (mut dpi, mut unused) = (96u32, 96u32);
+        GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut dpi, &mut unused);
+        let fits = self.config.show_osd
+            && !text.contains('\n')
+            && GetMonitorInfoW(monitor, &mut info) != 0
+            && self.card_text_width(text, dpi) + (16 + 40 + 16) * dpi.max(96) as i32 / 96
+                <= (info.rcWork.right - info.rcWork.left) * 8 / 10;
+        if fits {
+            self.show_card_for(Some(INFO), text, None, 6000);
+        } else {
+            message(text);
+        }
+    }
     /// Shows the card: an icon, the text and an optional 0–100 level bar.
     pub(super) unsafe fn show_card(&self, icon: Option<char>, text: &str, level: Option<u8>) {
         self.show_card_for(icon, text, level, 1200);
@@ -156,19 +192,7 @@ impl App {
         GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut dpi, &mut unused);
         let unit = |v: i32| v * dpi.max(96) as i32 / 96;
         // Wide enough for the text, up to most of the screen; longer text ends in "…".
-        let text_width = {
-            let dc = GetDC(null_mut());
-            let family = if self.config.menu_font.is_empty() { crate::font_names::NL_FAMILY } else { self.config.menu_font.as_str() };
-            let font = fonts::create(family, 12, true, dpi.max(96));
-            let old = SelectObject(dc, font as HGDIOBJ);
-            let mut size: SIZE = zeroed();
-            let wide_text: Vec<u16> = text.encode_utf16().collect();
-            GetTextExtentPoint32W(dc, wide_text.as_ptr(), wide_text.len() as i32, &mut size);
-            SelectObject(dc, old);
-            DeleteObject(font as HGDIOBJ);
-            ReleaseDC(null_mut(), dc);
-            size.cx
-        };
+        let text_width = self.card_text_width(text, dpi);
         let most = (info.rcWork.right - info.rcWork.left) * 8 / 10;
         let w = (text_width + unit(16 + 40 + 16)).clamp(unit(WIDTH), most.max(unit(WIDTH)));
         let h = unit(HEIGHT);
