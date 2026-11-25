@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Font > Install JetBrains Mono for Windows Terminal and other apps** installs the
+  bundled JetBrains Mono Nerd Fonts for this Windows user (no administrator rights),
+  so the themed Terminal profile uses Omarchy's font. Like every other change it is
+  undone on exit and after a crash, and put back at the next start while turned on.
+  Fonts you already had are never touched.
 - **One font**, as omarchy-font-set: choosing a font on the Font page sets it for the
   menus, the top bar and the themed Windows Terminal profile. Terminal uses it when
   the font is installed in Windows (it cannot see the fonts bundled beside the exe).

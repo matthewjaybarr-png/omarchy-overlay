@@ -185,7 +185,7 @@ pub(super) fn apply_terminal(directory: &Path, theme_name: &str, font: &str) -> 
         &color(palette.text),
         &color(palette.accent),
         &colors,
-        unsafe { fonts::in_windows(font) }.then_some(font),
+        Some(crate::font_names::terminal_face(font)).filter(|face| unsafe { fonts::in_windows(face) }).as_deref(),
     );
     let next = serde_json::to_string_pretty(&fragment).map_err(|e| e.to_string())?;
     let mut acceptable = current.into_iter().collect::<Vec<_>>();
@@ -331,6 +331,10 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
         errors.push(error);
     }
     if let Err(error) = vscode_effects::restore(directory) {
+        errors.push(error);
+    }
+    // After the Terminal profile, which may name one of these fonts.
+    if let Err(error) = font_install::remove(directory) {
         errors.push(error);
     }
     if errors.is_empty() {

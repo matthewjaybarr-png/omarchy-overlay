@@ -696,6 +696,14 @@ impl App {
                     crate::font_names::Source::Installed => "Icons: the JetBrains Mono Nerd Font installed in Windows (fonts folder missing).",
                     crate::font_names::Source::None => "No Nerd Font found: menus use Segoe UI with plain letters.",
                 }));
+                if font_install::available() {
+                    let installed = self.config.install_fonts;
+                    rows.push(
+                        Row::new(FONT, "Install JetBrains Mono for Windows Terminal and other apps", Act::Choose("font-install", if installed { "remove" } else { "install" }.into()))
+                            .checked(installed)
+                            .detail(if installed { "Enter removes them" } else { "this user only, no admin" }),
+                    );
+                }
                 rows.push(info("As in Omarchy, one font for everything: the menu, app picker, keybinds list, top bar and the themed Windows Terminal profile. Terminal only uses fonts installed in Windows. Icons always use the Nerd Font."));
                 rows.push(info("Other fonts installed in Windows:"));
                 rows.extend(all.map(row));
@@ -2613,6 +2621,23 @@ impl App {
                 };
                 let result =
                     result.and_then(|text| self.save_layout_choices(candidate).map(|()| text));
+                overlay::message(&match result {
+                    Ok(text) => text.to_string(),
+                    Err(error) => error,
+                });
+                true
+            }
+            "font-install" => {
+                let result = if value == "install" {
+                    font_install::install(&self.directory).map(|_| "Installed for this user. Restart apps to see it.")
+                } else {
+                    font_install::remove(&self.directory).map(|()| "Removed.")
+                };
+                if result.is_ok() {
+                    self.config.install_fonts = value == "install";
+                    self.save_config();
+                    self.apply_app_colors();
+                }
                 overlay::message(&match result {
                     Ok(text) => text.to_string(),
                     Err(error) => error,

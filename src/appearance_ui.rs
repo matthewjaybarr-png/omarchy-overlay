@@ -376,6 +376,7 @@ pub(super) unsafe fn command(app: &mut App, id: usize, notification: usize) {
                 appearance_effects::restore(&app.directory)?;
                 app.config.terminal_colors = false;
                 app.config.vscode_colors = false;
+                app.config.install_fonts = false;
                 app.save_config();
             }
             818 => {

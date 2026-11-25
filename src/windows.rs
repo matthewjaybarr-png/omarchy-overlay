@@ -7,6 +7,8 @@ mod app_rules_ui;
 mod appearance_effects;
 #[path = "vscode_effects.rs"]
 mod vscode_effects;
+#[path = "font_install.rs"]
+mod font_install;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]
@@ -2203,6 +2205,11 @@ impl App {
     /// change, and at start, since exit put back what they had.
     fn apply_app_colors(&self) {
         let name = &self.config.theme;
+        if self.config.install_fonts {
+            if let Err(error) = unsafe { font_install::install(&self.directory) } {
+                log(&error);
+            }
+        }
         if self.config.terminal_colors {
             if let Err(error) = appearance_effects::apply_terminal(&self.directory, name, &self.config.menu_font) {
                 log(&error);

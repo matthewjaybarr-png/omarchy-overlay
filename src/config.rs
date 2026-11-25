@@ -63,6 +63,8 @@ pub struct Config {
     /// away like every other change to Windows, and the next start puts them back.
     pub terminal_colors: bool,
     pub vscode_colors: bool,
+    /// The bundled JetBrains Mono fonts are installed for this user while it runs.
+    pub install_fonts: bool,
     /// "omarchy" (Super keys), "classic" (Ctrl+Alt keys) or "both".
     pub keymap: String,
     /// What a tap of Super alone does: "start", "picker" or "nothing".
@@ -177,6 +179,7 @@ impl Default for Config {
             dock: "floating".into(),
             terminal_colors: false,
             vscode_colors: false,
+            install_fonts: false,
             keymap: "both".into(),
             tap_super: "start".into(),
             menu_font: MENU_FONTS[1].0.into(),

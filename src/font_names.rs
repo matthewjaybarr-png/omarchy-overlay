@@ -85,6 +85,15 @@ pub fn menu_choices(installed: &[String]) -> Vec<String> {
     out
 }
 
+/// The family name Windows Terminal (DirectWrite) knows a menu font by: the bundled
+/// JetBrains Mono NL is the Nerd Font "JetBrainsMonoNL Nerd Font" once installed.
+pub fn terminal_face(family: &str) -> String {
+    match family {
+        NL_FAMILY | "JetBrainsMonoNL NF" => "JetBrainsMonoNL Nerd Font".into(),
+        "JetBrainsMono NF" => ICON_FAMILY.into(),
+        other => other.into(),
+    }
+}
 /// True when a Windows font registry value name (lowercase, like
 /// "jetbrainsmono nerd font bold italic (truetype)") installs `family` (lowercase):
 /// the family name followed only by style words. "Cascadia Mono" is not "Cascadia".
@@ -104,6 +113,12 @@ pub fn names_family(value_name: &str, family: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn terminal_knows_the_bundled_fonts_by_their_nerd_font_names() {
+        assert_eq!(terminal_face(NL_FAMILY), "JetBrainsMonoNL Nerd Font");
+        assert_eq!(terminal_face(ICON_FAMILY), "JetBrainsMono Nerd Font");
+        assert_eq!(terminal_face("Cascadia Mono"), "Cascadia Mono");
+    }
     #[test]
     fn registry_names_match_only_their_own_family() {
         let f = "jetbrainsmono nerd font";
