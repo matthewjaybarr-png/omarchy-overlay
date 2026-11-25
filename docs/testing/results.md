@@ -2,6 +2,43 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 13 (bb1af08) — 2026-11-25 20:55 UTC, Windows 11 VM, by hand, clean settings folder
+
+Started from an empty `%LOCALAPPDATA%\OmarchyOverlay` (the old one is `OmarchyOverlay-old-12-suites`).
+
+- **WL1** PASS. First start: the menu opened once (![](shots/13-wl1-first.png)) and
+  `"welcomed": true` was written to config.json. Second start: no menu (![](shots/13-wl1-second.png)).
+- **A4 Standard** PASS. Appearance > Apply theme to Windows > Lock screen picture says it
+  needs the Admin edition (![](shots/13-a4-std.png)). The header message is cut off
+  ("The lock screen picture needs the …"), another truncated label.
+- **A4 Admin** PASS on Windows 11 Home, no sign-out needed. "Lock screen shows the theme
+  background" sets HKLM PersonalizationCSP LockScreenImagePath/Url/Status=1 to
+  `C:\ProgramData\OmarchyOverlay\lock-screen.jpg` (![](shots/13-a4-adm-set.png)). Win+L
+  shows Tokyo Night's first background, `tokyo-night-0-liftoff.jpg` (hash match)
+  (![](shots/13-a4-lock.png)). Switching to Gruvbox (![](shots/13-a4-gruvbox.png))
+  changes it to `gruvbox-1-the-backwater.jpg` (hash match) (![](shots/13-a4-lock-gruvbox.png)).
+  Exit removes the CSP values; the lock screen is the Windows default again
+  (![](shots/13-a4-lock-after-exit.png)).
+- **Opacity (Standard)**: Super+Backspace makes a tiled Notepad translucent and back
+  (![](shots/13-a1-np-after.png)), but does nothing on cmd, which Windows 11 now hosts
+  in Windows Terminal (`CASCADIA_HOSTING_WINDOW_CLASS`; pixel diff empty,
+  ![](shots/13-a1-cmd-after.png)). Not a regression check, just noting Terminal ignores it.
+- **Untracked Notepads** still happen with a **clean** settings folder and no
+  `workspace-layouts.json` anywhere (none in the old folders either; test_windows.py
+  also deletes it before every suite), so that file is not the cause. Notepad restores
+  its earlier tabs as several windows in one process (pid 3388). 5 were tiled, 3 floated
+  untiled in the middle (![](shots/13-notepads-untracked.png)), with identical
+  class `Notepad`, style 14CF0000, exstyle 00000110, owner 0, not cloaked:
+  tiled 30802, 40728, 40720, 407F2, 306F4; untiled 407A4 (128,166–1280,830),
+  3073C (78,108–1038,687), 6029C (104,134–1064,713). A Windows Terminal window (1C05D0)
+  was untiled too, while the cmd Terminal window (3F04D8) was tiled. The log says nothing
+  about these windows. Looks like a race when one process opens several top-level
+  windows at once, not leftover settings.
+- **Leftovers confirmed** for the excluded list: a fresh config has 5
+  `excluded_processes` (Taskmgr, mstsc, msrdc, ApplicationFrameHost, vmconnect); the
+  36-entry list with conhost came from old settings. Odd: a **fresh** folder also gets a
+  `config.pre-0.5.0.json`, although there was nothing to migrate.
+
 ## Build 13 (bb1af08) — 2026-11-25 VM suites, Windows 11 VM
 
 - **VM suites** PASS after one test fix. All 23 default suites plus `standard` and

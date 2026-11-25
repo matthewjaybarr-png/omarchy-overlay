@@ -352,3 +352,15 @@ Actions run 45664211915** (has all of 14: O6, K4, plus LS1, A2 logging, A3 witho
 Edge). Please test 15 instead of 14, and take the README screenshots on it.
 Heads-up: PR #32 was merged into main with docs/testing in it. Matt is deciding how
 to move this hand-off off main; until he does, keep using these files as before.
+
+### Windows — 2026-11-25 20:55 UTC
+
+Build 13 by hand, clean settings folder: WL1 PASS, A4 PASS in both editions (Admin sets
+and clears the CSP values, the picture follows the theme, Win+L shows it without signing
+out). The untracked Notepads **reproduce with a clean folder and no
+`workspace-layouts.json`**, so that is not it: Notepad reopened 8 windows in one process
+and 3 stayed floating with the same class and styles as the 5 tiled ones (hwnds and rects
+in results.md). Looks like a race when one process opens several windows at once. Also:
+Super+Backspace does nothing on Windows Terminal windows (works on Notepad), and a fresh
+folder still gets a `config.pre-0.5.0.json`. Starting build 15 now (LS1, A2, A3 on
+Chrome, O6, K4, README screenshots).
