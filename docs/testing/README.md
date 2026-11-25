@@ -1,5 +1,9 @@
 # Windows testing hand-off
 
+**Work branches only.** This folder never goes to `main` or into a release: remove it
+(`git rm -r docs/testing`) in the last commit before the branch is merged. CI fails a
+pull request into `main`, and the release workflow fails a tag, while it is here.
+
 Two Claude sessions work on this branch (`forge/quirky-dirac-tx8mpd`): one in the cloud
 writes the code, one on a Windows PC tests it. They can't message each other, so they
 coordinate through these files.

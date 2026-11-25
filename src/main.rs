@@ -15,6 +15,8 @@ mod config;
 #[cfg(any(windows, test))]
 mod control_theme;
 #[cfg(any(windows, test))]
+mod defaults_merge;
+#[cfg(any(windows, test))]
 mod desktops;
 #[cfg(any(windows, test))]
 mod dock;

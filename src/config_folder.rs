@@ -64,6 +64,27 @@ fn write_examples(folder: &Path) {
     }
 }
 
+/// Brings new defaults into the user's own copy of a config file, keeping a copy of the
+/// file as it was (`<name>.before-<version>`) the first time a version changes it.
+fn merge_defaults(folder: &Path, name: &str, merge: impl Fn(&str) -> Option<String>) {
+    let path = folder.join(name);
+    let Ok(text) = fs::read_to_string(&path) else {
+        return;
+    };
+    let crlf = text.contains("\r\n");
+    let Some(merged) = merge(&text.replace("\r\n", "\n")) else {
+        return;
+    };
+    let backup = folder.join(format!("{name}.before-{}", env!("CARGO_PKG_VERSION")));
+    if !backup.exists() && fs::write(&backup, &text).is_err() {
+        return; // A read-only folder: leave the user's file alone.
+    }
+    let merged = if crlf { merged.replace('\n', "\r\n") } else { merged };
+    match fs::write(&path, merged) {
+        Ok(()) => log(&format!("{name}: added the new defaults; your earlier copy is {}", backup.display())),
+        Err(error) => log(&format!("{name}: new defaults not added ({error})")),
+    }
+}
 /// Reads one of the user's files. None when there is no copy, which is not an error.
 fn read(folder: &Path, name: &str, errors: &mut Vec<String>) -> Option<String> {
     let path = folder.join(name);
@@ -125,6 +146,20 @@ fn themes(folder: &Path, errors: &mut Vec<String>) -> Vec<theme_files::Theme> {
 /// Reads every config file. Each one falls back to its built-in version on its own.
 pub(super) fn load() -> Loaded {
     let folder = folder();
+    // The examples the last version wrote are the base for merging in new defaults.
+    let base = |name: &str| {
+        fs::read_to_string(folder.join("examples").join(name))
+            .map(|t| t.replace("\r\n", "\n"))
+            .unwrap_or_default()
+    };
+    let (binds_base, menu_base) = (base("binds.conf"), base("menu.json"));
+    merge_defaults(&folder, "binds.conf", |user| {
+        crate::defaults_merge::merge_binds(&binds_base, user, binds::DEFAULT, env!("CARGO_PKG_VERSION"))
+    });
+    merge_defaults(&folder, "menu.json", |user| {
+        crate::defaults_merge::merge_menus(&menu_base, user, menu_model::DEFAULT)
+            .filter(|merged| menu_model::parse(merged).is_ok())
+    });
     write_examples(&folder);
     let mut errors = vec![];
     let binds = read(&folder, "binds.conf", &mut errors)

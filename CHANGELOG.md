@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **New defaults reach your own config files.** When a version adds keys to
+  binds.conf or entries to menu.json, they are merged into your copies at start: new
+  keys and entries are added, lines you never changed follow the new defaults, and
+  anything you changed or deleted stays as it is. Your file from before is kept as
+  `binds.conf.before-<version>` / `menu.json.before-<version>`.
 - Fixes from testing on Windows: floating windows use Omarchy's sizes in logical
   pixels, so they are 64% wide at 125% scaling, not 57%; the Terminal scheme takes
   black, white, bright black and bright white from the theme as Omarchy does;
