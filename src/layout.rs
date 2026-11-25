@@ -213,6 +213,21 @@ pub fn arrange(area: Rect, count: usize, gap: i32, ratio: f64, mode: &str) -> Ve
         })
         .collect()
 }
+/// Where the floating layout first puts a window, as Omarchy's floating workspace
+/// mode does: min(1100, 64%) x min(760, 68%) of the area, centred, then stepped
+/// diagonally by 24 px in a cycle of five so windows floated together do not stack
+/// exactly. `index` counts the windows already placed on that monitor.
+pub fn floating(area: Rect, index: usize) -> Rect {
+    let w = 1100.min(area.w * 64 / 100).max(1);
+    let h = 760.min(area.h * 68 / 100).max(1);
+    let step = ((index + 1) % 5) as i32 * 24 - 48;
+    Rect {
+        x: area.x + (area.w - w) / 2 + step,
+        y: area.y + (area.h - h) / 2 + step,
+        w,
+        h,
+    }
+}
 pub fn transfer(window: Rect, source: Rect, target: Rect) -> Rect {
     let w = window.w.min(target.w).max(1);
     let h = window.h.min(target.h).max(1);
@@ -491,6 +506,23 @@ mod tests {
                     h: 1380
                 }));
         }
+    }
+    #[test]
+    fn floating_centres_a_comfortable_size_and_cascades_in_fives() {
+        let area = Rect { x: -1920, y: 40, w: 1920, h: 1040 };
+        let first = floating(area, 0);
+        assert_eq!((first.w, first.h), (1100, 707));
+        // Centre of the area, moved by the first cascade step (-24, -24).
+        assert_eq!(first.x, -1920 + (1920 - 1100) / 2 - 24);
+        assert_eq!(first.y, 40 + (1040 - 707) / 2 - 24);
+        let steps: Vec<i32> = (0..6).map(|i| floating(area, i).x - floating(area, 1).x).collect();
+        assert_eq!(steps, vec![-24, 0, 24, 48, -48, -24]);
+        let small = Rect { x: 0, y: 0, w: 800, h: 600 };
+        let r = floating(small, 2);
+        assert_eq!((r.w, r.h), (512, 408));
+        assert!(r.x >= small.x && r.x + r.w <= small.x + small.w);
+        let tiny = floating(Rect { x: 0, y: 0, w: 0, h: 0 }, 0);
+        assert!(tiny.w >= 1 && tiny.h >= 1);
     }
     #[test]
     fn handles_empty_and_small_work_areas() {

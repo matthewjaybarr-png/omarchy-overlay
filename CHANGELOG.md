@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Floating layout**, Omarchy's floating workspace mode: a workspace set to it stops
+  tiling. Each window is placed once at min(1100, 64%) × min(760, 68%) of its
+  monitor, centred and stepped 24 px in a cycle of five, then left where you put it;
+  new windows open the same way. Switching back to a tiling layout re-tiles them.
+  Windows floated with **Super + T** or an app rule stay floating. Exit, a crash and
+  `RECOVER.cmd` put the windows back as for the tiled layouts.
+- **Super + Shift + L** and **Super + Alt + L** change the layout of the workspace in
+  front only. Before, they changed the default for every workspace unless that
+  workspace already had a layout of its own.
+- **Super + Shift + Backspace** turns the gaps off or back on, as in Omarchy, instead
+  of opening the gaps page.
 - The Admin zip carries only the stock Omarchy theme backgrounds, not ones from
   `~/.config/omarchy/themes`.
 - Release builds run on GitHub Actions: a `v<version>` tag builds both zips and

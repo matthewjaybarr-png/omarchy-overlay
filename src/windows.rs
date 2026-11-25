@@ -67,6 +67,8 @@ mod groups;
 mod reminders;
 #[path = "scrolling_runtime.rs"]
 mod scrolling_runtime;
+#[path = "floating_runtime.rs"]
+mod floating_runtime;
 #[path = "settings.rs"]
 mod settings;
 #[path = "shortcuts_ui.rs"]
@@ -356,6 +358,8 @@ struct App {
     workspace_focus: HashMap<usize, isize>,
     seen_foreground: isize,
     floating: HashSet<isize>,
+    /// Windows the floating layout has already placed; it never moves them again.
+    float_placed: HashSet<isize>,
     saved: HashMap<isize, Saved>,
     signature: Vec<(isize, isize, Rect)>,
     dirty: bool,
@@ -1463,6 +1467,7 @@ pub fn run() {
             workspace_focus: HashMap::new(),
             seen_foreground: 0,
             floating: HashSet::new(),
+            float_placed: HashSet::new(),
             saved: HashMap::new(),
             scrolling: HashMap::new(),
             signature: vec![],
@@ -2472,6 +2477,7 @@ impl App {
         self.forget_workspaces();
         self.order.clear();
         self.floating.clear();
+        self.float_placed.clear();
         self.signature.clear();
         self.routed.clear();
     }
@@ -2593,6 +2599,7 @@ impl App {
             }
         }
         self.floating.retain(|&key| IsWindow(key as HWND) != 0);
+        self.float_placed.retain(|&key| IsWindow(key as HWND) != 0);
         self.order
             .retain(|key| found.contains(key) && !self.floating.contains(key));
         // Reverse z-order makes existing windows enter in a stable, bottom-to-top order.
@@ -2665,6 +2672,13 @@ impl App {
             };
             let area = &layout::outer(*area, self.config.gap, self.config.outer_gap);
             let mode = self.layout_for_monitor(monitor as HMONITOR);
+            if mode == "floating" {
+                self.float_layout(monitor, &group, *area);
+                continue;
+            }
+            for (key, _, _) in &group {
+                self.float_placed.remove(key);
+            }
             if mode == "scrolling" {
                 self.tile_scrolling(monitor, &group, *area);
                 continue;

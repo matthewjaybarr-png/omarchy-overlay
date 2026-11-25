@@ -185,6 +185,7 @@ pub const LAYOUTS: &[(&str, &str)] = &[
     ("scrolling", "Scrolling"),
     ("centered", "Centered main"),
     ("monocle", "Monocle"),
+    ("floating", "Floating"),
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]

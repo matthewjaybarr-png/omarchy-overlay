@@ -39,7 +39,14 @@ Admin on your own PC when its keys must also work in apps running as administrat
 ## What it does
 
 - **Tiles windows:** main-stack, columns, rows, grid, dwindle, a scrolling
-  layout inspired by Niri, centered main for wide monitors and monocle. You can resize windows by dragging their shared edges.
+  layout inspired by Niri, centered main for wide monitors, monocle and floating.
+  You can resize windows by dragging their shared edges.
+- **Floating workspaces:** as in Omarchy, a workspace set to the floating layout
+  stops tiling. Each window is placed once at a comfortable size in the middle of
+  its monitor, stepped so they don't stack exactly, and then stays where you put
+  it. Switching the workspace back to a tiling layout tiles them again.
+  **Super + Shift + L** and **Super + Alt + L** cycle the layout of the workspace
+  in front only; the default for other workspaces stays as it is.
 - **Super keys:** an app grid, a command menu, a keybind list and window
   actions, defined in `config\binds.conf`.
 - **Top bar:** ten workspaces of its own, the active app, a clock,
@@ -477,7 +484,7 @@ Used in binds.conf and menu.json.
 | `workspace <1-10>` | Shows that workspace |
 | `move-to-workspace <1-10>` | Moves the focused window to that workspace and goes there |
 | `move-to-workspace-silent <1-10>` | Moves the focused window to that workspace and stays |
-| `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling`, `centered`, `monocle` |
+| `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling`, `centered`, `monocle`, `floating` |
 | `theme <name>` | Switches theme, for example `theme tokyo-night` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |
 | `resize width\|height <pixels>` | Resizes the focused tile, for example `resize width -100` |

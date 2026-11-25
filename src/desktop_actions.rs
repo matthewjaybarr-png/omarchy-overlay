@@ -162,7 +162,41 @@ impl App {
         let at = names.iter().position(|(name, _)| *name == mode);
         let step = if back { names.len() - 1 } else { 1 };
         let next = names[at.map_or(0, |i| (i + step) % names.len())].0;
-        self.set_layout(next);
+        self.set_workspace_layout(next);
+    }
+    /// Omarchy's layout keys change only the workspace in front, never the default for
+    /// every workspace. Without a known workspace this falls back to the default.
+    pub(super) unsafe fn set_workspace_layout(&mut self, layout: &str) {
+        if !crate::commands::LAYOUTS.iter().any(|(name, _)| *name == layout) {
+            return;
+        }
+        let monitor = MonitorFromWindow(
+            if IsWindow(self.selected) != 0 {
+                self.selected
+            } else {
+                GetForegroundWindow()
+            },
+            MONITOR_DEFAULTTONEAREST,
+        );
+        let Some((desktop, identity)) = self.layout_scope(monitor) else {
+            self.set_layout(layout);
+            return;
+        };
+        let (desktop, identity) = self.layout_preferences.workspace_scope(&desktop, &identity);
+        let mut choices = self.layout_preferences.clone();
+        match choices
+            .set(desktop, identity, Some(layout.into()))
+            .and_then(|_| self.save_layout_choices(choices))
+        {
+            Ok(()) => {
+                let label = crate::commands::LAYOUTS
+                    .iter()
+                    .find(|(name, _)| *name == layout)
+                    .map_or(layout, |(_, label)| *label);
+                self.show_feedback(&format!("This workspace: {label}"));
+            }
+            Err(error) => message(&error),
+        }
     }
     pub(super) unsafe fn rebalance(&mut self) {
         if !self.active {
