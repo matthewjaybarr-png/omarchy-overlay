@@ -166,8 +166,8 @@ They are kept unless you run
   former workspace and **Super + K** lists every key.
 - **Universal clipboard:** **Super + C / V / X / A** copy, paste, cut and select
   all in any app, as on Omarchy. In Windows Terminal, copy and paste send
-  Ctrl + Shift + C / V so Ctrl + C still stops a command. Windows uses Super + C,
-  V, X and A itself, so these need the Admin edition, which can take Super keys.
+  Ctrl + Shift + C / V so Ctrl + C still stops a command. Both editions take
+  these keys from Windows' own Super + C, V, X and A.
 - **Groups:** **Super + G** makes the focused window a group, and
   **Super + Alt + arrows** move a window into the group of the tile in that
   direction. A group fills one tile and shows one window at a time:
