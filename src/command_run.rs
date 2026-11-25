@@ -196,6 +196,7 @@ impl App {
             "record-screen" => self.queue_system_action(15),
             "extract-text" => self.queue_system_action(16),
             "color-picker" => color_picker::start(self.main),
+            "console" => self.toggle_console(),
             "toggle-group" => self.toggle_group(GetForegroundWindow()),
             "leave-group" => self.leave_group(GetForegroundWindow()),
             "move-into-group-left" => self.move_into_group(GetForegroundWindow(), -1, 0),

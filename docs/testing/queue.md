@@ -6,7 +6,8 @@ Explorer, a browser) before starting.
 
 ## Build 6 (next) — not built yet
 
-Adds to build 5: bar status indicators (B1), multi-window scratchpad (S1).
+Adds to build 5: bar status indicators (B1), multi-window scratchpad (S1),
+drop-down console (C1).
 
 ## Build 5 — commit 7fd09c4 — Actions run 45629843370
 
@@ -81,6 +82,10 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   keyboard layouts the layout code shows.
 - **S1** Super+Alt+S on two windows ("In the scratchpad"); Super+S hides both, Super+S
   again shows both; Super+Alt+S on one again takes it out.
+
+- **C1** Super+` starts the terminal over the top half of the screen, on top; Super+`
+  hides it and shows it again; it stays out of the tiles. Exit: it is no longer
+  always on top.
 
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run

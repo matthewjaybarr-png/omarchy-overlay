@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Super + `** is Omarchy's drop-down console: the first press starts your terminal
+  and drops its window over the top half of the screen, on top; the key then hides
+  and shows it. It floats outside the tiles, and pause, exit and crash recovery take
+  it off the top. It takes Windows Terminal's own Win + ` quake key.
 - The scratchpad holds up to eight windows per workspace, like Omarchy's special
   workspace: **Super + Alt + S** adds the focused window or takes it out again, and
   **Super + S** shows them all or hides them all.

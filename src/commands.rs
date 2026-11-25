@@ -29,6 +29,7 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("record-screen", "Screen recording (Snipping Tool)"),
     ("extract-text", "Copy text from the screen (Snipping Tool)"),
     ("color-picker", "Pick a color from the screen and copy its hex value"),
+    ("console", "Drop-down console: show, hide or start it"),
     ("toggle-group", "Make the window a group, or ungroup it"),
     ("leave-group", "Take the window out of its group"),
     ("move-into-group-left", "Move the window into the group on the left"),

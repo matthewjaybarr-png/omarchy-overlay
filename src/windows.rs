@@ -15,6 +15,8 @@ mod windows_syscolors;
 mod color_picker;
 #[path = "idle.rs"]
 mod idle;
+#[path = "console.rs"]
+mod console;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]
@@ -412,6 +414,9 @@ struct App {
     /// The idle lock fired; it waits for input before it can fire again.
     idle_locked: bool,
     indicator_ticks: u32,
+    /// The drop-down console window, and a terminal started for it.
+    console: Option<console::Console>,
+    console_pending: Option<console::Pending>,
     mic_off: bool,
     pending_command: Option<(crate::commands::Command, bool)>,
     /// Sent with each Super key message so a key pressed before a reload is ignored.
@@ -1528,6 +1533,8 @@ pub fn run() {
             keep_awake: false,
             idle_locked: false,
             indicator_ticks: 0,
+            console: None,
+            console_pending: None,
             mic_off: false,
             pending_command: None,
             bind_generation: 0,
@@ -2550,6 +2557,7 @@ impl App {
     unsafe fn restore(&mut self) {
         self.finish_motion(false);
         self.restore_scratchpads();
+        self.release_console();
         window_actions::unpop_all();
         self.tiled.clear();
         self.dwindle.clear();
@@ -3534,6 +3542,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 app.dock_poll();
                 app.idle_tick();
                 app.update_indicators();
+                app.console_tick();
                 app.tasks.refresh();
                 app.update_dashboard();
                 Some(0)

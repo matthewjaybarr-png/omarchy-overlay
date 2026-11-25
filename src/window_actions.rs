@@ -7,8 +7,11 @@ pub(super) struct Scratchpad {
 /// Marks a popped-out window, so exit and crash recovery can find it and drop always-on-top.
 const POP: &str = "OmarchyOverlay.Pop.v1";
 const KEEP: u32 = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
+/// Marks the drop-down console, which is kept on top the same way.
+pub(super) const CONSOLE: &str = "OmarchyOverlay.Console.v1";
 unsafe extern "system" fn unpop(hwnd: HWND, _: LPARAM) -> i32 {
-    if !RemovePropW(hwnd, wide(POP).as_ptr()).is_null() {
+    let console = !RemovePropW(hwnd, wide(CONSOLE).as_ptr()).is_null();
+    if !RemovePropW(hwnd, wide(POP).as_ptr()).is_null() || console {
         SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, KEEP);
     }
     1
