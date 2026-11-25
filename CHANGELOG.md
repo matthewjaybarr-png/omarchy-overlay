@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Super + Print** picks a color from the screen, as Omarchy's color picker does:
+  the screen freezes under a crosshair with the color and its hex value beside the
+  pointer, and a click copies the hex value. Escape or a right-click cancels. It takes
+  Windows' Super + Print screenshot key; remove the line from binds.conf to keep it.
 - The on-screen message is an Omarchy-style card in the theme's colors and font: an
   icon, the text and, for volume and brightness, a level bar. Volume keys, mute and
   the brightness keys now show it too.

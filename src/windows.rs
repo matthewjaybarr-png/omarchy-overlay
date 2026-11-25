@@ -11,6 +11,8 @@ mod vscode_effects;
 mod font_install;
 #[path = "windows_syscolors.rs"]
 mod windows_syscolors;
+#[path = "color_picker.rs"]
+mod color_picker;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]
@@ -3464,6 +3466,10 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             }
             m if m != 0 && m == app.shell_hook => {
                 app.shell_event(w, l as HWND);
+                Some(0)
+            }
+            color_picker::PICKED => {
+                app.show_card(Some('\u{F020A}'), &format!("{} copied", color_picker::hex(w as u32)), None);
                 Some(0)
             }
             dock_ui::DOCK_MESSAGE => {
