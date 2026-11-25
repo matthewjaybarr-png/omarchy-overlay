@@ -13,6 +13,8 @@ mod obsidian_effects;
 mod browser_policy;
 #[path = "lock_screen.rs"]
 mod lock_screen;
+#[path = "display_topology.rs"]
+mod display_topology;
 #[path = "font_install.rs"]
 mod font_install;
 #[path = "windows_syscolors.rs"]

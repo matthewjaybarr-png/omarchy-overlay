@@ -172,6 +172,17 @@ impl App {
             "lock" => {
                 LockWorkStation();
             }
+            "toggle-laptop-display" | "toggle-mirror" => {
+                let result = if name == "toggle-mirror" {
+                    display_topology::toggle_mirror()
+                } else {
+                    display_topology::toggle_laptop()
+                };
+                match result {
+                    Ok(text) => self.show_feedback(text),
+                    Err(error) => self.show_feedback(&error),
+                }
+            }
             "hibernate" => {
                 if !SetSuspendState(true, false, false) {
                     message("Windows did not allow hibernate. It may be turned off on this PC (powercfg /hibernate on).");

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Omarchy's display keys: **Super + Ctrl + Delete** turns the laptop screen off (external
+  screens only) or back on, and **Super + Ctrl + Shift + Delete** mirrors the screens or
+  extends them again, through Windows' own display switching (as Win + P).
 - **Lock screen** (Appearance > Lock screen, Admin edition): the lock screen shows the
   theme's first background, as Omarchy's lock screen follows its theme, through
   Windows' lock screen policy (for every user of the PC). It follows theme changes;

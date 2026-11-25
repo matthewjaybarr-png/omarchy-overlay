@@ -188,6 +188,11 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   Windows editions; note which edition the VM runs). A theme switch changes it. Exit:
   the original lock screen is back. Standard: the page says it needs Admin.
 
+- **K4** (build 14, two monitors) Super+Ctrl+Shift+Delete mirrors the screens ("Screens
+  mirrored"); again extends them. Super+Ctrl+Delete on a laptop with an external screen
+  turns the laptop screen off and back on (SKIP on a VM without an internal screen;
+  note the message it shows).
+
 ### Before hiding the taskbar by default
 - **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar", dock on floating workspaces. Then check each and note PASS/FAIL:
   the Win key opens Start; Win+N opens notifications; Win+A Quick Settings; a toast
