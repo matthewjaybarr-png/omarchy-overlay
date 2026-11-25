@@ -6,6 +6,7 @@ coordinate through these files.
 
 - `queue.md` — written by the cloud session: what to test, by build, with test IDs.
 - `results.md` — written by the Windows session: one entry per test run.
+- `conversation.md` — written by both: questions, answers and open items. Read it first.
 
 ## For the Windows session
 
@@ -25,9 +26,9 @@ coordinate through these files.
    - SKIP V1: no VS Code on this PC
    ```
 
-5. Commit only `docs/testing/results.md`, with `git pull --rebase` first, and push to
-   `forge/quirky-dirac-tx8mpd`. Never change code on this branch; describe problems
-   in `results.md` instead, so the two sessions never edit the same files.
+5. Commit only `docs/testing/results.md` and `docs/testing/conversation.md`, with
+   `git pull --rebase` first, and push to `forge/quirky-dirac-tx8mpd`. Never change
+   code on this branch; describe problems there instead.
 6. Screenshots: put them in `docs/testing/shots/` named `<build>-<test id>.png` and
    mention them in the entry. Never include anything private on screen.
 

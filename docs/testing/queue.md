@@ -4,7 +4,12 @@ Newest build first. Test IDs stay the same across builds; a retest names the ID 
 Standard zip unless marked Admin. Have 3–4 ordinary windows open (Notepad, File
 Explorer, a browser) before starting.
 
-## Build 6 (next) — not built yet
+## Build 6 — commit f8bfe3e — running (run number added when done)
+
+First build with the manifest fix, so the Actions exe starts. Retest **F1** (64% wide
+at 125%), **T1** (black, bright black, bright white now from the theme), **D1** (icons
+keep their order), **D8** with the taskbar on auto-hide (dock above it), and the
+Admin TRAY button (an on-screen message, no frozen overlay).
 
 Adds to build 5: bar status indicators (B1), multi-window scratchpad (S1),
 drop-down console (C1).
