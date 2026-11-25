@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
 - Menu commands that cannot run (sleep refused, a link that does not open, an Admin-only
   item in the Standard edition) say so on the themed card for six seconds, as Omarchy's
