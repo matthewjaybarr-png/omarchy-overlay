@@ -1,6 +1,14 @@
 # Test queue
 
-## Build 13 — commit bb1af08 — building (run number added when done)
+## Build 15 (next) — not built yet
+
+Adds: Standard lock screen for this user (LS1).
+
+## Build 14 — commit 0167a81 — building (run number added when done)
+
+Adds: reminders on screen + tray icon re-added (retest O6), display keys (K4), README.
+
+## Build 13 — commit bb1af08 — Actions run 45659274637
 
 Adds: menu only at the first start (WL1, and the VM suites' new Ready()), Admin lock
 screen (A4).
