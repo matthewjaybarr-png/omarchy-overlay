@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Restart into BIOS/UEFI** in the System menu (Admin edition), Omarchy's "Reboot to
+  BIOS". The Standard edition explains that it needs the Admin edition.
 - **Obsidian colors** (Appearance > Obsidian colors), as Omarchy themes Obsidian: each
   vault Obsidian lists gets an "Omarchy Overlay" theme from Omarchy's Obsidian template
   in the current colors; pick it once in Obsidian's Appearance settings. Obsidian's own

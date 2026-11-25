@@ -221,6 +221,7 @@
         { "label": "Hibernate", "icon": "F04B2", "command": "hibernate", "confirm": true },
         { "label": "Sign out", "icon": "F0343", "command": "sign-out", "confirm": true },
         { "label": "Restart", "icon": "F0709", "command": "restart-pc", "confirm": true },
+        { "label": "Restart into BIOS/UEFI", "icon": "F0709", "command": "restart-to-firmware", "confirm": true },
         { "label": "Shut down", "icon": "F0425", "command": "shutdown", "confirm": true }
       ]
     }

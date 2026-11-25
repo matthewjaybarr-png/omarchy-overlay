@@ -238,6 +238,21 @@ impl App {
                     message("Windows did not allow sign-out. Use Start → your name → Sign out.");
                 }
             }
+            "restart-to-firmware" => {
+                // Omarchy's "Reboot to BIOS". Windows only allows it with administrator
+                // rights, so it runs here, from the elevated Admin edition, not through the
+                // unelevated launch every app gets.
+                if !crate::launch_unelevated::process_elevated() {
+                    message("Restarting into the firmware (BIOS/UEFI) setup needs the Admin edition, which runs with administrator rights.");
+                } else {
+                    let windir = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+                    let tool = crate::install::system_tool(&windir, "shutdown.exe");
+                    match std::process::Command::new(tool).args(["/r", "/fw", "/t", "0"]).status() {
+                        Ok(status) if status.success() => {}
+                        _ => message("Windows did not restart into the firmware setup. This PC may not use UEFI firmware."),
+                    }
+                }
+            }
             "restart-pc" | "shutdown" => {
                 let switch = if name == "shutdown" { "/s /t 0" } else { "/r /t 0" };
                 if !shell(Path::new("shutdown.exe"), switch) {

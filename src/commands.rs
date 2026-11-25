@@ -31,6 +31,7 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("color-picker", "Pick a color from the screen and copy its hex value"),
     ("console", "Drop-down console: show, hide or start it"),
     ("hibernate", "Hibernate the PC"),
+    ("restart-to-firmware", "Restart into the firmware (BIOS/UEFI) setup (Admin edition)"),
     ("voice-typing", "Windows voice typing (dictation)"),
     ("close-all", "Close every window on this workspace"),
     ("full-screen-desktop", "Hide the bar and the gaps, or bring them back"),
