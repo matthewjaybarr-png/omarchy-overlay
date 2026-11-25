@@ -915,16 +915,24 @@ impl State {
     unsafe fn layout(&mut self) {
         for panel in &mut self.panels {
             let height = self.config.height * panel.dpi as i32 / 96;
+            let bottom = self.config.position == "bottom";
             let mut data = APPBARDATA {
                 cbSize: size_of::<APPBARDATA>() as u32,
                 hWnd: panel.hwnd,
-                uEdge: ABE_TOP,
+                uEdge: if bottom { ABE_BOTTOM } else { ABE_TOP },
                 rc: panel.monitor_rect,
                 ..zeroed()
             };
-            data.rc.bottom = data.rc.top + height;
+            let place = |rc: &mut RECT| {
+                if bottom {
+                    rc.top = rc.bottom - height;
+                } else {
+                    rc.bottom = rc.top + height;
+                }
+            };
+            place(&mut data.rc);
             SHAppBarMessage(ABM_QUERYPOS, &mut data);
-            data.rc.bottom = data.rc.top + height;
+            place(&mut data.rc);
             if !panel.positioned || !same_rect(panel.rect, data.rc) {
                 SHAppBarMessage(ABM_SETPOS, &mut data);
                 panel.rect = data.rc;

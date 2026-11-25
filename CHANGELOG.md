@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Bar position** (Appearance > Top bar > Bar position): the bar can sit at the
+  bottom of the screen, as Omarchy's can. Windows and the dock stay clear of it.
 - Exit puts back the stock or Settings-chosen wallpaper instead of leaving the
   desktop black: Windows reports its own cache file as the wallpaper and overwrites
   it with the next one, so a copy is kept before the first change.

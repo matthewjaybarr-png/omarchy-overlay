@@ -148,6 +148,8 @@ pub struct BarConfig {
     pub left: Vec<Module>,
     pub center: Vec<Module>,
     pub right: Vec<Module>,
+    /// "top" or "bottom" of the screen.
+    pub position: String,
 }
 #[derive(Deserialize)]
 #[serde(default)]
@@ -164,6 +166,7 @@ struct BarConfigData {
     left: Vec<Module>,
     center: Vec<Module>,
     right: Vec<Module>,
+    position: String,
 }
 impl Default for BarConfigData {
     fn default() -> Self {
@@ -182,6 +185,7 @@ impl Default for BarConfigData {
             left: c.left,
             center: c.center,
             right: c.right,
+            position: c.position,
         }
     }
 }
@@ -201,6 +205,7 @@ impl TryFrom<BarConfigData> for BarConfig {
             left: c.left,
             center: c.center,
             right: c.right,
+            position: c.position,
         };
         if !result.split_task_modules {
             let has_drawer = [&result.left, &result.center, &result.right]
@@ -308,6 +313,7 @@ impl Default for BarConfig {
             left: vec![Menu, Workspaces],
             center: vec![Clock],
             right: vec![Indicators, SystemTray, Sound, Network, Power],
+            position: "top".into(),
         }
     }
 }
@@ -323,6 +329,9 @@ impl BarConfig {
             })
     }
     pub fn validate(&self) -> Result<(), String> {
+        if !["top", "bottom"].contains(&self.position.as_str()) {
+            return Err("The bar goes at the top or bottom of the screen.".into());
+        }
         if !(24..=56).contains(&self.height)
             || !(10..=22).contains(&self.font_size)
             || self.font_size > self.height - 8

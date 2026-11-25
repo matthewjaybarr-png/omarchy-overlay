@@ -221,6 +221,7 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
             c.bar.font_size = d.bar.font_size;
         }
         "bar-opacity" => c.bar_opacity = d.bar_opacity,
+        "bar-position" => c.bar.position = d.bar.position.clone(),
         "taskbar" => {
             c.dock = d.dock.clone();
             c.taskbar_mode = d.taskbar_mode;
@@ -1145,6 +1146,12 @@ impl App {
                 .map(|(f, label)| {
                     Row::new(CLOCK, *label, Act::Choose("clock", (*f).into()))
                         .checked(self.config.bar.clock_format == *f)
+                })
+                .collect(),
+            "bar-position" => [("top", "At the top of the screen"), ("bottom", "At the bottom of the screen")]
+                .into_iter()
+                .map(|(p, label)| {
+                    Row::new(SLIDERS, label, Act::Choose("bar-position", p.into())).checked(self.config.bar.position == p)
                 })
                 .collect(),
             "bar-height" => values(
@@ -2289,6 +2296,7 @@ impl App {
             "default-opacity" => c.default_allow_opacity = !c.default_allow_opacity,
             "frames" => c.coordinate_windows = !c.coordinate_windows,
             "corners" => c.corners = value.into(),
+            "bar-position" => c.bar.position = value.into(),
             "transparency" => {
                 if !c.set_transparency(value) {
                     return false;

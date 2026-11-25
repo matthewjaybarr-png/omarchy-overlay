@@ -110,6 +110,7 @@ pub const PAGES: &[(&str, &str)] = &[
     ("opacity", "Window opacity"),
     ("transparency", "Window transparency"),
     ("idle", "Screensaver and idle lock"),
+    ("bar-position", "Bar position"),
     ("idle-screensaver", "Screensaver"),
     ("idle-lock", "Lock when idle"),
     ("corners", "Window corners"),

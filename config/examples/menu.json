@@ -97,6 +97,7 @@
       "title": "Top bar",
       "items": [
         { "label": "Show or hide", "icon": "F0208", "command": "toggle-bar" },
+        { "label": "Bar position", "icon": "F0CA", "command": "page bar-position" },
         { "label": "Bar height", "icon": "F065", "command": "page bar-height" },
         { "label": "Bar opacity", "icon": "F00B5", "command": "page bar-opacity" },
         { "label": "Clock", "icon": "F017", "command": "page clock" },

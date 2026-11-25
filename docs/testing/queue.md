@@ -108,6 +108,9 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   accent colour; clicking the other tab shows that window; Super+G again ungroups and
   the tile is full height again.
 
+- **P1** (build 8) Appearance > Top bar > Bar position > bottom: the bar moves to the
+  bottom of every monitor, tiles end above it, the dock sits above it; back to top.
+
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run
   RECOVER.cmd: windows, taskbar, accent, wallpaper, Terminal/VS Code colours, fonts
