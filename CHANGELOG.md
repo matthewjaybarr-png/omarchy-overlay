@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Window transparency** (Appearance > Window transparency): Omarchy's opaque,
+  transparent and glassy modes in one choice. Each sets the active and inactive
+  window opacity and the app window material together.
 - **VS Code colors** (Appearance > VS Code colors), as Omarchy themes VS Code: the
   theme's colors fill Omarchy's VS Code color theme, installed as a local "Omarchy
   Overlay" theme for VS Code, VS Code Insiders, VSCodium and Cursor, and selected in

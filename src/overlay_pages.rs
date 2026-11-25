@@ -188,6 +188,11 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
         "layout" => c.layout = d.layout,
         "columns" => c.scrolling_columns = d.scrolling_columns,
         "opacity" => c.active_opacity = d.active_opacity,
+        "transparency" => {
+            c.active_opacity = d.active_opacity;
+            c.inactive_opacity = d.inactive_opacity;
+            c.window_backdrop = d.window_backdrop.clone();
+        }
         "corners" => c.corners = d.corners.clone(),
         "inactive-opacity" => c.inactive_opacity = d.inactive_opacity,
         "materials" => {
@@ -950,6 +955,18 @@ impl App {
                 self.config.scrolling_columns,
                 &[1, 2, 3, 4].map(|c| (c, format!("{c} column{}", if c == 1 { "" } else { "s" }))),
             ),
+            "transparency" => {
+                let current = self.config.transparency();
+                let mut rows: Vec<Row> = crate::config::TRANSPARENCY
+                    .iter()
+                    .map(|(id, label, ..)| {
+                        Row::new(OPACITY, *label, Act::Choose("transparency", (*id).into())).checked(current == Some(*id))
+                    })
+                    .collect();
+                rows.push(Row::new(SLIDERS, "Set opacity and materials yourself", Act::Open(Level::Page("opacity"))));
+                rows.push(info("As in Omarchy. Apps that don't allow opacity, and apps with their own rule, keep their look."));
+                rows
+            }
             "opacity" => values(
                 "opacity",
                 OPACITY,
@@ -2228,6 +2245,11 @@ impl App {
             "default-opacity" => c.default_allow_opacity = !c.default_allow_opacity,
             "frames" => c.coordinate_windows = !c.coordinate_windows,
             "corners" => c.corners = value.into(),
+            "transparency" => {
+                if !c.set_transparency(value) {
+                    return false;
+                }
+            }
             "conflict" => {
                 let Some((i, chord)) = value.split_once('=') else {
                     return false;

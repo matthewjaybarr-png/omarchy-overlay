@@ -227,6 +227,8 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
   `backgrounds` folder. The Admin edition ships Omarchy's backgrounds for every theme in
   `themes\<id>\backgrounds` beside the exe.
 
+- **Appearance > Window transparency** picks Omarchy's opaque, transparent (barely
+  see-through) or glassy (75% with Acrylic) windows in one step.
 - **Appearance > Window corners** draws every window with square, round or
   slightly round corners, or leaves them as Windows draws them.
 - **Background > Apply to** sets a background on one monitor only (counted left to

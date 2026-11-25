@@ -80,6 +80,7 @@
         { "label": "Top bar", "icon": "F035C", "command": "menu bar" },
         { "label": "Windows look", "icon": "F05B2", "command": "menu look" },
         { "label": "Layouts by workspace", "icon": "F0DB", "command": "page workspace-layouts" },
+        { "label": "Window transparency", "icon": "F00B5", "command": "page transparency" },
         { "label": "Animations", "icon": "F05D8", "command": "page animations" },
         { "label": "Layout", "icon": "F10AC", "command": "page layout" },
         { "label": "On-screen messages", "icon": "F0EB", "command": "page osd" },

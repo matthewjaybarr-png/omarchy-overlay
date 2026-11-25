@@ -98,6 +98,34 @@ pub const MENU_FONTS: &[(&str, &str)] = &[
     ("Segoe UI", "Segoe UI (Windows)"),
 ];
 pub const MATERIALS: [&str; 3] = ["solid", "mica", "acrylic"];
+/// Omarchy's window transparency modes (omarchy-hyprland-window-transparency) as
+/// (id, label, active opacity %, inactive opacity %, app window material).
+pub const TRANSPARENCY: &[(&str, &str, u8, u8, &str)] = &[
+    ("opaque", "Opaque windows", 100, 100, "solid"),
+    ("transparent", "Transparent windows (Omarchy's default: barely see-through)", 98, 95, "solid"),
+    ("glassy", "Glassy windows (75% and Acrylic)", 75, 75, "acrylic"),
+];
+impl Config {
+    /// Sets one of the TRANSPARENCY modes; false for an unknown id.
+    pub fn set_transparency(&mut self, id: &str) -> bool {
+        let Some(&(_, _, active, inactive, material)) = TRANSPARENCY.iter().find(|m| m.0 == id) else {
+            return false;
+        };
+        self.active_opacity = active;
+        self.inactive_opacity = inactive;
+        self.window_backdrop = material.into();
+        true
+    }
+    /// The TRANSPARENCY mode these settings match, if any.
+    pub fn transparency(&self) -> Option<&'static str> {
+        TRANSPARENCY
+            .iter()
+            .find(|&&(_, _, active, inactive, material)| {
+                self.active_opacity == active && self.inactive_opacity == inactive && self.window_backdrop == material
+            })
+            .map(|m| m.0)
+    }
+}
 /// A menu font name must be a plausible Windows family name; whether it is installed
 /// is checked when drawing, so a missing font never makes the profile invalid.
 pub fn valid_font_name(name: &str) -> bool {
@@ -325,6 +353,19 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn transparency_modes_set_and_read_back() {
+        let mut c = Config::default();
+        assert_eq!(c.transparency(), Some("opaque"));
+        for (id, ..) in TRANSPARENCY {
+            assert!(c.set_transparency(id));
+            c.validate().unwrap();
+            assert_eq!(c.transparency(), Some(*id));
+        }
+        assert!(!c.set_transparency("frosted"));
+        c.active_opacity = 90;
+        assert_eq!(c.transparency(), None);
+    }
     #[test]
     fn each_set_of_monitors_gets_its_layout_back() {
         let mut c = Config::default();
