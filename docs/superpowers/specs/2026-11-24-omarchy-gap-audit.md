@@ -33,24 +33,27 @@ borders, themes, accent and dark mode are already done. The biggest gaps:
    is top-only, and there's no color picker, idle screensaver or attention
    highlight for apps that flash.
 
-## Progress (2026-11-25)
+## Progress (2026-11-25, evening)
 
-Built on `forge/quirky-dirac-tx8mpd`; unit tests and Windows clippy pass, VM and
-real-desktop testing still to do:
+Built on `forge/quirky-dirac-tx8mpd` (PR #32). Unit tests, Windows clippy and the 23
+VM suites pass (VM at 423d207); builds 7–9 tested on a Windows 11 VM through
+`docs/testing` (work branch only).
 
-- P1-A: floating layout, per-workspace layout keys, Super+Shift+Backspace gaps.
-- P1-B: dock (pins, running apps, click cycling, middle/right click, auto-hide mode,
-  attention ring). Still open: hiding the taskbar by default after the Start,
-  Win+N, Win+A, toast and tray checks.
-- P1-C: Terminal ANSI colors, VS Code colors, accent palette, classic-control
-  selection colors, theme swatches, transparency modes, one font, per-user font
-  install, Terminal and VS Code colors restored at every start. Still open:
-  backgrounds in the Standard zip (decision pending), git theme install,
+- P1-A: done — floating layout, per-workspace layout keys, gap toggle (edges too).
+- P1-B: dock done (pins, running apps, cycling, middle/right click, auto-hide mode,
+  attention ring, stable order, clear of an auto-hidden taskbar). Open: hidden
+  taskbar as the default, after the Start / Win+N / Win+A / toast / tray checks.
+- P1-C: done — Terminal ANSI and black/white, VS Code, accent palette, classic
+  selection colors, swatches, transparency modes, one font, per-user font install,
+  colors back at every start, backgrounds in both zips. Open: git theme install,
   Obsidian/Neovim, night light.
-- P1-D: OSD card with level bar, color picker, idle screensaver and lock,
-  persistent reminders. Still open: bar position and backgrounds, bar indicators,
-  clickable panels, smaller items.
-- P1-E: not started.
+- P1-D: done — OSD card, color picker, idle screensaver and lock, persistent
+  reminders, status indicators, bar at top or bottom, defaults merged into users'
+  config files, full-screen desktop, hibernate, voice typing. Open: left/right bar,
+  clickable calendar and audio panels, terminal-app launcher, welcome tour.
+- P1-E: done — multi-window scratchpad, drop-down console, per-monitor workspaces
+  (setting, off by default), group tabs, group window keys, close-all. Open:
+  pseudo-tile, square aspect toggle, laptop display toggles, window animations.
 
 ## Phase 1 — Standard edition, in build order
 
