@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Admin edition:** windows running as administrator get the theme's frame colors,
+  corners, materials, opacity and the focus outline too, since the elevated Admin
+  edition may change them. They still keep their own place instead of tiling.
 - **Restart into BIOS/UEFI** in the System menu (Admin edition), Omarchy's "Reboot to
   BIOS". The Standard edition explains that it needs the Admin edition.
 - **Obsidian colors** (Appearance > Obsidian colors), as Omarchy themes Obsidian: each

@@ -163,6 +163,13 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   the theme colours; a theme switch changes them; Exit removes the theme folder.
   SKIP without Obsidian.
 
+- **A1** (build 12, Admin installed) Open an elevated cmd (Run as administrator):
+  with Appearance > frames following the theme, its frame takes the theme colours, the
+  focus outline shows on it, and Super+Backspace changes its opacity. It does not tile.
+  Exit restores its frame and opacity. In the Standard edition nothing changes on it.
+- **A2** (build 12, Admin) System > Restart into BIOS/UEFI asks first, then restarts
+  into the firmware setup (UEFI VMs; SKIP on BIOS). Standard: a message instead.
+
 ### Before hiding the taskbar by default
 - **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar while Omarchy
   Overlay runs", dock on floating workspaces. Then check each and note PASS/FAIL:

@@ -24,7 +24,7 @@ pub(super) unsafe fn update(app: &App) {
     let target = GetForegroundWindow();
     if !app.config.focus_outline
         || !basic_eligible(target)
-        || elevated(target)
+        || out_of_reach(target)
         || !can_change_opacity(&app.config, target)
     {
         ShowWindow(app.outline, SW_HIDE);

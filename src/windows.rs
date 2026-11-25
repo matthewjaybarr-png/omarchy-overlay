@@ -2314,14 +2314,14 @@ impl App {
             1
         }
         EnumWindows(Some(enumerate), &mut windows as *mut _ as isize);
-        if basic_eligible(foreground) && !elevated(foreground) && foreground != self.selected {
+        if basic_eligible(foreground) && !out_of_reach(foreground) && foreground != self.selected {
             self.selected = foreground;
             if IsWindowVisible(self.appearance) != 0 {
                 self.update_appearance();
             }
         }
         let frame_windows = windows.clone();
-        windows.retain(|&hwnd| !elevated(hwnd) && can_change_opacity(&self.config, hwnd));
+        windows.retain(|&hwnd| !out_of_reach(hwnd) && can_change_opacity(&self.config, hwnd));
         self.opacity
             .enforce_rules(|hwnd| can_change_opacity(&self.config, hwnd));
         let config = &self.config;
@@ -2343,7 +2343,7 @@ impl App {
                     || p.coordinate_theme
                     || p.material_explicit && p.backdrop != 0)
                 && !excluded
-                && !elevated(h))
+                && !out_of_reach(h))
             .then_some((
                 p.coordinate_theme,
                 // Borders alone must not apply the global material (pre-border behaviour).
@@ -2378,7 +2378,7 @@ impl App {
                     message("Focus a regular application window first, then reopen Appearance.");
                     return;
                 }
-                if !basic_eligible(self.selected) || elevated(self.selected) {
+                if !basic_eligible(self.selected) || out_of_reach(self.selected) {
                     message("The selected window is now minimized, full-screen, or protected. Focus a regular app window before changing its opacity.");
                     return;
                 }
@@ -2399,7 +2399,7 @@ impl App {
     }
     unsafe fn opacity_hotkey(&mut self, index: u32) {
         let hwnd = GetForegroundWindow();
-        if !basic_eligible(hwnd) || elevated(hwnd) || !can_change_opacity(&self.config, hwnd) {
+        if !basic_eligible(hwnd) || out_of_reach(hwnd) || !can_change_opacity(&self.config, hwnd) {
             return;
         }
         self.selected = hwnd;
@@ -3109,7 +3109,7 @@ impl App {
     unsafe fn show_search(&mut self, commands: bool) {
         self.command_menu = commands;
         let foreground = GetForegroundWindow();
-        if basic_eligible(foreground) && !elevated(foreground) {
+        if basic_eligible(foreground) && !out_of_reach(foreground) {
             self.selected = foreground;
         }
         // Opening search from our dashboard retains the last external selection.
@@ -4047,6 +4047,12 @@ unsafe fn elevated(hwnd: HWND) -> bool {
     }
     CloseHandle(process);
     !result || elevation.TokenIsElevated != 0
+}
+/// A window whose look Omarchy Overlay cannot change: one running as administrator,
+/// unless Omarchy Overlay runs elevated too (the installed Admin edition).
+unsafe fn out_of_reach(hwnd: HWND) -> bool {
+    static ELEVATED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    !*ELEVATED.get_or_init(crate::launch_unelevated::process_elevated) && elevated(hwnd)
 }
 unsafe fn position(hwnd: HWND, target: Rect) {
     if IsIconic(hwnd) != 0 {
