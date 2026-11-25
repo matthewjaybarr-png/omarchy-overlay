@@ -85,9 +85,36 @@ pub fn menu_choices(installed: &[String]) -> Vec<String> {
     out
 }
 
+/// True when a Windows font registry value name (lowercase, like
+/// "jetbrainsmono nerd font bold italic (truetype)") installs `family` (lowercase):
+/// the family name followed only by style words. "Cascadia Mono" is not "Cascadia".
+pub fn names_family(value_name: &str, family: &str) -> bool {
+    const STYLES: &[&str] = &[
+        "regular", "normal", "bold", "italic", "oblique", "light", "medium", "semibold", "demibold",
+        "thin", "extralight", "ultralight", "extrabold", "ultrabold", "black", "heavy", "book",
+        "semilight", "semi", "extra", "ultra", "condensed", "semicondensed",
+    ];
+    let name = value_name.split(" (").next().unwrap_or(value_name);
+    name.split(" & ").any(|face| {
+        face.trim()
+            .strip_prefix(family)
+            .is_some_and(|rest| rest.is_empty() || (rest.starts_with(' ') && rest.split_whitespace().all(|w| STYLES.contains(&w))))
+    })
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn registry_names_match_only_their_own_family() {
+        let f = "jetbrainsmono nerd font";
+        assert!(names_family("jetbrainsmono nerd font regular (truetype)", f));
+        assert!(names_family("jetbrainsmono nerd font bold italic (truetype)", f));
+        assert!(!names_family("jetbrainsmono nerd font mono regular (truetype)", f));
+        assert!(!names_family("jetbrainsmononl nerd font regular (truetype)", f));
+        assert!(names_family("cascadia code regular & cascadia mono regular (truetype)", "cascadia mono"));
+        assert!(!names_family("cascadia mono regular (truetype)", "cascadia"));
+        assert!(names_family("consolas (truetype)", "consolas"));
+    }
 
     fn set(names: &'static [&'static str]) -> impl Fn(&str) -> bool {
         move |n| names.contains(&n)

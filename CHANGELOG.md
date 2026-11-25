@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **One font**, as omarchy-font-set: choosing a font on the Font page sets it for the
+  menus, the top bar and the themed Windows Terminal profile. Terminal uses it when
+  the font is installed in Windows (it cannot see the fonts bundled beside the exe).
 - The themed Windows Terminal profile and VS Code theme come back at every start
   once turned on. Exit still takes them away, like every other change to Windows;
   before, they stayed away until added again. **Restore the original Windows

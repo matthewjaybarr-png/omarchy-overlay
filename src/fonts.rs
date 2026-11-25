@@ -85,6 +85,45 @@ pub(super) fn choices() -> Vec<String> {
     let installed: Vec<String> = FAMILIES.with(|f| f.borrow().iter().cloned().collect());
     font_names::menu_choices(&installed)
 }
+/// True when `family` is installed in Windows for every app, for this user or the PC
+/// (a font Omarchy Overlay loads only for itself does not count). Other apps, such as
+/// Windows Terminal, can only use fonts installed this way.
+pub(super) unsafe fn in_windows(family: &str) -> bool {
+    use windows_sys::Win32::System::Registry::*;
+    let wanted = family.to_lowercase();
+    let mut found = false;
+    for root in [HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE] {
+        let mut key = null_mut();
+        if RegOpenKeyExW(
+            root,
+            wide("Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts").as_ptr(),
+            0,
+            KEY_READ,
+            &mut key,
+        ) != 0
+        {
+            continue;
+        }
+        for index in 0..4096 {
+            let mut name = [0u16; 512];
+            let mut length = name.len() as u32;
+            if RegEnumValueW(key, index, name.as_mut_ptr(), &mut length, null(), null_mut(), null_mut(), null_mut()) != 0 {
+                break;
+            }
+            // Value names look like "JetBrainsMono Nerd Font Regular (TrueType)".
+            let name = String::from_utf16_lossy(&name[..length as usize]).to_lowercase();
+            if crate::font_names::names_family(&name, &wanted) {
+                found = true;
+                break;
+            }
+        }
+        RegCloseKey(key);
+        if found {
+            break;
+        }
+    }
+    found
+}
 /// True when this family can be drawn as chosen (not the Segoe UI fallback).
 pub(super) fn exists(family: &str) -> bool {
     !font_names::text_face(family, &has).1

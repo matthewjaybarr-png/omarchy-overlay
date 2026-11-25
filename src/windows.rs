@@ -2204,7 +2204,7 @@ impl App {
     fn apply_app_colors(&self) {
         let name = &self.config.theme;
         if self.config.terminal_colors {
-            if let Err(error) = appearance_effects::apply_terminal(&self.directory, name) {
+            if let Err(error) = appearance_effects::apply_terminal(&self.directory, name, &self.config.menu_font) {
                 log(&error);
             }
         }

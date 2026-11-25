@@ -368,7 +368,7 @@ pub(super) unsafe fn command(app: &mut App, id: usize, notification: usize) {
                 appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&app.directory, &path))?;
             }
             816 => {
-                appearance_effects::apply_terminal(&app.directory, &app.config.theme)?;
+                appearance_effects::apply_terminal(&app.directory, &app.config.theme, &app.config.menu_font)?;
                 app.config.terminal_colors = true;
                 app.save_config();
             }

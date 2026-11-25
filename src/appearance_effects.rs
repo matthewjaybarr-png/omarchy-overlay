@@ -149,7 +149,10 @@ fn color(value: u32) -> String {
         (value >> 16) & 255
     )
 }
-pub(super) fn apply_terminal(directory: &Path, theme_name: &str) -> Result<(), String> {
+/// Adds the themed Terminal profile. `font` is the Omarchy Overlay font; the profile
+/// uses it only when it is installed in Windows, since Terminal cannot see fonts that
+/// Omarchy Overlay loads for itself.
+pub(super) fn apply_terminal(directory: &Path, theme_name: &str, font: &str) -> Result<(), String> {
     let path = terminal_path(directory);
     let record = directory.join("terminal-appearance-restore.json");
     let current = if path.exists() {
@@ -182,6 +185,7 @@ pub(super) fn apply_terminal(directory: &Path, theme_name: &str) -> Result<(), S
         &color(palette.text),
         &color(palette.accent),
         &colors,
+        unsafe { fonts::in_windows(font) }.then_some(font),
     );
     let next = serde_json::to_string_pretty(&fragment).map_err(|e| e.to_string())?;
     let mut acceptable = current.into_iter().collect::<Vec<_>>();

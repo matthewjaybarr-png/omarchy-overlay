@@ -141,6 +141,7 @@ pub fn terminal_fragment(
     foreground: &str,
     accent: &str,
     colors: &std::collections::BTreeMap<String, u32>,
+    font: Option<&str>,
 ) -> serde_json::Value {
     let name = format!("Omarchy Overlay {theme}");
     let mut fragment = serde_json::json!({"profiles":[{"name":"Omarchy Overlay","commandline":"powershell.exe","colorScheme":name}],
@@ -151,6 +152,9 @@ pub fn terminal_fragment(
         if let Some(value) = sources.iter().find_map(|k| colors.get(*k)) {
             fragment["schemes"][0][key] = serde_json::json!(format!("#{value:06X}"));
         }
+    }
+    if let Some(face) = font {
+        fragment["profiles"][0]["font"] = serde_json::json!({ "face": face });
     }
     if theme == "neon-ridge" {
         for (key, value) in [
@@ -193,14 +197,15 @@ mod tests {
             assert_eq!(c.layout, "dwindle");
             assert_eq!(c.terminal, "my-terminal.exe");
         }
-        let f = terminal_fragment("Tokyo Night", "#1A1B26", "#C0CAF5", "#7AA2F7", &Default::default());
+        let f = terminal_fragment("Tokyo Night", "#1A1B26", "#C0CAF5", "#7AA2F7", &Default::default(), None);
         assert_eq!(f["profiles"][0]["name"], "Omarchy Overlay");
         assert!(f.get("defaultProfile").is_none());
     }
     #[test]
     fn terminal_uses_each_themes_own_terminal_colors() {
         let gruvbox = crate::theme_files::built_in("gruvbox").unwrap();
-        let f = terminal_fragment("gruvbox", "#000000", "#FFFFFF", "#123456", &gruvbox.colors);
+        let f = terminal_fragment("gruvbox", "#000000", "#FFFFFF", "#123456", &gruvbox.colors, Some("Cascadia Mono"));
+        assert_eq!(f["profiles"][0]["font"]["face"], "Cascadia Mono");
         let scheme = &f["schemes"][0];
         for (key, sources) in TERMINAL_COLORS {
             if let Some(value) = sources.iter().find_map(|k| gruvbox.colors.get(*k)) {
@@ -210,7 +215,8 @@ mod tests {
         assert_eq!(scheme["red"], format!("#{:06X}", gruvbox.colors["red"]));
         assert_ne!(scheme["red"], "#F7768E", "not Tokyo Night's red");
         // A key the theme leaves out keeps the default.
-        let f = terminal_fragment("x", "#000000", "#FFFFFF", "#123456", &Default::default());
+        let f = terminal_fragment("x", "#000000", "#FFFFFF", "#123456", &Default::default(), None);
+        assert!(f["profiles"][0].get("font").is_none());
         assert_eq!(f["schemes"][0]["red"], "#F7768E");
     }
 }

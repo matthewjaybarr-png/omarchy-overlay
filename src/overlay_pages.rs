@@ -696,7 +696,7 @@ impl App {
                     crate::font_names::Source::Installed => "Icons: the JetBrains Mono Nerd Font installed in Windows (fonts folder missing).",
                     crate::font_names::Source::None => "No Nerd Font found: menus use Segoe UI with plain letters.",
                 }));
-                rows.push(info("Used by the menu, app picker, keybinds list and the main window. Icons always use the Nerd Font. The top bar font is under Appearance → Top bar → Bar items."));
+                rows.push(info("As in Omarchy, one font for everything: the menu, app picker, keybinds list, top bar and the themed Windows Terminal profile. Terminal only uses fonts installed in Windows. Icons always use the Nerd Font."));
                 rows.push(info("Other fonts installed in Windows:"));
                 rows.extend(all.map(row));
                 rows
@@ -1932,6 +1932,9 @@ impl App {
         if bar_changed {
             bar::settings(&self.config.bar);
         }
+        if old.menu_font != self.config.menu_font && !theme_changed {
+            self.apply_app_colors();
+        }
         if taskbar_changed {
             self.taskbar_hidden_preferred = self.config.taskbar_mode == "hidden";
             bar::configure(
@@ -2197,7 +2200,11 @@ impl App {
         let index = value.parse::<usize>().unwrap_or(0);
         match page {
             "theme" => c.theme = value.into(),
-            "font" => c.menu_font = value.into(),
+            "font" => {
+                // One font, as omarchy-font-set: menus, the bar and the Terminal profile.
+                c.menu_font = value.into();
+                c.bar.font_family = value.into();
+            }
             "font-size" => c.menu_font_size = number,
             "gaps" => c.gap = [0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32][index.min(10)],
             "main-size" => {
@@ -2631,7 +2638,7 @@ impl App {
             "terminal-colors" => {
                 let result = match value {
                     "apply" => {
-                        appearance_effects::apply_terminal(&self.directory, &self.config.theme).map(
+                        appearance_effects::apply_terminal(&self.directory, &self.config.theme, &self.config.menu_font).map(
                             |()| "Added. Restart Windows Terminal to see the Omarchy Overlay profile.",
                         )
                     }
