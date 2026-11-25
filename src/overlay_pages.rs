@@ -207,6 +207,10 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
         }
         "focus-outline" => c.focus_outline = d.focus_outline,
         "osd" => c.show_osd = d.show_osd,
+        "idle" => {
+            c.screensaver_after = d.screensaver_after;
+            c.lock_after = d.lock_after;
+        }
         "start-tiling" => c.start_tiling = d.start_tiling,
         "bar" => c.show_top_bar = d.show_top_bar,
         "clock" => c.bar.clock_format = d.bar.clock_format,
@@ -1069,6 +1073,25 @@ impl App {
                 rows
             }
             "focus-outline" => on_off("focus-outline", self.config.focus_outline, "Outline the active window", "No outline"),
+            "idle" => vec![
+                Row::new(DESKTOP, "Screensaver", Act::Open(Level::Page("idle-screensaver")))
+                    .detail(idle::label(self.config.screensaver_after)),
+                Row::new(DESKTOP, "Lock the PC", Act::Open(Level::Page("idle-lock")))
+                    .detail(idle::label(self.config.lock_after)),
+                info("As in Omarchy: after this long without a key press or mouse move. Neither starts while a video or another app keeps the screen on, or while Stay awake is on. Windows' own lock and sleep settings still apply."),
+            ],
+            "idle-screensaver" => values(
+                "idle-screensaver",
+                DESKTOP,
+                self.config.screensaver_after,
+                &idle::SCREENSAVER_AFTER.map(|s| (s, idle::label(s))),
+            ),
+            "idle-lock" => values(
+                "idle-lock",
+                DESKTOP,
+                self.config.lock_after,
+                &idle::LOCK_AFTER.map(|s| (s, idle::label(s))),
+            ),
             "osd" => on_off("osd", self.config.show_osd, "Show short messages on screen", "No on-screen messages"),
             "start-tiling" => {
                 let mut rows = on_off(
@@ -2235,6 +2258,8 @@ impl App {
             }
             "focus-outline" => c.focus_outline = value == "on",
             "osd" => c.show_osd = value == "on",
+            "idle-screensaver" => c.screensaver_after = idle::SCREENSAVER_AFTER[index.min(idle::SCREENSAVER_AFTER.len() - 1)],
+            "idle-lock" => c.lock_after = idle::LOCK_AFTER[index.min(idle::LOCK_AFTER.len() - 1)],
             "start-tiling" => c.start_tiling = value == "on",
             "bar" => c.show_top_bar = value == "on",
             "clock" => c.bar.clock_format = value.into(),

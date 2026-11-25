@@ -13,6 +13,8 @@ mod font_install;
 mod windows_syscolors;
 #[path = "color_picker.rs"]
 mod color_picker;
+#[path = "idle.rs"]
+mod idle;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]
@@ -406,6 +408,8 @@ struct App {
     /// True while every key is given back to Windows.
     keys_paused: bool,
     keep_awake: bool,
+    /// The idle lock fired; it waits for input before it can fire again.
+    idle_locked: bool,
     pending_command: Option<(crate::commands::Command, bool)>,
     /// Sent with each Super key message so a key pressed before a reload is ignored.
     bind_generation: usize,
@@ -1518,6 +1522,7 @@ pub fn run() {
             confirm_choice: None,
             keys_paused: false,
             keep_awake: false,
+            idle_locked: false,
             pending_command: None,
             bind_generation: 0,
             last_profile: None,
@@ -3490,6 +3495,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 app.check_reminders();
                 app.tick();
                 app.dock_poll();
+                app.idle_tick();
                 app.tasks.refresh();
                 app.update_dashboard();
                 Some(0)

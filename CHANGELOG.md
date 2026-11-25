@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Screensaver and idle lock** (Appearance > Screensaver and idle lock), Omarchy's
+  idle settings: a themed screensaver with a large clock, and locking the PC, each
+  after a chosen time without input. Both are off by default, since Windows has its
+  own lock timeout. Neither starts while a video or another app keeps the screen on,
+  or while Stay awake is on.
 - **Super + Print** picks a color from the screen, as Omarchy's color picker does:
   the screen freezes under a crosshair with the color and its hex value beside the
   pointer, and a click copies the hex value. Escape or a right-click cancels. It takes

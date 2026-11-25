@@ -65,6 +65,9 @@ pub struct Config {
     pub vscode_colors: bool,
     /// The bundled JetBrains Mono fonts are installed for this user while it runs.
     pub install_fonts: bool,
+    /// Seconds without input before the screensaver and the lock (0: off).
+    pub screensaver_after: u32,
+    pub lock_after: u32,
     /// "omarchy" (Super keys), "classic" (Ctrl+Alt keys) or "both".
     pub keymap: String,
     /// What a tap of Super alone does: "start", "picker" or "nothing".
@@ -180,6 +183,8 @@ impl Default for Config {
             terminal_colors: false,
             vscode_colors: false,
             install_fonts: false,
+            screensaver_after: 0,
+            lock_after: 0,
             keymap: "both".into(),
             tap_super: "start".into(),
             menu_font: MENU_FONTS[1].0.into(),
@@ -241,6 +246,8 @@ impl Config {
             || !MATERIALS.contains(&self.menu_backdrop.as_str())
             || !["legacy", "visible", "auto-hide", "hidden"].contains(&self.taskbar_mode.as_str())
             || !crate::dock::MODES.iter().any(|(m, _)| *m == self.dock)
+            || self.screensaver_after > 24 * 3600
+            || self.lock_after > 24 * 3600
         {
             return Err("Invalid global appearance, motion or taskbar setting.".into());
         }
