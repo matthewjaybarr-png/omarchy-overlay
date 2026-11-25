@@ -412,6 +412,7 @@ impl App {
                     self.config.terminal_colors = false;
                     self.config.vscode_colors = false;
                     self.config.obsidian_colors = false;
+                    self.config.browser_colors = false;
                     self.config.install_fonts = false;
                     self.save_config();
                     self.show_feedback("Original Windows appearance restored.")

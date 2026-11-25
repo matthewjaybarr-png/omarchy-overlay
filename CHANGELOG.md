@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Browser colors** (Appearance > Browser colors, Admin edition), as Omarchy's
+  browser theme: Chrome, Edge, Brave and Chromium take the theme background as their
+  toolbar color through the BrowserThemeColor policy, with BrowserColorScheme
+  "device". Browsers show "Managed by your organization" while it is on. The original
+  policy values are journaled and restored on exit; the next start sets them again.
 - **Admin edition:** windows running as administrator get the theme's frame colors,
   corners, materials, opacity and the focus outline too, since the elevated Admin
   edition may change them. They still keep their own place instead of tiling.

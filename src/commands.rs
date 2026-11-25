@@ -177,6 +177,7 @@ pub const PAGES: &[(&str, &str)] = &[
     ("terminal-colors", "Windows Terminal colors"),
     ("vscode-colors", "VS Code colors"),
     ("obsidian-colors", "Obsidian colors"),
+    ("browser-colors", "Browser colors"),
     ("config-errors", "Config file problems"),
 ];
 

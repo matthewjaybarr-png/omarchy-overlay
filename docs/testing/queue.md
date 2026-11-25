@@ -170,6 +170,12 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
 - **A2** (build 12, Admin) System > Restart into BIOS/UEFI asks first, then restarts
   into the firmware setup (UEFI VMs; SKIP on BIOS). Standard: a message instead.
 
+- **A3** (build 12, Admin) Appearance > Browser colors > follow the theme. Restart
+  Edge (and Chrome if installed): the toolbar is the theme background; edge://policy
+  lists BrowserThemeColor. A theme switch changes it after a browser restart. Exit:
+  the policy is gone again (edge://policy, reload). Standard: the page says it needs
+  the Admin edition.
+
 ### Before hiding the taskbar by default
 - **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar while Omarchy
   Overlay runs", dock on floating workspaces. Then check each and note PASS/FAIL:

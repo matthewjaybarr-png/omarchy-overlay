@@ -868,6 +868,17 @@ impl App {
                 rows.push(info("Choices stay on this PC. Specific desktop/display choices override broader ones. Workspaces switch every monitor together."));
                 rows
             }
+            "browser-colors" => vec![
+                Row::new(BRUSH, "Chrome, Edge, Brave and Chromium follow the theme", Act::Choose("browser-colors", "apply".into()))
+                    .checked(self.config.browser_colors),
+                Row::new(UNDO, "Put back the browsers' own colors", Act::Choose("browser-colors", "restore".into())),
+                info("As in Omarchy: the browsers' theme color policy takes the theme background. Browsers then say \"Managed by your organization\". Restart the browser, or open chrome://policy and reload, to see it."),
+                info(if crate::launch_unelevated::process_elevated() {
+                    "Exit puts the browsers' own settings back; the next start sets the theme again."
+                } else {
+                    "Needs the Admin edition: browser policies take administrator rights."
+                }),
+            ],
             "obsidian-colors" => vec![
                 Row::new(BRUSH, "Add the Omarchy Overlay theme to my Obsidian vaults", Act::Choose("obsidian-colors", "apply".into()))
                     .checked(self.config.obsidian_colors)
@@ -1649,6 +1660,7 @@ impl App {
             Row::new(BRUSH, "Windows Terminal colors", Act::Run(Command::Page("terminal-colors"))),
             Row::new(BRUSH, "VS Code colors", Act::Run(Command::Page("vscode-colors"))),
             Row::new(BRUSH, "Obsidian colors", Act::Run(Command::Page("obsidian-colors"))),
+            Row::new(BRUSH, "Browser colors (Admin edition)", Act::Run(Command::Page("browser-colors"))),
             Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))),
             Row::new(INFO, "Apps Omarchy Overlay cannot theme", Act::Open(Level::Page("windows-checklist"))),
             info("Omarchy Overlay records the original values first and puts them back on Restore, on exit and after a crash."),
@@ -2696,6 +2708,20 @@ impl App {
                     Ok(text) => text.to_string(),
                     Err(error) => error,
                 });
+                true
+            }
+            "browser-colors" => {
+                let result = if value == "apply" {
+                    let background = theme::current().background;
+                    browser_policy::apply(&self.directory, background).map(|()| "Set. Restart the browsers to see the theme color.".to_string())
+                } else {
+                    browser_policy::restore(&self.directory).map(|()| "Put back.".to_string())
+                };
+                if result.is_ok() {
+                    self.config.browser_colors = value == "apply";
+                    self.save_config();
+                }
+                overlay::message(&result.unwrap_or_else(|e| e));
                 true
             }
             "obsidian-colors" => {

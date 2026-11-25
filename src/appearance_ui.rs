@@ -377,6 +377,7 @@ pub(super) unsafe fn command(app: &mut App, id: usize, notification: usize) {
                 app.config.terminal_colors = false;
                 app.config.vscode_colors = false;
                 app.config.obsidian_colors = false;
+                app.config.browser_colors = false;
                 app.config.install_fonts = false;
                 app.save_config();
             }

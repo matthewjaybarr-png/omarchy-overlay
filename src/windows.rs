@@ -9,6 +9,8 @@ mod appearance_effects;
 mod vscode_effects;
 #[path = "obsidian_effects.rs"]
 mod obsidian_effects;
+#[path = "browser_policy.rs"]
+mod browser_policy;
 #[path = "font_install.rs"]
 mod font_install;
 #[path = "windows_syscolors.rs"]
@@ -2271,6 +2273,13 @@ impl App {
         if self.config.obsidian_colors {
             if let Err(error) = obsidian_effects::apply(&self.directory, name) {
                 log(&error);
+            }
+        }
+        if self.config.browser_colors {
+            if let Some(palette) = theme::palette(name) {
+                if let Err(error) = unsafe { browser_policy::apply(&self.directory, palette.background) } {
+                    log(&error);
+                }
             }
         }
     }
