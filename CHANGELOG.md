@@ -8,9 +8,10 @@
 - Omarchy's display keys: **Super + Ctrl + Delete** turns the laptop screen off (external
   screens only) or back on, and **Super + Ctrl + Shift + Delete** mirrors the screens or
   extends them again, through Windows' own display switching (as Win + P).
-- **Lock screen** (Appearance > Lock screen, Admin edition): the lock screen shows the
-  theme's first background, as Omarchy's lock screen follows its theme, through
-  Windows' lock screen policy (for every user of the PC). It follows theme changes;
+- **Lock screen** (Appearance > Lock screen): the lock screen shows the theme's first
+  background, as Omarchy's lock screen follows its theme. The Standard edition sets
+  your own lock screen, without administrator rights; the Admin edition sets it for
+  every user of the PC through Windows' lock screen policy. It follows theme changes;
   exit puts the original back.
 - The menu opens by itself only at the very first start, as a welcome; later starts
   are quiet, as in Omarchy. (After this update it opens once more, then never.)

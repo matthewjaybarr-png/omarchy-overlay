@@ -198,6 +198,11 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   turns the laptop screen off and back on (SKIP on a VM without an internal screen;
   note the message it shows).
 
+- **LS1** (build 15, Standard) Appearance > Lock screen > shows the theme background.
+  Win+L shows the theme's first background; a theme switch changes it; Exit puts your
+  previous lock screen picture back. If it says Windows doesn't allow it, note the
+  Windows edition and the exact message.
+
 ### Before hiding the taskbar by default
 - **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar", dock on floating workspaces. Then check each and note PASS/FAIL:
   the Win key opens Start; Win+N opens notifications; Win+A Quick Settings; a toast

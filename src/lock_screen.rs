@@ -89,7 +89,8 @@ fn picture_path() -> PathBuf {
 /// Shows the theme's first background on the lock screen.
 pub(super) unsafe fn apply(directory: &Path, theme_name: &str) -> Result<(), String> {
     if !crate::launch_unelevated::process_elevated() {
-        return Err("The lock screen picture needs the Admin edition, which runs with administrator rights.".into());
+        // Standard edition: this user's lock screen only.
+        return user::apply(directory, theme_name);
     }
     let Some(picture) = appearance_effects::backgrounds(theme_name).into_iter().next() else {
         return Err("This theme has no backgrounds for the lock screen.".into());
@@ -117,9 +118,10 @@ pub(super) unsafe fn apply(directory: &Path, theme_name: &str) -> Result<(), Str
 }
 /// Puts the lock screen settings back as they were.
 pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
+    let user = user::restore(directory);
     let record = directory.join(RECORD);
     if !record.exists() {
-        return Ok(());
+        return user;
     }
     if !crate::launch_unelevated::process_elevated() {
         return Err("The lock screen from the Admin edition can only be put back by the Admin edition.".into());
@@ -135,4 +137,82 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     set_number(&key, STATUS, before.status);
     let _ = fs::remove_file(picture_path());
     fs::remove_file(record).map_err(|e| e.to_string())
+}
+
+/// The Standard edition's lock screen: this user's own, through Windows'
+/// UserProfilePersonalizationSettings, which needs no administrator rights. The picture
+/// shown before is saved first and set back on Remove, on exit and after a crash.
+pub(super) mod user {
+    use super::super::*;
+    use ::windows::{
+        core::HSTRING,
+        Storage::{StorageFile, Streams::DataReader},
+        System::UserProfile::{LockScreen, UserProfilePersonalizationSettings},
+        Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED},
+    };
+    const ORIGINAL: &str = "lock-screen-original.jpg";
+
+    /// Runs `work` on a thread of its own in the multithreaded apartment, where Windows'
+    /// asynchronous calls can be waited for, and waits for it.
+    fn on_mta<T: Send + 'static>(work: impl FnOnce() -> Result<T, String> + Send + 'static) -> Result<T, String> {
+        std::thread::spawn(move || unsafe {
+            let started = CoInitializeEx(None, COINIT_MULTITHREADED).is_ok();
+            let result = work();
+            if started {
+                CoUninitialize();
+            }
+            result
+        })
+        .join()
+        .map_err(|_| "The lock screen change stopped unexpectedly.".to_string())?
+    }
+    fn set(path: PathBuf) -> Result<(), String> {
+        let text = |e: ::windows::core::Error| e.message();
+        if !UserProfilePersonalizationSettings::IsSupported().map_err(text)? {
+            return Err("Windows does not let apps change this user's lock screen here.".into());
+        }
+        let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path.to_string_lossy().as_ref()))
+            .and_then(|o| o.get())
+            .map_err(text)?;
+        let done = UserProfilePersonalizationSettings::Current()
+            .and_then(|s| s.TrySetLockScreenImageAsync(&file))
+            .and_then(|o| o.get())
+            .map_err(text)?;
+        if done {
+            Ok(())
+        } else {
+            Err("Windows did not change the lock screen picture.".into())
+        }
+    }
+    /// Copies the picture the lock screen shows now, to put it back later.
+    fn save_current(target: PathBuf) -> Result<(), String> {
+        let text = |e: ::windows::core::Error| e.message();
+        let stream = LockScreen::GetImageStream().map_err(text)?;
+        let size = stream.Size().map_err(text)? as u32;
+        let reader = DataReader::CreateDataReader(&stream).map_err(text)?;
+        reader.LoadAsync(size).and_then(|o| o.get()).map_err(text)?;
+        let mut bytes = vec![0u8; size as usize];
+        reader.ReadBytes(&mut bytes).map_err(text)?;
+        fs::write(&target, bytes).map_err(|e| e.to_string())
+    }
+    pub(in super::super) fn apply(directory: &Path, theme_name: &str) -> Result<(), String> {
+        let Some(picture) = appearance_effects::backgrounds(theme_name).into_iter().next() else {
+            return Err("This theme has no backgrounds for the lock screen.".into());
+        };
+        let original = directory.join(ORIGINAL);
+        if !original.exists() {
+            let target = original.clone();
+            on_mta(move || save_current(target))?;
+        }
+        on_mta(move || set(picture))
+    }
+    pub(in super::super) fn restore(directory: &Path) -> Result<(), String> {
+        let original = directory.join(ORIGINAL);
+        if !original.exists() {
+            return Ok(());
+        }
+        let path = original.clone();
+        on_mta(move || set(path))?;
+        fs::remove_file(original).map_err(|e| e.to_string())
+    }
 }
