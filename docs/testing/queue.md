@@ -180,6 +180,9 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   the policy is gone again (edge://policy, reload). Standard: the page says it needs
   the Admin edition.
 
+- **WL1** (build 13) Delete `welcomed` from config.json (or use a fresh settings
+  folder) and start: the menu opens. Exit and start again: no menu.
+
 ### Before hiding the taskbar by default
 - **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar", dock on floating workspaces. Then check each and note PASS/FAIL:
   the Win key opens Start; Win+N opens notifications; Win+A Quick Settings; a toast

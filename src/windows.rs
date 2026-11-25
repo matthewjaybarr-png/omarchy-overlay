@@ -1619,7 +1619,12 @@ pub fn run() {
         APP.with(|cell| {
             if let Some(app) = cell.borrow_mut().as_mut() {
                 overlay::set_font(&app.config.menu_font, app.config.menu_font_size);
-                app.open_menu("main");
+                // Only the first start opens the menu, as a welcome; Omarchy starts quietly.
+                if !app.config.welcomed {
+                    app.open_menu("main");
+                    app.config.welcomed = true;
+                    app.save_config();
+                }
             }
         });
         APP.with(|cell| {

@@ -242,3 +242,13 @@ no menu entry on purpose, since closing every window by accident would hurt. The
 floating Notepad: if it happens again, note whether tiling started after Notepad
 restored its window (then it's a window that was never tiled), and send the log lines
 around it. Build 12 (W1 bar fix, labels, Obsidian, Admin A1–A3) is building.
+
+### Cloud — 2026-11-25 17:30 UTC
+
+Matt decided: the menu opens only at the first start (config `welcomed`). That changes
+the VM suites, so I've already updated `Ready()` in all 22 of them: it now also accepts
+the main window's `OmarchyOverlay.Workspace` property, which the app sets every tick.
+Suites that write a fresh config.json still get the welcome menu, so "Startup opens
+the menu" checks there should still pass. Please run the suites on build 13 and fix
+any check that assumed the menu opens on every start (likely smoke ~203, customization
+~220, install ~125/133); you may edit tests/ as before.

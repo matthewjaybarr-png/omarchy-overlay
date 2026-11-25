@@ -75,6 +75,8 @@ pub struct Config {
     pub per_monitor_workspaces: bool,
     /// Omarchy's single-window aspect ratio: a lone tile stays a centred square.
     pub single_window_square: bool,
+    /// The menu opened once at the first start, as a welcome; later starts stay quiet.
+    pub welcomed: bool,
     /// "omarchy" (Super keys), "classic" (Ctrl+Alt keys) or "both".
     pub keymap: String,
     /// What a tap of Super alone does: "start", "picker" or "nothing".
@@ -196,6 +198,7 @@ impl Default for Config {
             lock_after: 0,
             per_monitor_workspaces: false,
             single_window_square: false,
+            welcomed: false,
             keymap: "both".into(),
             tap_super: "start".into(),
             menu_font: MENU_FONTS[1].0.into(),

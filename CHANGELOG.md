@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The menu opens by itself only at the very first start, as a welcome; later starts
+  are quiet, as in Omarchy. (After this update it opens once more, then never.)
 - **Browser colors** (Appearance > Browser colors, Admin edition), as Omarchy's
   browser theme: Chrome, Edge, Brave and Chromium take the theme background as their
   toolbar color through the BrowserThemeColor policy, with BrowserColorScheme
