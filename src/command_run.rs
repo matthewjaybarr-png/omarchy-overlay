@@ -223,12 +223,21 @@ impl App {
                     ShowWindow(window, SW_MINIMIZE);
                 }
             }
-            "volume-up" => native_status::adjust_volume(5),
-            "volume-down" => native_status::adjust_volume(-5),
-            "mute" => native_status::toggle_mute(),
+            "volume-up" => {
+                native_status::adjust_volume(5);
+                self.feedback_message(0);
+            }
+            "volume-down" => {
+                native_status::adjust_volume(-5);
+                self.feedback_message(0);
+            }
+            "mute" => {
+                native_status::toggle_mute();
+                self.feedback_message(0);
+            }
             "mic-mute" => match native_status::toggle_mic_mute() {
-                Some(true) => self.show_feedback("Microphone muted"),
-                Some(false) => self.show_feedback("Microphone on"),
+                Some(true) => self.show_card(Some(osd::MIC_OFF), "Microphone muted", None),
+                Some(false) => self.show_card(Some(osd::MIC), "Microphone on", None),
                 None => self.show_feedback("No microphone found"),
             },
             "zoom-in" => self.queue_system_action(13),
@@ -243,8 +252,8 @@ impl App {
             "move-workspace-right" => self.move_workspace_to_monitor(1, 0),
             "move-workspace-up" => self.move_workspace_to_monitor(0, -1),
             "move-workspace-down" => self.move_workspace_to_monitor(0, 1),
-            "brightness-up" => brightness::adjust(10),
-            "brightness-down" => brightness::adjust(-10),
+            "brightness-up" => brightness::adjust(10, self.main),
+            "brightness-down" => brightness::adjust(-10, self.main),
             "toggle-gaps" => {
                 let mut c = self.config.clone();
                 if c.gap == 0 {

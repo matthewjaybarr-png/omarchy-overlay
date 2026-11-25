@@ -3325,6 +3325,13 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
         }
     }
 
+    if msg == WM_PAINT && window_class(hwnd) == "OmarchyOverlay.OSD" {
+        osd::paint(hwnd);
+        return 0;
+    }
+    if msg == WM_ERASEBKGND && window_class(hwnd) == "OmarchyOverlay.OSD" {
+        return 1;
+    }
     if msg == WM_PAINT && window_class(hwnd) == "OmarchyOverlay.FocusOutline" {
         let mut paint: PAINTSTRUCT = zeroed();
         let dc = BeginPaint(hwnd, &mut paint);

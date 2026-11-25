@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The on-screen message is an Omarchy-style card in the theme's colors and font: an
+  icon, the text and, for volume and brightness, a level bar. Volume keys, mute and
+  the brightness keys now show it too.
 - The selection, selected-text and link colors of classic Windows controls (list
   boxes, edit boxes, menus and older dialogs) follow the theme accent, as Omarchy's
   GTK and Qt apps do. Window and text colors stay as they are. The originals are
