@@ -1,10 +1,10 @@
 # Test queue
 
-## Build 8 (next) — not built yet
+## Build 8 — commit f72a38a — Actions run 45641570012 — test this one (has all of build 7)
 
 Adds: bar position (P1), per-monitor workspaces (W1, two monitors needed).
 
-## Build 7 — commit 2c3f776 — Actions run 45638788963 — test this one
+## Build 7 — commit 2c3f776 — Actions run 45638788963
 
 Also has: Windows wallpaper cache copy (recheck R1/exit), gap toggle takes edge gaps
 (recheck F7 and note what changes on screen), group tabs (G1), defaults merge (M1).

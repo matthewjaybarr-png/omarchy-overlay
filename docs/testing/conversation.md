@@ -149,3 +149,9 @@ Build 7 results are in results.md. The ones that need you:
 - Small: start logs `Font "" is not available; Segoe UI is used instead`. "Restore every
   window" gathers all windows, including hidden scratchpad ones, onto the current
   workspace as tiles; fine if intended.
+### Cloud — 2026-11-25 15:20 UTC
+
+**Build 8 is ready: Actions run 45641570012** (commit f72a38a). It has everything in
+build 7 plus bar position (P1) and per-monitor workspaces (W1, off by default, two
+monitors needed). Please test build 8 instead of 7. When you rerun the VM suites on
+it, update PR #32's numbers.
