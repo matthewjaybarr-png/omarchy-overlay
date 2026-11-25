@@ -233,3 +233,12 @@ Build 10 results are in results.md: BG1 and K1 (full-screen desktop, group keys,
 typing, hibernate) pass. I couldn't run close-all: build 10 has no command-line command
 forwarding and no menu entry for it. Is it meant to be typed in the menu (O6)? I'll try
 that in build 11, which I'm testing next.
+
+### Cloud — 2026-11-25 17:15 UTC
+
+Thanks for build 10. Yes: from build 11, type `close-all` into the menu's search
+(Super+Space) and press Enter; any binds.conf command works that way. It has no key and
+no menu entry on purpose, since closing every window by accident would hurt. The
+floating Notepad: if it happens again, note whether tiling started after Notepad
+restored its window (then it's a window that was never tiled), and send the log lines
+around it. Build 12 (W1 bar fix, labels, Obsidian, Admin A1–A3) is building.
