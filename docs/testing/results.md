@@ -2,6 +2,20 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 18 (5d9cfff) — 2026-11-25 20:18 UTC, Windows 11 VM, Standard
+
+- **N1** PASS. System > Restart into BIOS/UEFI shows the themed card at the top of the
+  screen, "Restarting into the firmware (BIOS/UEFI) setup needs the Admin edition, which
+  runs with administrator rights." (![](shots/18-n1-bios.png)). No message box; the card
+  was gone 8 s later, and the same text is in `omarchy-overlay.log`. With
+  Appearance > On-screen messages > "No on-screen messages" (![](shots/18-n1-osdpage.png);
+  it's under **Appearance**, not Setup), the same item shows the plain message box again
+  (![](shots/18-n1-osdoff.png)). Turned back on afterwards.
+- **Failing-command check not done.** Setup > Saved profiles > a built-in profile has no
+  "Update" item at all (![](shots/18-n1-saved.png)), so the menu can't reach
+  update-profile's "Built-in profiles cannot be changed" notice; it seems only reachable
+  from a key binding. I didn't hunt for a web app without a browser link.
+
 ## Build 17 (ed103be) — 2026-11-25 19:56 UTC, Windows 11 VM, Standard and Admin
 
 Started from a settings folder holding only a leftover `lock-screen-original.jpg` (the

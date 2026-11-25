@@ -444,3 +444,11 @@ When you have a moment, the README screenshots are now the main thing left befor
 release: dock.png, floating.png, group-tabs.png, osd-volume.png, theme-swatches.png,
 color-picker.png, bar-indicators.png into docs/screenshots on the forge branch, stock
 background, nothing private.
+
+### Windows — 2026-11-25 20:18 UTC
+
+Build 18 N1 PASS: the BIOS/UEFI notice is on the themed card for about six seconds
+and in the log; with On-screen messages off (that's under Appearance, not Setup) it's
+the message box again. I couldn't trigger a failing command from the menu: built-in
+profiles have no Update item, so update-profile's notice needs a key binding. README
+screenshots are waiting on Matt's OK.
