@@ -1,5 +1,6 @@
 //! The Windows accent color follows the theme, like omarchy-theme-set, with an undo journal.
-//! Only DWORD values are written; the binary AccentPalette is left to Windows.
+//! The DWORD values and the binary AccentPalette (the shades Start and the taskbar use)
+//! have journals of their own.
 use super::*;
 use windows_sys::Win32::System::Registry::*;
 const FILE: &str = "windows-accent-restore.json";
@@ -99,6 +100,79 @@ unsafe fn record(path: &Path) -> Result<Vec<Entry>, String> {
     }
     Ok(entries)
 }
+const PALETTE_FILE: &str = "windows-accent-palette-restore.json";
+const PALETTE: &str = "AccentPalette";
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PaletteEntry {
+    before: Option<Vec<u8>>,
+    acceptable: Vec<Option<Vec<u8>>>,
+}
+unsafe fn read_palette(h: HKEY) -> Result<Option<Vec<u8>>, String> {
+    let (mut value, mut kind, mut size) = ([0u8; 64], 0, 64u32);
+    let status = RegQueryValueExW(h, wide(PALETTE).as_ptr(), null(), &mut kind, value.as_mut_ptr(), &mut size);
+    if status == ERROR_FILE_NOT_FOUND {
+        return Ok(None);
+    }
+    if status != ERROR_SUCCESS || kind != REG_BINARY || size != 32 {
+        return Err("Unexpected Windows accent palette; it was left unchanged.".into());
+    }
+    Ok(Some(value[..32].to_vec()))
+}
+unsafe fn write_palette(h: HKEY, value: Option<&[u8]>) -> Result<(), String> {
+    let status = match value {
+        Some(v) => RegSetValueExW(h, wide(PALETTE).as_ptr(), 0, REG_BINARY, v.as_ptr(), v.len() as u32),
+        None => RegDeleteValueW(h, wide(PALETTE).as_ptr()),
+    };
+    if status == ERROR_SUCCESS || status == ERROR_FILE_NOT_FOUND {
+        Ok(())
+    } else {
+        Err(format!("Windows did not allow the accent palette change ({status})."))
+    }
+}
+fn palette_record(path: &Path) -> Result<PaletteEntry, String> {
+    let entry: PaletteEntry = serde_json::from_str(&profile::read_text(path)?).map_err(|e| e.to_string())?;
+    let ok = |v: &Option<Vec<u8>>| v.as_ref().is_none_or(|b| b.len() == 32);
+    if entry.acceptable.len() > 2 || !ok(&entry.before) || !entry.acceptable.iter().all(ok) {
+        return Err("Invalid Windows accent palette recovery record; it was preserved.".into());
+    }
+    Ok(entry)
+}
+/// Sets the shades Start and the taskbar use from the accent, journaled like the rest.
+unsafe fn apply_palette(directory: &Path, accent: u32) -> Result<(), String> {
+    let key = open(EXPLORER)?;
+    let path = directory.join(PALETTE_FILE);
+    let current = read_palette(key.0)?;
+    let mut entry = if path.exists() {
+        palette_record(&path)?
+    } else {
+        PaletteEntry { before: current.clone(), acceptable: vec![] }
+    };
+    if !entry.acceptable.is_empty() && current != entry.before && !entry.acceptable.contains(&current) {
+        return Err("The Windows accent palette changed outside Omarchy Overlay; it was left as it is.".into());
+    }
+    let last = current
+        .as_ref()
+        .map_or([0xf7, 0x63, 0x0c, 0], |c| [c[28], c[29], c[30], c[31]]);
+    let next = crate::theme_files::accent_palette(accent, last).to_vec();
+    entry.acceptable = vec![current, Some(next.clone())];
+    write_json_atomic(&path, &entry)?;
+    write_palette(key.0, Some(&next))
+}
+unsafe fn restore_palette(directory: &Path) -> Result<(), String> {
+    let path = directory.join(PALETTE_FILE);
+    if !path.exists() {
+        return Ok(());
+    }
+    let key = open(EXPLORER)?;
+    let entry = palette_record(&path)?;
+    let current = read_palette(key.0)?;
+    if current != entry.before && !entry.acceptable.contains(&current) {
+        return Err("The Windows accent palette changed externally; its recovery record was kept.".into());
+    }
+    write_palette(key.0, entry.before.as_deref())?;
+    fs::remove_file(path).map_err(|e| e.to_string())
+}
 /// Sets the accent (a COLORREF), recording the original values on first use.
 pub(super) unsafe fn apply(directory: &Path, accent: u32) -> Result<(), String> {
     let keys = [open(DWM)?, open(EXPLORER)?];
@@ -129,17 +203,22 @@ pub(super) unsafe fn apply(directory: &Path, accent: u32) -> Result<(), String> 
     for ((k, name), v) in VALUES.iter().zip(next) {
         write(key(k), name, Some(v))?;
     }
+    // The palette is extra polish: a problem with it never undoes the accent.
+    if let Err(error) = apply_palette(directory, accent) {
+        log(&error);
+    }
     notify();
     Ok(())
 }
 pub(super) fn pending(directory: &Path) -> bool {
-    directory.join(FILE).exists()
+    directory.join(FILE).exists() || directory.join(PALETTE_FILE).exists()
 }
 /// Restores without the settings broadcast; the caller sends one for every color value.
 pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
+    let palette = restore_palette(directory);
     let path = directory.join(FILE);
     if !path.exists() {
-        return Ok(());
+        return palette;
     }
     let keys = [open(DWM)?, open(EXPLORER)?];
     let key = |k: &str| if k == DWM { keys[0].0 } else { keys[1].0 };
@@ -153,6 +232,7 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     for (entry, &(k, name)) in entries.iter().zip(VALUES.iter()) {
         write(key(k), name, entry.before)?;
     }
-    fs::remove_file(path).map_err(|e| e.to_string())
+    fs::remove_file(path).map_err(|e| e.to_string())?;
+    palette
 }
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The theme also sets the Windows accent palette, the lighter and darker shades of
+  the accent that Start and the taskbar use, so they match the theme instead of
+  Windows' last accent. It has its own journal and is restored with the accent.
 - **Window transparency** (Appearance > Window transparency): Omarchy's opaque,
   transparent and glassy modes in one choice. Each sets the active and inactive
   window opacity and the app window material together.

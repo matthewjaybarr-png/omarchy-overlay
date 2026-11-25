@@ -176,10 +176,47 @@ pub fn accent_values(accent: u32) -> [u32; 5] {
     let argb = 0xC400_0000 | ((accent & 255) << 16) | (accent & 0xff00) | ((accent >> 16) & 255);
     [abgr, argb, argb, abgr, abgr]
 }
+/// The binary AccentPalette for a COLORREF accent: eight RGBA colors, three lighter
+/// shades, the accent, three darker shades, then `last` (Windows keeps a contrast
+/// color there; the caller passes the one already set). Start and the taskbar use the
+/// darker shades in dark mode and the lighter ones in light mode.
+pub fn accent_palette(accent: u32, last: [u8; 4]) -> [u8; 32] {
+    let rgb = [accent & 255, (accent >> 8) & 255, (accent >> 16) & 255];
+    let toward = |target: u32, amount: f64| {
+        rgb.map(|c| (c as f64 + (target as f64 - c as f64) * amount + 0.5) as u8)
+    };
+    let shades = [
+        toward(255, 0.70),
+        toward(255, 0.45),
+        toward(255, 0.25),
+        rgb.map(|c| c as u8),
+        toward(0, 0.20),
+        toward(0, 0.40),
+        toward(0, 0.60),
+    ];
+    let mut out = [0u8; 32];
+    for (i, [r, g, b]) in shades.into_iter().enumerate() {
+        out[i * 4..i * 4 + 4].copy_from_slice(&[r, g, b, 0]);
+    }
+    out[28..].copy_from_slice(&last);
+    out
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn accent_palette_brackets_the_accent_with_lighter_and_darker_shades() {
+        // Tokyo Night accent #7aa2f7 as a COLORREF.
+        let p = accent_palette(0x00f7a27a, [0xf7, 0x63, 0x0c, 0]);
+        assert_eq!(&p[12..16], &[0x7a, 0xa2, 0xf7, 0]);
+        let luma = |i: usize| p[i * 4] as u32 + p[i * 4 + 1] as u32 + p[i * 4 + 2] as u32;
+        for i in 0..6 {
+            assert!(luma(i) > luma(i + 1), "shade {i}");
+        }
+        assert_eq!(&p[28..], &[0xf7, 0x63, 0x0c, 0]);
+        assert!(p.iter().skip(3).step_by(4).take(7).all(|&a| a == 0));
+    }
     #[test]
     fn next_background_starts_at_the_first_and_wraps() {
         let list: Vec<PathBuf> = ["a.jpg", "b.jpg", "c.jpg"].map(PathBuf::from).into();
