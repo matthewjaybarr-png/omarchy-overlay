@@ -2,6 +2,42 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 9 (4c2a8d5) — 2026-11-25 16:45 UTC, Windows 11 VM
+
+Standard and Admin zips run portable from `C:\Users\Public\ovt\b9`; Admin run
+elevated. One 1920x1080 monitor, then two 1280x800 monitors for W1. Screenshots in
+`shots/9-*.png`.
+
+- PASS log at start: no `Font ""` line; tray lookup "selected SystemTray.NormalButton /
+  Tray preparation: ready".
+- PASS B1 (`9-B1`, `9-B1-tip`): mic off shows the mic-off icon, stay awake shows the cup.
+  With both on only one icon shows (mic-off wins); the tooltip lists both. Is one icon
+  at a time intended?
+- PASS D8 (`9-D8`): "Dock always (auto-hides)" with the taskbar on auto-hide: pointer at
+  the bottom shows the dock above the taskbar; both hide when the pointer leaves.
+- PASS TRAY (`9-TRAY-std`): Standard and elevated Admin, the chevron opens the Windows
+  overflow, no card, no freeze; the tooltip fits on one line. The card-width and
+  tooltip-wrap fixes were not exercised because the lookup no longer fails.
+- Labels (`9-labels-trigger`, `9-labels-taskbar`): Trigger and Toggle fit. Still cut:
+  "Hide the Windows taskbar while Omarchy Overla…" (Appearance → Windows taskbar) and
+  "Each monitor has its own workspaces (as in …" (Layout, `9-W1-label`).
+- PASS P1 (`9-P1`): bar moves to the bottom, survives a restart, back to top shows
+  "Saved.". Once, after the menu closed, the Windows taskbar showed over the bottom bar
+  (during a Standard/Admin swap); not reproduced on a recheck. Not checked: tiles and
+  dock with the bar at the bottom (tiling was paused).
+- Main menu opens by itself at start (`9-menu-at-start`): seen twice with elevated
+  Admin and once with Standard on two monitors.
+- W1, two monitors (`9-W1-a2`): mostly PASS.
+  - Super+2 on A hid only A's 5 windows; B's 2 stayed. Super+1 on A brought them back.
+  - Super+Shift+3 on B sent the window to B's workspace 3; B's other window stayed.
+  - Turning the setting off brought B's workspace-3 window back.
+  - "Restore desktop and exit" restored all 7 Notepads, no process left.
+  - FAIL bar: both monitors' bars show the workspace of the monitor last switched.
+    After Super+2 on A, B's bar also shows 2, and still did after focusing B with
+    Ctrl+Alt+Tab. (The VM pointer cannot reach monitor 2, so I could not click a window
+    on B; focus came from Ctrl+Alt+Tab.)
+  - A Photos window that was open on A, untiled, appeared when A switched to 2.
+
 ## Build 7 (2c3f776) — 2026-11-25 15:20 UTC, Windows 11 VM, 1 monitor at 125%
 
 Standard zip, run portable from `C:\Users\Public\ovt\b7\std` as a standard user, with a

@@ -188,3 +188,20 @@ than 8.
 type `remind 2 Test message` into the menu, but before build 11 the menu couldn't run
 typed commands, so skip O6 on builds before 11. From 11, typing any binds.conf
 command into the menu's search and pressing Enter runs it.
+
+### Windows — 2026-11-25 16:45 UTC
+
+Build 9 results are in results.md. Retests pass: B1, D8, TRAY, the log. P1 and W1
+mostly pass.
+
+Open points:
+
+- **W1 bar:** each monitor's bar shows the workspace of whichever monitor last
+  switched, not its own.
+- **Labels:** two are still cut off, the Windows taskbar hide row and the W1 row.
+- **Menu at start:** the main menu opens by itself at start, in both editions.
+- **B1:** only one status icon shows at a time.
+- **P1:** the taskbar showed over the bottom bar once and has not happened again.
+
+Next: build 10.
+
