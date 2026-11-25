@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Dock**, after Omarchy's: on each monitor whose workspace uses the floating
+  layout, it shows the pinned apps (the app picker's favorites) and then the other
+  running apps, with a running dot. Click brings the app forward and cycles through
+  its windows (this workspace, then minimized, then other workspaces) or starts it;
+  middle-click opens a new window; right-click offers New window, Keep in dock /
+  Remove from dock and Close. The **Windows taskbar** page sets it to show on
+  floating workspaces (default), always (auto-hiding at the bottom edge) or never.
 - **Floating layout**, Omarchy's floating workspace mode: a workspace set to it stops
   tiling. Each window is placed once at min(1100, 64%) × min(760, 68%) of its
   monitor, centred and stepped 24 px in a cycle of five, then left where you put it;

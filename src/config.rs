@@ -57,6 +57,8 @@ pub struct Config {
     pub animations: bool,
     pub animation_duration_ms: u32,
     pub taskbar_mode: String,
+    /// When the dock shows: "floating", "always" or "off" (dock::MODES).
+    pub dock: String,
     /// "omarchy" (Super keys), "classic" (Ctrl+Alt keys) or "both".
     pub keymap: String,
     /// What a tap of Super alone does: "start", "picker" or "nothing".
@@ -140,6 +142,7 @@ impl Default for Config {
             animations: false,
             animation_duration_ms: 140,
             taskbar_mode: "legacy".into(),
+            dock: "floating".into(),
             keymap: "both".into(),
             tap_super: "start".into(),
             menu_font: MENU_FONTS[1].0.into(),
@@ -200,6 +203,7 @@ impl Config {
             || !MATERIALS.contains(&self.window_backdrop.as_str())
             || !MATERIALS.contains(&self.menu_backdrop.as_str())
             || !["legacy", "visible", "auto-hide", "hidden"].contains(&self.taskbar_mode.as_str())
+            || !crate::dock::MODES.iter().any(|(m, _)| *m == self.dock)
         {
             return Err("Invalid global appearance, motion or taskbar setting.".into());
         }

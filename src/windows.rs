@@ -69,6 +69,10 @@ mod reminders;
 mod scrolling_runtime;
 #[path = "floating_runtime.rs"]
 mod floating_runtime;
+#[path = "dock_ui.rs"]
+mod dock_ui;
+#[path = "dock_runtime.rs"]
+mod dock_runtime;
 #[path = "settings.rs"]
 mod settings;
 #[path = "shortcuts_ui.rs"]
@@ -360,6 +364,10 @@ struct App {
     floating: HashSet<isize>,
     /// Windows the floating layout has already placed; it never moves them again.
     float_placed: HashSet<isize>,
+    /// What each dock icon stands for, and the ids that match apps to dock pins.
+    dock_actions: Vec<dock_runtime::DockAction>,
+    dock_entry_ids: HashMap<String, Vec<String>>,
+    dock_window_ids: HashMap<(isize, u32), Vec<String>>,
     saved: HashMap<isize, Saved>,
     signature: Vec<(isize, isize, Rect)>,
     dirty: bool,
@@ -1468,6 +1476,9 @@ pub fn run() {
             seen_foreground: 0,
             floating: HashSet::new(),
             float_placed: HashSet::new(),
+            dock_actions: vec![],
+            dock_entry_ids: HashMap::new(),
+            dock_window_ids: HashMap::new(),
             saved: HashMap::new(),
             scrolling: HashMap::new(),
             signature: vec![],
@@ -1672,6 +1683,7 @@ pub fn run() {
             }
         }
         bar::stop();
+        dock_ui::stop();
         APP.with(|cell| {
             if let Some(mut app) = cell.borrow_mut().take() {
                 app.restore();
@@ -2127,6 +2139,7 @@ impl App {
     unsafe fn apply_theme(&mut self, name: &str) {
         self.config.theme = name.into();
         theme::set(name);
+        dock_ui::redraw();
         let old = self.brush;
         self.brush = CreateSolidBrush(theme::current().background);
         let dark: i32 = i32::from(theme::current().dark);
@@ -3408,7 +3421,12 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 KillTimer(app.main, 3);
                 Some(0)
             }
+            dock_ui::DOCK_MESSAGE => {
+                app.dock_click(w, l as usize);
+                Some(0)
+            }
             WM_TIMER if w == 2 => {
+                dock_ui::reveal_tick();
                 app.resize_tick();
                 Some(0)
             }
@@ -3420,6 +3438,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 app.poll_system_action();
                 app.check_reminders();
                 app.tick();
+                app.dock_poll();
                 app.tasks.refresh();
                 app.update_dashboard();
                 Some(0)
@@ -3634,6 +3653,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                     log(&error);
                 }
                 bar::stop();
+                dock_ui::stop();
                 Some(1)
             }
             n if n == WM_APP + 59 => {

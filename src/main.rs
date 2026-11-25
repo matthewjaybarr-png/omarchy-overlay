@@ -17,6 +17,8 @@ mod control_theme;
 #[cfg(any(windows, test))]
 mod desktops;
 #[cfg(any(windows, test))]
+mod dock;
+#[cfg(any(windows, test))]
 mod dwindle;
 #[cfg(any(windows, test))]
 mod effects_gate;

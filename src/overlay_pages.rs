@@ -213,6 +213,7 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
         }
         "bar-opacity" => c.bar_opacity = d.bar_opacity,
         "taskbar" => {
+            c.dock = d.dock.clone();
             c.taskbar_mode = d.taskbar_mode;
             c.auto_hide_taskbar = d.auto_hide_taskbar;
         }
@@ -1101,6 +1102,10 @@ impl App {
                 Row::new(WINDOWS, label, Act::Choose("taskbar", m.into()))
                     .checked(self.config.taskbar_mode == m)
             })
+            .chain(crate::dock::MODES.iter().map(|(m, label)| {
+                Row::new(WINDOWS, *label, Act::Choose("dock", (*m).into()))
+                    .checked(self.config.dock == *m)
+            }))
             .collect(),
             "keymap" => crate::config::KEYMAPS
                 .iter()
@@ -2291,6 +2296,14 @@ impl App {
             "taskbar" => {
                 self.remember(key);
                 self.set_taskbar_policy(value);
+                true
+            }
+            "dock" => {
+                self.remember("taskbar");
+                let mut c = self.config.clone();
+                c.dock = value.into();
+                self.commit(c);
+                self.dock_poll();
                 true
             }
             "background" => {

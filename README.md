@@ -236,6 +236,22 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
 Every Windows setting this changes is recorded first and restored on exit, from
 the recovery menu, and after a crash.
 
+### Dock
+
+As in Omarchy, a dock shows at the bottom of each monitor whose workspace uses the
+floating layout. It holds your pinned apps, then every other running app, with a
+dot under each running one (a wider accent dot for the app in front).
+
+- **Pinned apps** are the app picker's favorites (★). Right-click an app in the dock
+  and choose **Keep in dock** or **Remove from dock** to change them.
+- **Click** brings the app forward: a window on this workspace first, then a
+  minimized one, then one on another workspace. Click again to move on to its
+  next window. An app that isn't running starts.
+- **Middle-click** opens a new window. **Right-click** also offers **Close window**.
+- **Windows taskbar** page: choose whether the dock shows on floating workspaces
+  (the default), always (it then hides until the pointer reaches the bottom edge of
+  the screen), or never.
+
 ### Windows behavior
 
 **Appearance > Windows behavior** switches Windows settings that get in the way
