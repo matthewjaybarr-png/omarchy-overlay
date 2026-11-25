@@ -9,6 +9,8 @@
   middle-click opens a new window; right-click offers New window, Keep in dock /
   Remove from dock and Close. The **Windows taskbar** page sets it to show on
   floating workspaces (default), always (auto-hiding at the bottom edge) or never.
+  An app whose window flashes for attention gets an accent ring until you bring it
+  forward, as its taskbar button would flash.
 - **Floating layout**, Omarchy's floating workspace mode: a workspace set to it stops
   tiling. Each window is placed once at min(1100, 64%) × min(760, 68%) of its
   monitor, centred and stepped 24 px in a cycle of five, then left where you put it;

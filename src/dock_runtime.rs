@@ -92,9 +92,26 @@ impl App {
         }
         icon
     }
+    /// A shell hook event: a window flashing for attention, or one that came forward.
+    pub(super) unsafe fn shell_event(&mut self, event: usize, hwnd: HWND) {
+        const WINDOW_ACTIVATED: usize = 4;
+        const RUDE_APP_ACTIVATED: usize = 0x8004;
+        const FLASH: usize = 0x8006;
+        match event {
+            FLASH if GetForegroundWindow() != hwnd && self.attention.insert(hwnd as isize) => {
+                self.dock_poll();
+            }
+            WINDOW_ACTIVATED | RUDE_APP_ACTIVATED if self.attention.remove(&(hwnd as isize)) => {
+                self.dock_poll();
+            }
+            _ => {}
+        }
+    }
     pub(super) unsafe fn dock_poll(&mut self) {
         let mode = self.config.dock.clone();
         let foreground = GetForegroundWindow();
+        self.attention
+            .retain(|&key| key != foreground as isize && IsWindow(key as HWND) != 0);
         let mut monitors = vec![];
         if mode != "off" {
             for display in settings::displays() {
@@ -164,6 +181,7 @@ impl App {
                 icon,
                 running: !owned.is_empty(),
                 focused: item.windows.iter().any(|&i| windows[i].focused),
+                attention: owned.iter().any(|t| self.attention.contains(&(t.hwnd as isize))),
             });
             self.dock_actions.push(DockAction {
                 entry: item.pin.map(|pin| self.entries[pinned[pin]].key()),

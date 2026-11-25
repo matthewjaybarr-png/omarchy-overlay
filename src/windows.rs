@@ -368,6 +368,10 @@ struct App {
     dock_actions: Vec<dock_runtime::DockAction>,
     dock_entry_ids: HashMap<String, Vec<String>>,
     dock_window_ids: HashMap<(isize, u32), Vec<String>>,
+    /// Windows that flashed for attention and have not been in front since.
+    attention: HashSet<isize>,
+    /// The SHELLHOOK message the shell sends to say a window flashed or came forward.
+    shell_hook: u32,
     saved: HashMap<isize, Saved>,
     signature: Vec<(isize, isize, Rect)>,
     dirty: bool,
@@ -1479,6 +1483,8 @@ pub fn run() {
             dock_actions: vec![],
             dock_entry_ids: HashMap::new(),
             dock_window_ids: HashMap::new(),
+            attention: HashSet::new(),
+            shell_hook: 0,
             saved: HashMap::new(),
             scrolling: HashMap::new(),
             signature: vec![],
@@ -1539,6 +1545,15 @@ pub fn run() {
                 &app.config.bar,
             );
         });
+        // Window flashes reach the taskbar through the shell hook; the dock listens too.
+        if RegisterShellHookWindow(main) != 0 {
+            let hook = RegisterWindowMessageW(wide("SHELLHOOK").as_ptr());
+            APP.with(|cell| {
+                if let Some(app) = cell.borrow_mut().as_mut() {
+                    app.shell_hook = hook;
+                }
+            });
+        }
         SetTimer(main, 1, 650, None);
         SetTimer(main, 2, 40, None);
         SetTimer(main, STICK_TIMER, 2000, None);
@@ -3419,6 +3434,10 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             WM_TIMER if w == 3 => {
                 ShowWindow(app.osd, SW_HIDE);
                 KillTimer(app.main, 3);
+                Some(0)
+            }
+            m if m != 0 && m == app.shell_hook => {
+                app.shell_event(w, l as HWND);
                 Some(0)
             }
             dock_ui::DOCK_MESSAGE => {

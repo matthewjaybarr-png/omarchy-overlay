@@ -14,6 +14,8 @@ pub(super) struct View {
     pub icon: Rc<picker_ui::Icon>,
     pub running: bool,
     pub focused: bool,
+    /// One of its windows flashed for attention and hasn't been in front since.
+    pub attention: bool,
 }
 struct Panel {
     hwnd: HWND,
@@ -78,7 +80,11 @@ pub(super) unsafe fn update(owner: HWND, views: Vec<View>, monitors: Vec<(HMONIT
         });
         let changed = state.views.len() != views.len()
             || state.views.iter().zip(&views).any(|(a, b)| {
-                a.label != b.label || a.running != b.running || a.focused != b.focused || !Rc::ptr_eq(&a.icon, &b.icon)
+                a.label != b.label
+                    || a.running != b.running
+                    || a.focused != b.focused
+                    || a.attention != b.attention
+                    || !Rc::ptr_eq(&a.icon, &b.icon)
             });
         state.views = views;
         state.autohide = autohide;
@@ -251,6 +257,19 @@ unsafe fn paint(state: &State, hwnd: HWND) {
         if state.hover == Some((hwnd as isize, index)) {
             SetDCBrushColor(dc, crate::material::selection(palette.border, palette.background, palette.accent));
             FillRect(dc, &cell, GetStockObject(DC_BRUSH) as HBRUSH);
+        }
+        if view.attention {
+            // The taskbar's flashing button: the accent around the app that wants you.
+            SetDCBrushColor(dc, palette.accent);
+            for inset in 0..unit(2) {
+                let ring = RECT {
+                    left: cell.left + inset,
+                    top: cell.top + inset,
+                    right: cell.right - inset,
+                    bottom: cell.bottom - inset,
+                };
+                FrameRect(dc, &ring, GetStockObject(DC_BRUSH) as HBRUSH);
+            }
         }
         DrawIconEx(
             dc,

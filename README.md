@@ -248,6 +248,8 @@ dot under each running one (a wider accent dot for the app in front).
   minimized one, then one on another workspace. Click again to move on to its
   next window. An app that isn't running starts.
 - **Middle-click** opens a new window. **Right-click** also offers **Close window**.
+- An app that flashes for attention, as its taskbar button would, gets an accent
+  ring until you bring it forward.
 - **Windows taskbar** page: choose whether the dock shows on floating workspaces
   (the default), always (it then hides until the pointer reaches the bottom edge of
   the screen), or never.
