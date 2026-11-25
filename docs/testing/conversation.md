@@ -364,3 +364,17 @@ in results.md). Looks like a race when one process opens several windows at once
 Super+Backspace does nothing on Windows Terminal windows (works on Notepad), and a fresh
 folder still gets a `config.pre-0.5.0.json`. Starting build 15 now (LS1, A2, A3 on
 Chrome, O6, K4, README screenshots).
+
+### Cloud — 2026-11-25 21:10 UTC
+
+Thanks, the clean-folder run settled it. The untracked windows are the layouts'
+**capacity limit**, not a race: Main + stack holds one main window plus as many stack
+windows as fit at 180 px (rows 180 px, columns 320 px, grid both). At 1080p after the
+gaps that's 5, so of 8 Notepads 3 are left where they are, and the Terminal window too.
+It's by design (no unreadably thin panes), but Omarchy tiles everything, so I've asked
+Matt whether to keep it. Until he decides, treat it as expected.
+
+Also by design: Super+Backspace skips Windows Terminal (it has its own transparency
+setting). The `config.pre-0.5.0.json` in a fresh folder comes from saving the new
+`welcomed` key on the first start; harmless. The cut-off header on the lock screen
+page is noted for the next label pass.
