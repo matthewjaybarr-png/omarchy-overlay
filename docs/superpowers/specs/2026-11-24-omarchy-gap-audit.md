@@ -33,6 +33,25 @@ borders, themes, accent and dark mode are already done. The biggest gaps:
    is top-only, and there's no color picker, idle screensaver or attention
    highlight for apps that flash.
 
+## Progress (2026-11-25)
+
+Built on `forge/quirky-dirac-tx8mpd`; unit tests and Windows clippy pass, VM and
+real-desktop testing still to do:
+
+- P1-A: floating layout, per-workspace layout keys, Super+Shift+Backspace gaps.
+- P1-B: dock (pins, running apps, click cycling, middle/right click, auto-hide mode,
+  attention ring). Still open: hiding the taskbar by default after the Start,
+  Win+N, Win+A, toast and tray checks.
+- P1-C: Terminal ANSI colors, VS Code colors, accent palette, classic-control
+  selection colors, theme swatches, transparency modes, one font, per-user font
+  install, Terminal and VS Code colors restored at every start. Still open:
+  backgrounds in the Standard zip (decision pending), git theme install,
+  Obsidian/Neovim, night light.
+- P1-D: OSD card with level bar, color picker, idle screensaver and lock,
+  persistent reminders. Still open: bar position and backgrounds, bar indicators,
+  clickable panels, smaller items.
+- P1-E: not started.
+
 ## Phase 1 — Standard edition, in build order
 
 ### P1-A. Floating workspace mode and per-workspace layouts
