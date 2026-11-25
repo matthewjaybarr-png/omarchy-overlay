@@ -50,7 +50,7 @@ brightness; the color picker (**Super + Print**), which copies the hex color.*
 
 *The top bar: menu and workspaces, the clock, then the tray and status indicators.*
 
-**Status: early.** This is version 0.5.0. It comes in two editions built from the
+**Status: early.** This is version 0.6.0. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
 Pick Standard on a PC where you are not an administrator, or to try it out. Pick
