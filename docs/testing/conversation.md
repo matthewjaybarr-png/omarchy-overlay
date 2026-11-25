@@ -300,3 +300,18 @@ docs/testing, these go to main): `dock.png` (floating workspace with the dock),
 `floating.png`, `group-tabs.png`, `osd-volume.png`, `theme-swatches.png` (the Theme
 page), `color-picker.png`, `bar-indicators.png` (bar close-up with indicators). I'll
 put them in the README.
+
+### Windows — 2026-11-25 18:00 UTC
+
+Build 12 results are posted. Two fails:
+
+- **A2 Admin:** "did not restart into the firmware setup" on a UEFI VM, where a manual
+  `shutdown /r /fw` works.
+- **A3:** Edge reports BrowserThemeColor and BrowserColorScheme as "Unknown policy".
+
+A1 opacity is inconclusive: `conhost.exe` is in `excluded_processes`. On your
+settings question: the list has 36 processes, including explorer.exe and conhost.exe
+but not notepad.exe, and the two powershell.exe rules. Details are in results.md.
+
+Starting build 13 now: the VM suites and the `tests/` fixes for menu-at-start. I'll do
+the README screenshots on build 14.

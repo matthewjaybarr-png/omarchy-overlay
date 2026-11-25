@@ -2,6 +2,52 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 12 (6d2c1aa) — 2026-11-25 18:00 UTC, Windows 11 VM, Admin and Standard
+
+- **Labels and menu** PASS. The top menu shows the short labels (Apps, Learn, Appearance,
+  Trigger, Setup, Install, Remove, Update). It opened by itself at start in both editions
+  (![](shots/12-menu-at-start.png)); build 13 changes that.
+- **A2 Admin** **FAIL**. System > Restart into BIOS/UEFI asks first
+  (![](shots/12-a2-menu.png), ![](shots/12-a2-confirm.png)). On Yes, a classic unthemed
+  message box says "Windows did not restart into the firmware setup. This PC may not use
+  UEFI firmware." (![](shots/12-a2-fail.png)). The VM is UEFI (OVMF, `firmware='efi'`).
+  `shutdown /r /fw /t 120` returns exit 0 both as SYSTEM and as Matt elevated (I
+  aborted both with `/a`). The System log has no event 1074 from the overlay's attempt,
+  and the overlay log says nothing. So the spawn of `System32\shutdown.exe /r /fw /t 0`
+  from the overlay fails or returns non-zero. Worth logging the status/error.
+- **A2 Standard** PASS. It still asks first, then says it needs the Admin edition
+  (![](shots/12-std-a2.png)). Asking first seems unnecessary when it can't do it.
+- **A1 Admin**
+  - Frames PASS. Apply theme to Windows > "Other apps' window frames follow the theme"
+    turns on and saves (![](shots/12-a1-frames-on.png)). The elevated cmd's title bar
+    becomes the theme's #0A1028, the focus outline #1F5B77 shows, and it doesn't tile
+    (![](shots/12-a1-cmd-after-opacity-key.png)).
+  - Opacity **INCONCLUSIVE**. Super+Backspace on the focused elevated cmd changes
+    nothing (pixel #0C0C0C before and after, tried 3 times). It works on Notepad. But
+    `conhost.exe` is in `excluded_processes` (see below), so this is probably the
+    exclusion, not elevation. I'll retest with a clean config.
+  - Exit PASS. After Restore desktop and exit, the cmd has Windows' own title bar again
+    and no outline (![](shots/12-a1-a3-after-exit.png)).
+- **A1 Standard** PASS. The elevated cmd is left as it is.
+- **A3 Admin** **FAIL for Edge**. "Chrome, Edge, Brave and Chromium follow the theme" says
+  "Set. Restart the browsers…". It writes `BrowserThemeColor #0a1028` and
+  `BrowserColorScheme device` under HKCU `Software\Policies\Microsoft\Edge` and
+  `…\Google\Chrome`. After restarting Edge, edge://policy lists both with Status
+  **Error: "Unknown policy."** (![](shots/12-a3-edge-policy.png)). Edge's toolbar takes
+  the Windows accent (#2A3A78), not the theme. Edge doesn't support these Chrome
+  policies. Chrome isn't installed in the VM, so Chrome is untested. Exit removed all
+  four values (PASS).
+- **A3 Standard** PASS. "Browser colors need the Admin edition" (![](shots/12-std-a3.png)).
+  The row still shows a check mark, because `browser_colors: true` stays in the shared
+  config.json after the Admin edition exits.
+- **OB1** SKIP (Obsidian isn't installed in the VM). **W1 bar per monitor** not tested
+  (the VM has one monitor).
+- **Settings check (17:45 request)**. `config.json` `excluded_processes` lists 36
+  processes, including explorer.exe, conhost.exe, WindowsTerminal.exe, OpenConsole.exe,
+  Dropbox.exe and SnippingTool.exe. notepad.exe is **not** in it. `rules` has two
+  powershell.exe entries: ignore, and tile for class OmarchyOverlay.ResizeFixture. So
+  the exclusion explains File Explorer, but not the untracked Notepads.
+
 ## Build 11 (0a27206) — 2026-11-25 17:03 UTC, Windows 11 VM, Standard
 
 - **K2** PASS. A lone Notepad on workspace 4 with Super+Ctrl+Backspace becomes a centred
