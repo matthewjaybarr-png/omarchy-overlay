@@ -21,6 +21,10 @@ pub(super) unsafe fn top_windows() -> Vec<isize> {
     found
 }
 const MOVE: u32 = SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE;
+/// The monitor a parked window came from.
+unsafe fn parked_monitor(parked: &Parked) -> isize {
+    MonitorFromRect(&parked.rect, MONITOR_DEFAULTTONEAREST) as isize
+}
 impl App {
     /// Parks one window for `workspace`. False when the window is not one the overlay may move.
     unsafe fn park(&mut self, hwnd: HWND, workspace: usize) -> bool {
@@ -67,8 +71,66 @@ impl App {
     }
     fn report_occupied(&mut self) {
         self.parked.retain(|&key, _| unsafe { IsWindow(key as HWND) } != 0);
-        let occupied = self.parked.values().fold(0u16, |mask, p| mask | 1 << p.workspace);
+        let per_monitor = self.config.per_monitor_workspaces;
+        let focus = self.focus_monitor;
+        let occupied = self
+            .parked
+            .values()
+            .filter(|p| !per_monitor || unsafe { parked_monitor(p) } == focus)
+            .fold(0u16, |mask, p| mask | 1 << p.workspace);
         crate::desktops::set_occupied(occupied);
+    }
+    /// The monitor a window is on, or for a parked one the monitor it was parked from;
+    /// the monitor under the pointer when the desktop or nothing is in front.
+    unsafe fn focus_monitor_now(&self) -> isize {
+        let front = GetForegroundWindow();
+        if let Some(parked) = self.parked.get(&(front as isize)) {
+            return parked_monitor(parked);
+        }
+        let mut pid = 0;
+        GetWindowThreadProcessId(front, &mut pid);
+        if front.is_null()
+            || pid == GetCurrentProcessId()
+            || ["Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd"].contains(&window_class(front).as_str())
+        {
+            let mut point: POINT = zeroed();
+            GetCursorPos(&mut point);
+            return MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST) as isize;
+        }
+        MonitorFromWindow(front, MONITOR_DEFAULTTONEAREST) as isize
+    }
+    /// The workspace a monitor shows: its own with per-monitor workspaces, else the one
+    /// every monitor shows.
+    pub(super) fn workspace_of(&self, monitor: isize) -> usize {
+        if self.config.per_monitor_workspaces {
+            self.monitor_workspace.get(&monitor).copied().unwrap_or(self.workspace)
+        } else {
+            self.workspace
+        }
+    }
+    /// A workspace button on a bar: that monitor switches (per-monitor workspaces), or
+    /// every monitor does.
+    pub(super) unsafe fn workspace_clicked(&mut self, workspace: usize, monitor: isize) {
+        if self.config.per_monitor_workspaces {
+            self.monitor_request = Some((monitor, workspace));
+            self.tick();
+        } else if crate::desktops::select(workspace) {
+            self.tick();
+        }
+        bar::poll();
+    }
+    /// Per-monitor workspaces turned on or off: every window comes back, every monitor
+    /// starts on the workspace shown now.
+    pub(super) unsafe fn reset_workspaces(&mut self) {
+        let keys: Vec<isize> = self.parked.keys().copied().collect();
+        for key in keys {
+            self.unpark(key);
+        }
+        self.monitor_workspace.clear();
+        self.focus_monitor = 0;
+        self.report_occupied();
+        bar::set_monitor_workspaces(HashMap::new());
+        self.dirty = true;
     }
     pub(super) unsafe fn focus_or_desktop(&mut self, target: Option<isize>) {
         // Seen first, so a refused focus change cannot read as the user picking a parked window.
@@ -105,35 +167,87 @@ impl App {
                 }
             }
         }
-        let next = crate::desktops::current();
+        let mut next = crate::desktops::current();
+        // Per-monitor workspaces (Omarchy's model): only the monitor in use switches, and
+        // moving to another monitor shows its workspace without switching anything.
+        let per_monitor = self.config.per_monitor_workspaces;
+        if per_monitor {
+            // Every monitor starts out showing the workspace shown now, so one that was
+            // never focused keeps its own number when another switches.
+            for display in settings::displays() {
+                self.monitor_workspace.entry(display.monitor as isize).or_insert(self.workspace);
+            }
+        }
+        let request = self.monitor_request.take().filter(|_| per_monitor);
+        let mut monitor = if per_monitor { self.focus_monitor_now() } else { 0 };
+        if let Some((asked, workspace)) = request {
+            // A bar button: that bar's monitor switches, whichever monitor has focus.
+            monitor = asked;
+            self.focus_monitor = asked;
+            self.workspace = self.workspace_of(asked);
+            next = workspace;
+            crate::desktops::select_quiet(workspace);
+        }
+        if per_monitor && request.is_none() && monitor != self.focus_monitor {
+            self.focus_monitor = monitor;
+            let shown = *self.monitor_workspace.entry(monitor).or_insert(self.workspace);
+            let requested = next != self.workspace;
+            self.workspace = shown;
+            if !requested || next == shown {
+                crate::desktops::select_quiet(shown);
+                self.report_occupied();
+                return;
+            }
+        }
         if next == self.workspace {
             return;
         }
         let old = std::mem::replace(&mut self.workspace, next);
-        if !self.parked.contains_key(&foreground) {
-            self.workspace_focus.insert(old, foreground);
+        if per_monitor {
+            self.monitor_workspace.insert(monitor, next);
         }
+        // Focus is remembered per workspace, and per monitor when monitors switch alone.
+        let slot = |workspace: usize| if per_monitor { (monitor as usize) << 4 | workspace } else { workspace };
+        if !self.parked.contains_key(&foreground) {
+            self.workspace_focus.insert(slot(old), foreground);
+        }
+        let on_monitor = |key: isize| !per_monitor || MonitorFromWindow(key as HWND, MONITOR_DEFAULTTONEAREST) as isize == monitor;
         let found = top_windows();
         for &key in &found {
-            self.park(key as HWND, old);
+            if on_monitor(key) {
+                self.park(key as HWND, old);
+            }
         }
         // EnumWindows runs top to bottom, so the first window back is the one that was on top.
         let back: Vec<isize> = found
             .iter()
             .copied()
-            .filter(|key| self.parked.get(key).is_some_and(|p| p.workspace == next))
+            .filter(|key| {
+                self.parked
+                    .get(key)
+                    .is_some_and(|p| p.workspace == next && (!per_monitor || parked_monitor(p) == monitor))
+            })
             .collect();
         for &key in &back {
             self.unpark(key);
         }
         let target = self
             .workspace_focus
-            .get(&next)
+            .get(&slot(next))
             .copied()
             .filter(|key| back.contains(key))
             .or(back.iter().copied().find(|&key| IsIconic(key as HWND) == 0));
         self.focus_or_desktop(target);
         self.report_occupied();
+        self.share_monitor_workspaces();
+    }
+    /// Tells the bar what each monitor shows, so each monitor's bar shows its own.
+    pub(super) unsafe fn share_monitor_workspaces(&self) {
+        bar::set_monitor_workspaces(if self.config.per_monitor_workspaces {
+            self.monitor_workspace.clone()
+        } else {
+            HashMap::new()
+        });
     }
     /// Omarchy's Super+Shift+number: sends the focused window to a workspace and, unless
     /// `silent`, goes there with it.
@@ -165,6 +279,8 @@ impl App {
     pub(super) fn forget_workspaces(&mut self) {
         self.parked.clear();
         self.workspace_focus.clear();
+        self.monitor_workspace.clear();
+        self.focus_monitor = 0;
         crate::desktops::set_occupied(0);
     }
 }

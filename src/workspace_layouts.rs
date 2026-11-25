@@ -21,6 +21,7 @@ pub const LAYOUTS: &[(&str, &str)] = &[
     ("scrolling", "Scrolling — Niri-inspired"),
     ("centered", "Centered main"),
     ("monocle", "Monocle — one at a time"),
+    ("floating", "Floating — windows stay where you put them"),
 ];
 impl Preferences {
     pub fn validate(&self) -> Result<(), String> {
@@ -59,6 +60,14 @@ impl Preferences {
             }
         }
         default
+    }
+    /// The scope a per-workspace change should write: the workspace's own entry for
+    /// this monitor or for all monitors if one exists, otherwise a new all-monitors
+    /// entry for the workspace, so other workspaces and the default stay as they are.
+    pub fn workspace_scope(&self, desktop: &str, monitor: &str) -> (String, String) {
+        let own = |m: &str| self.entries.iter().any(|e| e.desktop == desktop && e.monitor == m);
+        let monitor = if own(monitor) { monitor } else { "*" };
+        (desktop.to_string(), monitor.to_string())
     }
     pub fn set(
         &mut self,
@@ -103,5 +112,24 @@ mod tests {
         let restored: Preferences =
             serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
         restored.validate().unwrap();
+    }
+    #[test]
+    fn workspace_changes_stay_on_that_workspace() {
+        let desktop = desktop_key(&[2; 16]);
+        let mut p = Preferences::default();
+        p.set("*".into(), "*".into(), Some("columns".into())).unwrap();
+        // No entry of its own yet: the workspace gets one for all its monitors.
+        let (d, m) = p.workspace_scope(&desktop, "screen-a");
+        assert_eq!((d.as_str(), m.as_str()), (desktop.as_str(), "*"));
+        p.set(d, m, Some("floating".into())).unwrap();
+        assert_eq!(p.effective(&desktop, "screen-a", "grid"), "floating");
+        assert_eq!(p.effective("other", "screen-a", "grid"), "columns");
+        // A monitor-specific entry of its own is the one that changes.
+        p.set(desktop.clone(), "screen-b".into(), Some("rows".into())).unwrap();
+        let (d, m) = p.workspace_scope(&desktop, "screen-b");
+        assert_eq!(m, "screen-b");
+        p.set(d, m, Some("dwindle".into())).unwrap();
+        assert_eq!(p.effective(&desktop, "screen-b", "grid"), "dwindle");
+        assert_eq!(p.effective(&desktop, "screen-a", "grid"), "floating");
     }
 }

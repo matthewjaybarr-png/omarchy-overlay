@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 env:
-  # The Omarchy release whose stock theme backgrounds go into the Admin zip.
+  # The Omarchy release whose stock theme backgrounds go into both zips.
   OMARCHY_VERSION: v4.5.0
 
 jobs:
@@ -30,6 +30,13 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-xwin
+      - name: Keep testing notes out of releases
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          if [ -e docs/testing ]; then
+            echo "docs/testing is for work branches only. Remove it before tagging a release." >&2
+            exit 1
+          fi
       - name: Check the tag matches Cargo.toml
         if: startsWith(github.ref, 'refs/tags/')
         run: |

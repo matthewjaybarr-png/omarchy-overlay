@@ -308,6 +308,7 @@ pub(super) unsafe fn read(hwnd: HWND, current: &BarConfig) -> Result<BarConfig, 
         left: modules(201)?,
         center: modules(202)?,
         right: modules(203)?,
+        position: current.position.clone(),
     };
     c.validate()?;
     Ok(c)

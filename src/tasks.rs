@@ -81,7 +81,7 @@ fn shortcut_for(app_id: &str) -> Option<PathBuf> {
 }
 /// True for the AppUserModelID Chrome and Edge give an installed web app's window, such as
 /// `Chrome._crx_cadlkienfkclaiaibeoongdcgmdikeeg` (the browser itself has none or another).
-fn web_app_id(app_id: &str) -> bool {
+pub(super) fn web_app_id(app_id: &str) -> bool {
     app_id.to_ascii_lowercase().contains("._crx_")
 }
 unsafe fn shortcut_icon(shortcut: &Path) -> HICON {

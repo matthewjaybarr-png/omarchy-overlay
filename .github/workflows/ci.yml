@@ -9,6 +9,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      # docs/testing is the hand-off between the coding and the Windows testing sessions
+      # on a work branch. It never goes to main: remove it before merging.
+      - name: Keep testing notes off main
+        if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+        run: |
+          if [ -e docs/testing ]; then
+            echo "docs/testing is for work branches only. Run: git rm -r docs/testing" >&2
+            exit 1
+          fi
       - name: Install the Windows target and llvm-rc
         run: |
           rustup target add x86_64-pc-windows-msvc

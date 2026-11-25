@@ -28,6 +28,22 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("capture", "Screenshot or screen recording (Snipping Tool)"),
     ("record-screen", "Screen recording (Snipping Tool)"),
     ("extract-text", "Copy text from the screen (Snipping Tool)"),
+    ("color-picker", "Pick a color from the screen and copy its hex value"),
+    ("console", "Drop-down console: show, hide or start it"),
+    ("hibernate", "Hibernate the PC"),
+    ("toggle-laptop-display", "Laptop screen off, or back on"),
+    ("toggle-mirror", "Mirror the screens, or extend them again"),
+    ("restart-to-firmware", "Restart into the firmware (BIOS/UEFI) setup (Admin edition)"),
+    ("voice-typing", "Windows voice typing (dictation)"),
+    ("close-all", "Close every window on this workspace"),
+    ("full-screen-desktop", "Hide the bar and the gaps, or bring them back"),
+    ("single-window-square", "Keep a lone window square, or let it fill the screen"),
+    ("pseudo-tile", "Keep the window's own size inside its tile, or fill the tile"),
+    ("group-window-1", "Show window 1 of the group"),
+    ("group-window-2", "Show window 2 of the group"),
+    ("group-window-3", "Show window 3 of the group"),
+    ("group-window-4", "Show window 4 of the group"),
+    ("group-window-5", "Show window 5 of the group"),
     ("toggle-group", "Make the window a group, or ungroup it"),
     ("leave-group", "Take the window out of its group"),
     ("move-into-group-left", "Move the window into the group on the left"),
@@ -106,6 +122,11 @@ pub const PAGES: &[(&str, &str)] = &[
     ("layout", "Layout"),
     ("columns", "Scrolling columns"),
     ("opacity", "Window opacity"),
+    ("transparency", "Window transparency"),
+    ("idle", "Screensaver and idle lock"),
+    ("bar-position", "Bar position"),
+    ("idle-screensaver", "Screensaver"),
+    ("idle-lock", "Lock when idle"),
     ("corners", "Window corners"),
     ("windows-tweaks", "Windows behavior"),
     ("inactive-opacity", "Inactive window opacity"),
@@ -156,6 +177,10 @@ pub const PAGES: &[(&str, &str)] = &[
     ("app-folder", "Working folder"),
     ("version", "Omarchy Overlay version"),
     ("terminal-colors", "Windows Terminal colors"),
+    ("vscode-colors", "VS Code colors"),
+    ("obsidian-colors", "Obsidian colors"),
+    ("browser-colors", "Browser colors"),
+    ("lock-screen", "Lock screen picture"),
     ("config-errors", "Config file problems"),
 ];
 
@@ -185,6 +210,7 @@ pub const LAYOUTS: &[(&str, &str)] = &[
     ("scrolling", "Scrolling"),
     ("centered", "Centered main"),
     ("monocle", "Monocle"),
+    ("floating", "Floating"),
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -203,8 +229,10 @@ pub enum Command {
     /// Resizes the focused tile by `pixels`, wider/taller when positive, `resize width -100`.
     Resize { width: bool, pixels: i32 },
     /// Shows a reminder after this many minutes, `remind 15`.
-    Remind(u32),
+    Remind(u32, String),
     Theme(String),
+    /// Installs an Omarchy theme from its git repository, `theme-install owner/repo`.
+    ThemeInstall(String),
     /// A Windows Settings page, `settings sound` opens ms-settings:sound.
     Settings(String),
     App(&'static str),
@@ -301,12 +329,17 @@ pub fn parse(text: &str) -> Result<Command, String> {
         }
         "remind" => {
             need("a number of minutes")?;
-            argument
+            let (minutes, message) = argument.split_once(char::is_whitespace).unwrap_or((argument, ""));
+            let message = message.trim();
+            if message.chars().count() > 200 || message.chars().any(char::is_control) {
+                return Err("A reminder message is one line of up to 200 characters.".into());
+            }
+            minutes
                 .parse::<u32>()
                 .ok()
                 .filter(|n| (1..=1440).contains(n))
-                .map(Command::Remind)
-                .ok_or_else(|| "remind needs minutes from 1 to 1440, as in remind 15.".into())
+                .map(|n| Command::Remind(n, message.to_string()))
+                .ok_or_else(|| "remind needs minutes from 1 to 1440, as in remind 15 or remind 15 Stretch.".into())
         }
         "theme" => {
             need("a theme name")?;
@@ -315,6 +348,12 @@ pub fn parse(text: &str) -> Result<Command, String> {
             } else {
                 Err("Theme names use letters, digits and dashes.".into())
             }
+        }
+        "theme-install" => {
+            need("a theme repository, as in theme-install bjarneo/omarchy-ash-theme")?;
+            crate::theme_files::theme_repo(argument)
+                .map(|_| Command::ThemeInstall(argument.trim().to_string()))
+                .ok_or_else(|| "theme-install takes owner/repo or an https:// git address.".into())
         }
         "settings" => {
             // An empty argument opens the Settings home page.
@@ -401,6 +440,7 @@ impl Command {
                     | "capture"
                     | "record-screen"
                     | "extract-text"
+                    | "voice-typing"
                     | "move-to-desktop"
             ),
             _ => false,
@@ -480,7 +520,8 @@ mod tests {
             parse("Resize HEIGHT 25"),
             Ok(Command::Resize { width: false, pixels: 25 })
         );
-        assert_eq!(parse("remind 15"), Ok(Command::Remind(15)));
+        assert_eq!(parse("remind 15"), Ok(Command::Remind(15, String::new())));
+        assert_eq!(parse("remind 20  Take a break "), Ok(Command::Remind(20, "Take a break".into())));
         for bad in ["remind", "remind 0", "remind 1441", "remind soon"] {
             assert!(parse(bad).is_err(), "{bad}");
         }

@@ -162,6 +162,58 @@ pub fn resolve(id: &str) -> Option<Theme> {
 pub fn loaded() -> Vec<Theme> {
     LOADED.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
+/// The repository an Omarchy theme is installed from, and the theme id it gives, as
+/// omarchy-theme-install names it: `owner/repo` means GitHub; the id drops "omarchy-"
+/// and "-theme" and is lowercase. Only https and GitHub shorthand are accepted.
+pub fn theme_repo(text: &str) -> Option<(String, String)> {
+    let text = text.trim().trim_end_matches('/');
+    let url = if text.starts_with("https://") {
+        text.to_string()
+    } else if text.split('/').count() == 2 && !text.contains(':') && !text.starts_with('.') {
+        format!("https://github.com/{text}")
+    } else {
+        return None;
+    };
+    if url.chars().any(|c| c.is_whitespace() || c.is_control() || c == '"') || url.len() > 300 {
+        return None;
+    }
+    let last = url.rsplit('/').next()?.trim_end_matches(".git").to_lowercase();
+    let id = last
+        .strip_prefix("omarchy-")
+        .unwrap_or(&last)
+        .trim_end_matches("-theme")
+        .replace(['_', '.', '+'], "-");
+    valid_name(&id).then_some((url, id))
+}
+/// A theme's preview swatch as COLORREFs: background, accent, foreground, and its
+/// red or a second color, so themes with the same background still look different.
+pub fn preview(id: &str) -> Option<[u32; 4]> {
+    let t = resolve(id)?;
+    let colorref = |v: u32| ((v & 255) << 16) | (v & 0xff00) | ((v >> 16) & 255);
+    let fourth = ["red", "green", "magenta", "yellow"]
+        .iter()
+        .find_map(|k| t.colors.get(*k).copied())
+        .unwrap_or(t.surface);
+    Some([t.background, t.accent, t.text, fourth].map(colorref))
+}
+/// The classic-control selection, selected-text and link colors for an accent (COLORREF): the accent as the selection, black or
+/// white text on it, whichever reads better, and the accent for links.
+pub fn syscolor_values(accent: u32) -> [u32; 3] {
+    let channel = |c: u32| {
+        let c = f64::from(c & 255) / 255.0;
+        if c <= 0.03928 {
+            c / 12.92
+        } else {
+            ((c + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    let luminance = 0.2126 * channel(accent) + 0.7152 * channel(accent >> 8) + 0.0722 * channel(accent >> 16);
+    // Contrast against white (1.0) versus black (0.0).
+    let on_white = 1.05 / (luminance + 0.05);
+    let on_black = (luminance + 0.05) / 0.05;
+    let text = if on_white >= on_black { 0x00ff_ffff } else { 0 };
+    [accent & 0xff_ffff, text, accent & 0xff_ffff]
+}
 /// The image after `current` in a theme's backgrounds, wrapping; the first when
 /// `current` is not one of them.
 pub fn next_background(list: &[PathBuf], current: Option<&Path>) -> Option<PathBuf> {
@@ -176,10 +228,72 @@ pub fn accent_values(accent: u32) -> [u32; 5] {
     let argb = 0xC400_0000 | ((accent & 255) << 16) | (accent & 0xff00) | ((accent >> 16) & 255);
     [abgr, argb, argb, abgr, abgr]
 }
+/// The binary AccentPalette for a COLORREF accent: eight RGBA colors, three lighter
+/// shades, the accent, three darker shades, then `last` (Windows keeps a contrast
+/// color there; the caller passes the one already set). Start and the taskbar use the
+/// darker shades in dark mode and the lighter ones in light mode.
+pub fn accent_palette(accent: u32, last: [u8; 4]) -> [u8; 32] {
+    let rgb = [accent & 255, (accent >> 8) & 255, (accent >> 16) & 255];
+    let toward = |target: u32, amount: f64| {
+        rgb.map(|c| (c as f64 + (target as f64 - c as f64) * amount + 0.5) as u8)
+    };
+    let shades = [
+        toward(255, 0.70),
+        toward(255, 0.45),
+        toward(255, 0.25),
+        rgb.map(|c| c as u8),
+        toward(0, 0.20),
+        toward(0, 0.40),
+        toward(0, 0.60),
+    ];
+    let mut out = [0u8; 32];
+    for (i, [r, g, b]) in shades.into_iter().enumerate() {
+        out[i * 4..i * 4 + 4].copy_from_slice(&[r, g, b, 0]);
+    }
+    out[28..].copy_from_slice(&last);
+    out
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn accent_palette_brackets_the_accent_with_lighter_and_darker_shades() {
+        // Tokyo Night accent #7aa2f7 as a COLORREF.
+        let p = accent_palette(0x00f7a27a, [0xf7, 0x63, 0x0c, 0]);
+        assert_eq!(&p[12..16], &[0x7a, 0xa2, 0xf7, 0]);
+        let luma = |i: usize| p[i * 4] as u32 + p[i * 4 + 1] as u32 + p[i * 4 + 2] as u32;
+        for i in 0..6 {
+            assert!(luma(i) > luma(i + 1), "shade {i}");
+        }
+        assert_eq!(&p[28..], &[0xf7, 0x63, 0x0c, 0]);
+        assert!(p.iter().skip(3).step_by(4).take(7).all(|&a| a == 0));
+    }
+    #[test]
+    fn theme_repos_name_themes_as_omarchy_does() {
+        assert_eq!(
+            theme_repo("bjarneo/omarchy-ash-theme"),
+            Some(("https://github.com/bjarneo/omarchy-ash-theme".into(), "ash".into()))
+        );
+        assert_eq!(theme_repo("https://github.com/a/Omarchy-Pine_Forest.git").unwrap().1, "pine-forest");
+        assert_eq!(theme_repo("https://codeberg.org/a/b/").unwrap().1, "b");
+        for bad in ["git@github.com:a/b", "file:///c/x", "a/b/c", "", "http://x/y", "https://x/a b"] {
+            assert!(theme_repo(bad).is_none(), "{bad}");
+        }
+    }
+    #[test]
+    fn preview_uses_background_accent_foreground_and_red() {
+        let p = preview("tokyo-night").unwrap();
+        // #1a1b26, #7aa2f7, #a9b1d6, #f7768e as COLORREFs.
+        assert_eq!(p, [0x00261b1a, 0x00f7a27a, 0x00d6b1a9, 0x008e76f7]);
+        assert!(preview("no-such-theme").is_none());
+    }
+    #[test]
+    fn selection_text_is_whichever_reads_better_on_the_accent() {
+        // Dark blue accent: white text. Pale yellow accent: black text.
+        assert_eq!(syscolor_values(0x00a04010), [0x00a04010, 0x00ffffff, 0x00a04010]);
+        assert_eq!(syscolor_values(0x0080f0ff)[1], 0);
+    }
     #[test]
     fn next_background_starts_at_the_first_and_wraps() {
         let list: Vec<PathBuf> = ["a.jpg", "b.jpg", "c.jpg"].map(PathBuf::from).into();

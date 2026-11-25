@@ -284,6 +284,10 @@ pub(super) unsafe fn draw(
             Ellipse(dc, x + p(6), y + p(7), x + p(14), y + p(15));
         }
         Module::Divider => {}
+        // A drawn fallback when the Nerd Font is missing: a small dot.
+        Module::Indicators => {
+            Ellipse(dc, x + p(8), y + p(8), x + p(12), y + p(12));
+        }
     }
     SelectObject(dc, old_brush);
     SelectObject(dc, old_pen);

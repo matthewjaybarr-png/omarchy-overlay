@@ -25,8 +25,8 @@ public static class Desktop {
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string name, string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main", null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
-  public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
+  // The menu opens only at the first start; the main window's workspace property says it is running.
+  public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay()) || ReadyProp(main, "OmarchyOverlay.Workspace") != IntPtr.Zero); } [DllImport("user32.dll", CharSet=CharSet.Unicode, EntryPoint="GetPropW")] static extern IntPtr ReadyProp(IntPtr hwnd, string name);
   [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
   public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
   [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
@@ -184,6 +184,8 @@ try {
  $fixtureExcluded=@('Taskmgr.exe','mstsc.exe','msrdc.exe','ApplicationFrameHost.exe','vmconnect.exe')+@(Get-Process | Where-Object {$_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId -and $_.ProcessName -ne 'powershell'} | ForEach-Object {$_.ProcessName+'.exe'} | Select-Object -Unique)
 $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|ConvertTo-Json -Depth 5)
 [IO.File]::WriteAllText($configPath,$fixtureDefaults,[Text.UTF8Encoding]::new($false));$configTouched=$true
+$layoutFile=Join-Path (Split-Path $configPath) 'workspace-layouts.json';$originalLayouts=if(Test-Path $layoutFile){[IO.File]::ReadAllBytes($layoutFile)}else{$null}
+[IO.File]::WriteAllText($layoutFile,'{"entries":[]}');$layoutTouched=$true
  Key 0x10
  $originalTaskbar=[Desktop]::TaskbarState()
  for($i=0;$i -lt 3;$i++){
@@ -240,8 +242,8 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  $a=Bounds $forms[0].Handle;$b=Bounds $forms[1].Handle
  Check 'Make-main shortcut promotes focused window' ($b[0] -lt $a[0] -and ($b[2]-$b[0]) -gt ($a[2]-$a[0]))
  [Desktop]::Shortcut(0x56);Wait-Desktop 900
- $config=Get-Content -Raw $configPath|ConvertFrom-Json
- Check 'Cycle-layout shortcut saves columns' ($config.layout -eq 'columns')
+ # The layout key saves a choice for the workspace in front, not the default layout.
+ Check 'Cycle-layout shortcut saves columns' ((Get-Content -Raw $layoutFile) -match '"columns"')
  [Desktop]::Shortcut(0x56);Wait-Desktop 900
  $a=Bounds $forms[0].Handle;$b=Bounds $forms[1].Handle
  Check 'Cycle-layout shortcut arranges rows' ($a[0] -eq $b[0] -and $a[1] -ne $b[1])
@@ -299,6 +301,7 @@ finally {
  if($nativeFixture -ne [IntPtr]::Zero){[void][TasksTest]::DestroyWindow($nativeFixture)}
  foreach($form in $forms){$form.Close();$form.Dispose()}
  if($null -ne $originalTaskbar){[Desktop]::SetTaskbarState($originalTaskbar)}
+ if($layoutTouched){if($null -ne $originalLayouts){[IO.File]::WriteAllBytes($layoutFile,$originalLayouts)}else{Remove-Item -LiteralPath $layoutFile -ErrorAction SilentlyContinue}}
  if($configTouched){if($null -ne $originalConfig){[IO.File]::WriteAllText($configPath,$originalConfig,[Text.UTF8Encoding]::new($false))}elseif(Test-Path $configPath){Remove-Item $configPath}}
  if($configTouched){
   if($null -ne $originalUpgradeBackup){[IO.File]::WriteAllBytes($upgradeBackupPath,$originalUpgradeBackup)}

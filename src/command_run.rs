@@ -121,7 +121,8 @@ impl App {
             Command::Resize { width, pixels } => {
                 self.resize_keyboard(GetForegroundWindow(), *width, *pixels)
             }
-            Command::Remind(minutes) => self.remind(*minutes),
+            Command::Remind(minutes, text) => self.remind(*minutes, text),
+            Command::ThemeInstall(repo) => self.install_theme(repo),
             Command::Theme(name) => {
                 let mut c = self.config.clone();
                 c.theme = name.clone();
@@ -171,6 +172,73 @@ impl App {
             "lock" => {
                 LockWorkStation();
             }
+            "toggle-laptop-display" | "toggle-mirror" => {
+                let result = if name == "toggle-mirror" {
+                    display_topology::toggle_mirror()
+                } else {
+                    display_topology::toggle_laptop()
+                };
+                match result {
+                    Ok(text) => self.show_feedback(text),
+                    Err(error) => self.show_feedback(&error),
+                }
+            }
+            "hibernate" => {
+                if !SetSuspendState(true, false, false) {
+                    message("Windows did not allow hibernate. It may be turned off on this PC (powercfg /hibernate on).");
+                }
+            }
+            "voice-typing" => self.queue_system_action(17),
+            "close-all" => {
+                // Omarchy's close-all: every app window on this workspace is asked to close,
+                // as its own X button would, so apps can still ask about unsaved work.
+                for task in tasks::collect() {
+                    if !self.parked.contains_key(&(task.hwnd as isize)) && self.movable(task.hwnd) {
+                        PostMessageW(task.hwnd, WM_CLOSE, 0, 0);
+                    }
+                }
+            }
+            "pseudo-tile" => {
+                let key = GetForegroundWindow() as isize;
+                if self.order.contains(&key) {
+                    if !self.pseudo.remove(&key) {
+                        self.pseudo.insert(key);
+                    }
+                    self.tiled.clear();
+                    self.dirty = true;
+                    self.tick();
+                }
+            }
+            "single-window-square" => {
+                let mut c = self.config.clone();
+                c.single_window_square = !c.single_window_square;
+                self.show_feedback(if c.single_window_square { "A lone window stays square" } else { "A lone window fills the screen" });
+                // The cached tiles don't know the option: lay every monitor out again.
+                self.tiled.clear();
+                self.commit(c);
+            }
+            "full-screen-desktop" => {
+                // Omarchy's Super+Ctrl+Alt+F: no bar and no gaps, or both back.
+                let mut c = self.config.clone();
+                let bare = !c.show_top_bar && c.gap == 0 && c.outer_gap == 0;
+                if bare {
+                    c.show_top_bar = true;
+                    let d = Config::default();
+                    let (gap, outer) = std::mem::take(&mut self.gaps_before);
+                    (c.gap, c.outer_gap) = if (gap, outer) == (0, 0) { (d.gap, d.outer_gap) } else { (gap, outer) };
+                } else {
+                    c.show_top_bar = false;
+                    if (c.gap, c.outer_gap) != (0, 0) {
+                        self.gaps_before = (std::mem::take(&mut c.gap), std::mem::take(&mut c.outer_gap));
+                    }
+                }
+                self.commit(c);
+            }
+            name if name.starts_with("group-window-") => {
+                if let Ok(n) = name.trim_start_matches("group-window-").parse::<usize>() {
+                    self.show_group_window(GetForegroundWindow(), n.saturating_sub(1));
+                }
+            }
             "sleep" => {
                 if !SetSuspendState(false, false, false) {
                     message("Windows did not allow sleep. Use Start → Power → Sleep.");
@@ -179,6 +247,32 @@ impl App {
             "sign-out" => {
                 if ExitWindowsEx(EWX_LOGOFF, 0) == 0 {
                     message("Windows did not allow sign-out. Use Start → your name → Sign out.");
+                }
+            }
+            "restart-to-firmware" => {
+                // Omarchy's "Reboot to BIOS". Windows only allows it with administrator
+                // rights, so it runs here, from the elevated Admin edition, not through the
+                // unelevated launch every app gets.
+                if !crate::launch_unelevated::process_elevated() {
+                    message("Restarting into the firmware (BIOS/UEFI) setup needs the Admin edition, which runs with administrator rights.");
+                } else {
+                    let windir = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+                    let tool = crate::install::system_tool(&windir, "shutdown.exe");
+                    // A one-second delay: shutdown.exe takes /fw with a timer, as Windows'
+                    // own advanced startup does.
+                    match std::process::Command::new(&tool).args(["/r", "/fw", "/t", "1"]).output() {
+                        Ok(out) if out.status.success() => log("Restarting into the firmware setup."),
+                        Ok(out) => {
+                            let said = String::from_utf8_lossy(&out.stderr).trim().to_string()
+                                + String::from_utf8_lossy(&out.stdout).trim();
+                            log(&format!("{tool} /r /fw /t 1 exited with {:?}: {said}", out.status.code()));
+                            message(&format!("Windows did not restart into the firmware setup ({:?}). {said}", out.status.code()));
+                        }
+                        Err(error) => {
+                            log(&format!("{tool} could not start: {error}"));
+                            message(&format!("shutdown.exe could not start: {error}"));
+                        }
+                    }
                 }
             }
             "restart-pc" | "shutdown" => {
@@ -195,6 +289,8 @@ impl App {
             "capture" => self.queue_system_action(1),
             "record-screen" => self.queue_system_action(15),
             "extract-text" => self.queue_system_action(16),
+            "color-picker" => color_picker::start(self.main),
+            "console" => self.toggle_console(),
             "toggle-group" => self.toggle_group(GetForegroundWindow()),
             "leave-group" => self.leave_group(GetForegroundWindow()),
             "move-into-group-left" => self.move_into_group(GetForegroundWindow(), -1, 0),
@@ -223,12 +319,21 @@ impl App {
                     ShowWindow(window, SW_MINIMIZE);
                 }
             }
-            "volume-up" => native_status::adjust_volume(5),
-            "volume-down" => native_status::adjust_volume(-5),
-            "mute" => native_status::toggle_mute(),
+            "volume-up" => {
+                native_status::adjust_volume(5);
+                self.feedback_message(0);
+            }
+            "volume-down" => {
+                native_status::adjust_volume(-5);
+                self.feedback_message(0);
+            }
+            "mute" => {
+                native_status::toggle_mute();
+                self.feedback_message(0);
+            }
             "mic-mute" => match native_status::toggle_mic_mute() {
-                Some(true) => self.show_feedback("Microphone muted"),
-                Some(false) => self.show_feedback("Microphone on"),
+                Some(true) => self.show_card(Some(osd::MIC_OFF), "Microphone muted", None),
+                Some(false) => self.show_card(Some(osd::MIC), "Microphone on", None),
                 None => self.show_feedback("No microphone found"),
             },
             "zoom-in" => self.queue_system_action(13),
@@ -243,17 +348,20 @@ impl App {
             "move-workspace-right" => self.move_workspace_to_monitor(1, 0),
             "move-workspace-up" => self.move_workspace_to_monitor(0, -1),
             "move-workspace-down" => self.move_workspace_to_monitor(0, 1),
-            "brightness-up" => brightness::adjust(10),
-            "brightness-down" => brightness::adjust(-10),
+            "brightness-up" => brightness::adjust(10, self.main),
+            "brightness-down" => brightness::adjust(-10, self.main),
             "toggle-gaps" => {
+                // As Omarchy's toggle: the gaps at the screen edges go too, not only
+                // those between windows, so the tiles meet the edges and each other.
                 let mut c = self.config.clone();
-                if c.gap == 0 {
-                    c.gap = match std::mem::take(&mut self.gaps_before) {
-                        0 => Config::default().gap,
-                        gap => gap,
-                    };
+                if c.gap == 0 && c.outer_gap == 0 {
+                    let d = Config::default();
+                    let (gap, outer) = std::mem::take(&mut self.gaps_before);
+                    (c.gap, c.outer_gap) = if (gap, outer) == (0, 0) { (d.gap, d.outer_gap) } else { (gap, outer) };
+                    self.show_feedback("Gaps on");
                 } else {
-                    self.gaps_before = std::mem::take(&mut c.gap);
+                    self.gaps_before = (std::mem::take(&mut c.gap), std::mem::take(&mut c.outer_gap));
+                    self.show_feedback("Gaps off");
                 }
                 self.commit(c);
             }
@@ -321,7 +429,17 @@ impl App {
                 }
             }
             "restore-windows-appearance" => match appearance_effects::restore(&self.directory) {
-                Ok(()) => self.show_feedback("Original Windows appearance restored."),
+                Ok(()) => {
+                    // Asked for the original look: Terminal and VS Code stay unthemed.
+                    self.config.terminal_colors = false;
+                    self.config.vscode_colors = false;
+                    self.config.obsidian_colors = false;
+                    self.config.browser_colors = false;
+                    self.config.lock_screen = false;
+                    self.config.install_fonts = false;
+                    self.save_config();
+                    self.show_feedback("Original Windows appearance restored.")
+                }
                 Err(error) => message(&error),
             },
             "update-profile" => self.update_profile(),

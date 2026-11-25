@@ -188,6 +188,11 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
         "layout" => c.layout = d.layout,
         "columns" => c.scrolling_columns = d.scrolling_columns,
         "opacity" => c.active_opacity = d.active_opacity,
+        "transparency" => {
+            c.active_opacity = d.active_opacity;
+            c.inactive_opacity = d.inactive_opacity;
+            c.window_backdrop = d.window_backdrop.clone();
+        }
         "corners" => c.corners = d.corners.clone(),
         "inactive-opacity" => c.inactive_opacity = d.inactive_opacity,
         "materials" => {
@@ -202,6 +207,10 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
         }
         "focus-outline" => c.focus_outline = d.focus_outline,
         "osd" => c.show_osd = d.show_osd,
+        "idle" => {
+            c.screensaver_after = d.screensaver_after;
+            c.lock_after = d.lock_after;
+        }
         "start-tiling" => c.start_tiling = d.start_tiling,
         "bar" => c.show_top_bar = d.show_top_bar,
         "clock" => c.bar.clock_format = d.bar.clock_format,
@@ -212,7 +221,9 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
             c.bar.font_size = d.bar.font_size;
         }
         "bar-opacity" => c.bar_opacity = d.bar_opacity,
+        "bar-position" => c.bar.position = d.bar.position.clone(),
         "taskbar" => {
+            c.dock = d.dock.clone();
             c.taskbar_mode = d.taskbar_mode;
             c.auto_hide_taskbar = d.auto_hide_taskbar;
         }
@@ -391,7 +402,11 @@ impl App {
         }
         for item in &menu.items {
             let submenu = matches!(item.command, Command::Menu(_) | Command::Page(_));
-            let act = if item.confirm {
+            // An Admin-only command in the Standard edition only explains itself, so there
+            // is nothing to confirm.
+            let admin_only = matches!(item.command, Command::Builtin("restart-to-firmware"))
+                && !crate::launch_unelevated::process_elevated();
+            let act = if item.confirm && !admin_only {
                 Act::Confirm(item.command.clone(), format!("{}?", item.label))
             } else {
                 Act::Run(item.command.clone())
@@ -652,9 +667,13 @@ impl App {
                 }
                 list.into_iter()
                     .map(|(name, label, dark)| {
-                        Row::new(BRUSH, label, Act::Choose("theme", name.clone()))
+                        let mut row = Row::new(BRUSH, label, Act::Choose("theme", name.clone()))
                             .detail(if dark { "dark" } else { "light" })
-                            .checked(self.config.theme == name)
+                            .checked(self.config.theme == name);
+                        if let Some(colors) = crate::theme_files::preview(&name) {
+                            row.icon = overlay::Glyph::Swatch(colors);
+                        }
+                        row
                     })
                     .collect()
             }
@@ -686,7 +705,15 @@ impl App {
                     crate::font_names::Source::Installed => "Icons: the JetBrains Mono Nerd Font installed in Windows (fonts folder missing).",
                     crate::font_names::Source::None => "No Nerd Font found: menus use Segoe UI with plain letters.",
                 }));
-                rows.push(info("Used by the menu, app picker, keybinds list and the main window. Icons always use the Nerd Font. The top bar font is under Appearance → Top bar → Bar items."));
+                if font_install::available() {
+                    let installed = self.config.install_fonts;
+                    rows.push(
+                        Row::new(FONT, "Install JetBrains Mono for Windows Terminal and other apps", Act::Choose("font-install", if installed { "remove" } else { "install" }.into()))
+                            .checked(installed)
+                            .detail(if installed { "Enter removes them" } else { "this user only, no admin" }),
+                    );
+                }
+                rows.push(info("As in Omarchy, one font for everything: the menu, app picker, keybinds list, top bar and the themed Windows Terminal profile. Terminal only uses fonts installed in Windows. Icons always use the Nerd Font."));
                 rows.push(info("Other fonts installed in Windows:"));
                 rows.extend(all.map(row));
                 rows
@@ -845,6 +872,51 @@ impl App {
                 rows.push(info("Choices stay on this PC. Specific desktop/display choices override broader ones. Workspaces switch every monitor together."));
                 rows
             }
+            "lock-screen" => vec![
+                Row::new(IMAGE, "Lock screen shows the theme background", Act::Choose("lock-screen", "apply".into()))
+                    .checked(self.config.lock_screen),
+                Row::new(UNDO, "Put back the lock screen picture", Act::Choose("lock-screen", "restore".into())),
+                info("As Omarchy's lock screen follows its theme: the theme's first background. Windows shows it on the sign-in screen too when \"Show the lock screen background picture on the sign-in screen\" is on."),
+                info(if crate::launch_unelevated::process_elevated() {
+                    "Admin edition: for every user of this PC. Exit puts the original back; the next start sets it again."
+                } else {
+                    "For you only. Exit puts your own picture back; the next start sets the theme's again."
+                }),
+            ],
+            "browser-colors" => vec![
+                Row::new(BRUSH, "Chrome, Brave and Chromium follow the theme", Act::Choose("browser-colors", "apply".into()))
+                    .checked(self.config.browser_colors && crate::launch_unelevated::process_elevated()),
+                Row::new(UNDO, "Put back the browsers' own colors", Act::Choose("browser-colors", "restore".into())),
+                info("As in Omarchy: the browsers' theme color policy takes the theme background. Browsers then say \"Managed by your organization\". Restart the browser, or open chrome://policy and reload, to see it. Edge has no such policy; it follows the Windows accent, which the theme sets."),
+                info(if crate::launch_unelevated::process_elevated() {
+                    "Exit puts the browsers' own settings back; the next start sets the theme again."
+                } else {
+                    "Needs the Admin edition: browser policies take administrator rights."
+                }),
+            ],
+            "obsidian-colors" => vec![
+                Row::new(BRUSH, "Add the Omarchy Overlay theme to my Obsidian vaults", Act::Choose("obsidian-colors", "apply".into()))
+                    .checked(self.config.obsidian_colors)
+                    .detail(format!("{} vaults", obsidian_effects::vault_count())),
+                Row::new(UNDO, "Remove it from the vaults", Act::Choose("obsidian-colors", "restore".into())),
+                info("As in Omarchy: each vault gets an \"Omarchy Overlay\" theme in the current colors. Pick it once in Obsidian > Settings > Appearance > Themes. It follows theme changes; exit removes it and the next start adds it back."),
+            ],
+            "vscode-colors" => {
+                let found = vscode_effects::found();
+                vec![
+                    Row::new(BRUSH, "Theme VS Code with the current theme", Act::Choose("vscode-colors", "apply".into()))
+                        .checked(self.config.vscode_colors && vscode_effects::applied(&self.directory))
+                        .detail(format!("theme {}", self.config.theme)),
+                    Row::new(UNDO, "Put back the VS Code theme you had", Act::Choose("vscode-colors", "restore".into())),
+                    info(if found.is_empty() {
+                        "No VS Code, VS Code Insiders, VSCodium or Cursor settings were found for this user.".to_string()
+                    } else {
+                        format!("Found: {}.", found.join(", "))
+                    }),
+                    info("Adds a local \"Omarchy Overlay\" color theme built from Omarchy's VS Code template and selects it. Only that one setting changes in settings.json."),
+                    info("It follows every theme change. Put back, exit and a crash restore the theme you had, unless you picked another one since."),
+                ]
+            }
             "terminal-colors" => {
                 let applied = appearance_effects::terminal_applied(&self.directory);
                 vec![
@@ -922,6 +994,10 @@ impl App {
                     .collect();
                 rows.push(Row::new(DESKTOP, "Layouts by workspace", Act::Open(Level::Page("workspace-layouts"))));
                 rows.push(
+                    Row::new(DESKTOP, "Workspaces per monitor", Act::Choose("layout", "per-monitor".into()))
+                        .checked(self.config.per_monitor_workspaces),
+                );
+                rows.push(
                     Row::new(OPTION, "Remember layout, main share and gap for each set of monitors", Act::Choose("layout", "displays".into()))
                         .checked(self.config.remember_displays),
                 );
@@ -933,6 +1009,18 @@ impl App {
                 self.config.scrolling_columns,
                 &[1, 2, 3, 4].map(|c| (c, format!("{c} column{}", if c == 1 { "" } else { "s" }))),
             ),
+            "transparency" => {
+                let current = self.config.transparency();
+                let mut rows: Vec<Row> = crate::config::TRANSPARENCY
+                    .iter()
+                    .map(|(id, label, ..)| {
+                        Row::new(OPACITY, *label, Act::Choose("transparency", (*id).into())).checked(current == Some(*id))
+                    })
+                    .collect();
+                rows.push(Row::new(SLIDERS, "Set opacity and materials yourself", Act::Open(Level::Page("opacity"))));
+                rows.push(info("As in Omarchy. Apps that don't allow opacity, and apps with their own rule, keep their look."));
+                rows
+            }
             "opacity" => values(
                 "opacity",
                 OPACITY,
@@ -1023,6 +1111,25 @@ impl App {
                 rows
             }
             "focus-outline" => on_off("focus-outline", self.config.focus_outline, "Outline the active window", "No outline"),
+            "idle" => vec![
+                Row::new(DESKTOP, "Screensaver", Act::Open(Level::Page("idle-screensaver")))
+                    .detail(idle::label(self.config.screensaver_after)),
+                Row::new(DESKTOP, "Lock the PC", Act::Open(Level::Page("idle-lock")))
+                    .detail(idle::label(self.config.lock_after)),
+                info("As in Omarchy: after this long without a key press or mouse move. Neither starts while a video or another app keeps the screen on, or while Stay awake is on. Windows' own lock and sleep settings still apply."),
+            ],
+            "idle-screensaver" => values(
+                "idle-screensaver",
+                DESKTOP,
+                self.config.screensaver_after,
+                &idle::SCREENSAVER_AFTER.map(|s| (s, idle::label(s))),
+            ),
+            "idle-lock" => values(
+                "idle-lock",
+                DESKTOP,
+                self.config.lock_after,
+                &idle::LOCK_AFTER.map(|s| (s, idle::label(s))),
+            ),
             "osd" => on_off("osd", self.config.show_osd, "Show short messages on screen", "No on-screen messages"),
             "start-tiling" => {
                 let mut rows = on_off(
@@ -1078,6 +1185,12 @@ impl App {
                         .checked(self.config.bar.clock_format == *f)
                 })
                 .collect(),
+            "bar-position" => [("top", "At the top of the screen"), ("bottom", "At the bottom of the screen")]
+                .into_iter()
+                .map(|(p, label)| {
+                    Row::new(SLIDERS, label, Act::Choose("bar-position", p.into())).checked(self.config.bar.position == p)
+                })
+                .collect(),
             "bar-height" => values(
                 "bar-height",
                 SLIDERS,
@@ -1094,13 +1207,17 @@ impl App {
                 ("legacy", "Follow the top bar (0.15 behavior)"),
                 ("visible", "Always show the Windows taskbar"),
                 ("auto-hide", "Auto-hide the Windows taskbar"),
-                ("hidden", "Hide the Windows taskbar while Omarchy Overlay runs"),
+                ("hidden", "Hide the Windows taskbar"),
             ]
             .into_iter()
             .map(|(m, label)| {
                 Row::new(WINDOWS, label, Act::Choose("taskbar", m.into()))
                     .checked(self.config.taskbar_mode == m)
             })
+            .chain(crate::dock::MODES.iter().map(|(m, label)| {
+                Row::new(WINDOWS, *label, Act::Choose("dock", (*m).into()))
+                    .checked(self.config.dock == *m)
+            }))
             .collect(),
             "keymap" => crate::config::KEYMAPS
                 .iter()
@@ -1556,6 +1673,10 @@ impl App {
             Row::new(WINDOW, "Windows behavior (taskbar, File Explorer, snap, mouse focus)", Act::Open(Level::Page("windows-tweaks"))),
             Row::new(IMAGE, "Background", Act::Open(Level::Page("background"))),
             Row::new(BRUSH, "Windows Terminal colors", Act::Run(Command::Page("terminal-colors"))),
+            Row::new(BRUSH, "VS Code colors", Act::Run(Command::Page("vscode-colors"))),
+            Row::new(BRUSH, "Obsidian colors", Act::Run(Command::Page("obsidian-colors"))),
+            Row::new(BRUSH, "Browser colors (Admin edition)", Act::Run(Command::Page("browser-colors"))),
+            Row::new(IMAGE, "Lock screen", Act::Run(Command::Page("lock-screen"))),
             Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))),
             Row::new(INFO, "Apps Omarchy Overlay cannot theme", Act::Open(Level::Page("windows-checklist"))),
             info("Omarchy Overlay records the original values first and puts them back on Restore, on exit and after a crash."),
@@ -1889,6 +2010,9 @@ impl App {
         if bar_changed {
             bar::settings(&self.config.bar);
         }
+        if old.menu_font != self.config.menu_font && !theme_changed {
+            self.apply_app_colors();
+        }
         if taskbar_changed {
             self.taskbar_hidden_preferred = self.config.taskbar_mode == "hidden";
             bar::configure(
@@ -2154,7 +2278,11 @@ impl App {
         let index = value.parse::<usize>().unwrap_or(0);
         match page {
             "theme" => c.theme = value.into(),
-            "font" => c.menu_font = value.into(),
+            "font" => {
+                // One font, as omarchy-font-set: menus, the bar and the Terminal profile.
+                c.menu_font = value.into();
+                c.bar.font_family = value.into();
+            }
             "font-size" => c.menu_font_size = number,
             "gaps" => c.gap = [0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32][index.min(10)],
             "main-size" => {
@@ -2177,6 +2305,8 @@ impl App {
             }
             "focus-outline" => c.focus_outline = value == "on",
             "osd" => c.show_osd = value == "on",
+            "idle-screensaver" => c.screensaver_after = idle::SCREENSAVER_AFTER[index.min(idle::SCREENSAVER_AFTER.len() - 1)],
+            "idle-lock" => c.lock_after = idle::LOCK_AFTER[index.min(idle::LOCK_AFTER.len() - 1)],
             "start-tiling" => c.start_tiling = value == "on",
             "bar" => c.show_top_bar = value == "on",
             "clock" => c.bar.clock_format = value.into(),
@@ -2206,6 +2336,12 @@ impl App {
             "default-opacity" => c.default_allow_opacity = !c.default_allow_opacity,
             "frames" => c.coordinate_windows = !c.coordinate_windows,
             "corners" => c.corners = value.into(),
+            "bar-position" => c.bar.position = value.into(),
+            "transparency" => {
+                if !c.set_transparency(value) {
+                    return false;
+                }
+            }
             "conflict" => {
                 let Some((i, chord)) = value.split_once('=') else {
                     return false;
@@ -2277,6 +2413,15 @@ impl App {
                 self.edit_config_file(value);
                 false
             }
+            "layout" if value == "per-monitor" => {
+                let mut c = self.config.clone();
+                c.per_monitor_workspaces = !c.per_monitor_workspaces;
+                // Every hidden window comes back first, so none is left on a workspace
+                // the new setting no longer shows.
+                self.reset_workspaces();
+                self.commit(c);
+                true
+            }
             "layout" if value == "displays" => {
                 let mut c = self.config.clone();
                 c.remember_displays = !c.remember_displays;
@@ -2291,6 +2436,14 @@ impl App {
             "taskbar" => {
                 self.remember(key);
                 self.set_taskbar_policy(value);
+                true
+            }
+            "dock" => {
+                self.remember("taskbar");
+                let mut c = self.config.clone();
+                c.dock = value.into();
+                self.commit(c);
+                self.dock_poll();
                 true
             }
             "background" => {
@@ -2556,10 +2709,84 @@ impl App {
                 });
                 true
             }
+            "font-install" => {
+                let result = if value == "install" {
+                    font_install::install(&self.directory).map(|_| "Installed for this user. Restart apps to see it.")
+                } else {
+                    font_install::remove(&self.directory).map(|()| "Removed.")
+                };
+                if result.is_ok() {
+                    self.config.install_fonts = value == "install";
+                    self.save_config();
+                    self.apply_app_colors();
+                }
+                overlay::message(&match result {
+                    Ok(text) => text.to_string(),
+                    Err(error) => error,
+                });
+                true
+            }
+            "lock-screen" => {
+                let result = if value == "apply" {
+                    lock_screen::apply(&self.directory, &self.config.theme).map(|()| "Set. Lock the PC (Win+L) to see it.".to_string())
+                } else {
+                    lock_screen::restore(&self.directory).map(|()| "Put back.".to_string())
+                };
+                if result.is_ok() {
+                    self.config.lock_screen = value == "apply";
+                    self.save_config();
+                }
+                overlay::message(&result.unwrap_or_else(|e| e));
+                true
+            }
+            "browser-colors" => {
+                let result = if value == "apply" {
+                    let background = theme::current().background;
+                    browser_policy::apply(&self.directory, background).map(|()| "Set. Restart the browsers to see the theme color.".to_string())
+                } else {
+                    browser_policy::restore(&self.directory).map(|()| "Put back.".to_string())
+                };
+                if result.is_ok() {
+                    self.config.browser_colors = value == "apply";
+                    self.save_config();
+                }
+                overlay::message(&result.unwrap_or_else(|e| e));
+                true
+            }
+            "obsidian-colors" => {
+                let result = if value == "apply" {
+                    obsidian_effects::apply(&self.directory, &self.config.theme)
+                        .map(|n| format!("Added to {n} vaults. Choose it in Obsidian > Settings > Appearance."))
+                } else {
+                    obsidian_effects::restore(&self.directory).map(|()| "Removed.".to_string())
+                };
+                if result.is_ok() {
+                    self.config.obsidian_colors = value == "apply";
+                    self.save_config();
+                }
+                overlay::message(&result.unwrap_or_else(|e| e));
+                true
+            }
+            "vscode-colors" => {
+                let result = match value {
+                    "apply" => vscode_effects::apply(&self.directory, &self.config.theme)
+                        .map(|_| "Done. VS Code switches to the Omarchy Overlay theme; restart it if it doesn't."),
+                    _ => vscode_effects::restore(&self.directory).map(|()| "Put back."),
+                };
+                if result.is_ok() {
+                    self.config.vscode_colors = value == "apply";
+                    self.save_config();
+                }
+                overlay::message(&match result {
+                    Ok(text) => text.to_string(),
+                    Err(error) => error,
+                });
+                true
+            }
             "terminal-colors" => {
                 let result = match value {
                     "apply" => {
-                        appearance_effects::apply_terminal(&self.directory, &self.config.theme).map(
+                        appearance_effects::apply_terminal(&self.directory, &self.config.theme, &self.config.menu_font).map(
                             |()| "Added. Restart Windows Terminal to see the Omarchy Overlay profile.",
                         )
                     }
@@ -2573,6 +2800,10 @@ impl App {
                         Err("Windows Terminal could not open. Add the themed profile first, then restart Terminal if needed.".into())
                     }
                 };
+                if result.is_ok() {
+                    self.config.terminal_colors = value == "apply";
+                    self.save_config();
+                }
                 overlay::message(&match result {
                     Ok(text) => text.to_string(),
                     Err(error) => error,

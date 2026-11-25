@@ -2,6 +2,168 @@
 
 ## Unreleased
 
+- A reminder also shows on screen for 10 seconds, so it is seen even when Windows holds
+  the notification back, and the tray icon comes back after Explorer restarts (a lost
+  icon could not show the reminder at all).
+- Omarchy's display keys: **Super + Ctrl + Delete** turns the laptop screen off (external
+  screens only) or back on, and **Super + Ctrl + Shift + Delete** mirrors the screens or
+  extends them again, through Windows' own display switching (as Win + P).
+- **Lock screen** (Appearance > Lock screen): the lock screen shows the theme's first
+  background, as Omarchy's lock screen follows its theme. The Standard edition sets
+  your own lock screen, without administrator rights; the Admin edition sets it for
+  every user of the PC through Windows' lock screen policy. It follows theme changes;
+  exit puts the original back.
+- The menu opens by itself only at the very first start, as a welcome; later starts
+  are quiet, as in Omarchy. (After this update it opens once more, then never.)
+- **Browser colors** (Appearance > Browser colors, Admin edition), as Omarchy's
+  browser theme: Chrome, Brave and Chromium take the theme background as their
+  toolbar color through the BrowserThemeColor policy, with BrowserColorScheme
+  "device". Browsers show "Managed by your organization" while it is on. Edge has no
+  such policy and keeps following the Windows accent, which the theme sets. The original
+  policy values are journaled and restored on exit; the next start sets them again.
+- **Admin edition:** windows running as administrator get the theme's frame colors,
+  corners, materials, opacity and the focus outline too, since the elevated Admin
+  edition may change them. They still keep their own place instead of tiling.
+- **Restart into BIOS/UEFI** in the System menu (Admin edition), Omarchy's "Reboot to
+  BIOS". The Standard edition explains that it needs the Admin edition.
+- **Obsidian colors** (Appearance > Obsidian colors), as Omarchy themes Obsidian: each
+  vault Obsidian lists gets an "Omarchy Overlay" theme from Omarchy's Obsidian template
+  in the current colors; pick it once in Obsidian's Appearance settings. Obsidian's own
+  settings are not edited. It follows theme changes, is removed on exit and comes back
+  at the next start while turned on.
+- **Typed commands in the menu:** type any binds.conf command into the menu's search
+  and press Enter, as in Omarchy, for example `remind 25 Stretch`.
+- **Install themes from git**, as omarchy-theme-install: `theme-install owner/repo`
+  (GitHub) or an https:// git address downloads the theme with git, keeps only its
+  colors.toml and background pictures in `config\themes\<id>`, and switches to it.
+  Nothing that runs code is copied. Needs Git for Windows.
+- **Super + P** is Omarchy's pseudo-tile: the focused window keeps its own size,
+  centred in its tile, until you press it again. It takes Windows' Super + P (Project);
+  display projection stays in Settings > Display.
+- **Super + Ctrl + Backspace** is Omarchy's single-window aspect ratio: a workspace's
+  only tiled window stays a centred square instead of stretching across a wide screen.
+  Press it again to let it fill the screen.
+- More of Omarchy's keys and commands: **Super + Ctrl + Alt + F** hides the bar and
+  the gaps for a full-screen desktop, and brings them back; **Super + Alt + 1–5**
+  shows that window of the focused group; `close-all` closes every app window on this
+  workspace (each app can still ask about unsaved work); **Hibernate** in the System
+  menu; **Voice typing** in the Trigger menu opens Windows dictation.
+- The Standard zip carries Omarchy's stock theme backgrounds too, so every theme sets
+  its own wallpaper in both editions.
+- **Per-monitor workspaces** (Layout > "Workspaces per monitor"), off by
+  default: as in Omarchy, switching workspace changes only the monitor in use, and
+  moving to another monitor shows its workspace. Layout choices follow each monitor's
+  own workspace. Turning it on or off brings every hidden window back first. Each
+  monitor's bar shows that monitor's workspace, and its buttons switch that monitor.
+- **Bar position** (Appearance > Top bar > Bar position): the bar can sit at the
+  bottom of the screen, as Omarchy's can. Windows and the dock stay clear of it.
+- Exit puts back the stock or Settings-chosen wallpaper instead of leaving the
+  desktop black: Windows reports its own cache file as the wallpaper and overwrites
+  it with the next one, so a copy is kept before the first change.
+- **Super + Shift + Backspace** takes away the gaps at the screen edges too, as
+  Omarchy's toggle does, and says "Gaps off" / "Gaps on".
+- **Group tabs**, Omarchy's groupbar: a grouped tile gives up a 24 px row at its top
+  for a tab per window, the shown one in the accent color. Clicking a tab shows that
+  window.
+- **New defaults reach your own config files.** When a version adds keys to
+  binds.conf or entries to menu.json, they are merged into your copies at start: new
+  keys and entries are added, lines you never changed follow the new defaults, and
+  anything you changed or deleted stays as it is. Your file from before is kept as
+  `binds.conf.before-<version>` / `menu.json.before-<version>`.
+- Fixes from the build 7 test run: the status indicators icon follows the most urgent
+  indicator; the dock sits above the taskbar whenever Windows auto-hides it, whichever
+  setting does that; the on-screen card widens to fit its text; long bar tooltips wrap;
+  menus widen to fit their longest label (up to 560 px) instead of cutting labels off;
+  no "Font \"\" is not available" line in the log at start.
+- Fixes from testing on Windows: floating windows use Omarchy's sizes in logical
+  pixels, so they are 64% wide at 125% scaling, not 57%; the Terminal scheme takes
+  black, white, bright black and bright white from the theme as Omarchy does;
+  running apps keep their place in the dock instead of reordering on every focus
+  change; with an auto-hiding taskbar the dock sits above it; shorter dock option
+  labels; message boxes always open in front (one behind other windows froze the
+  Admin edition); a failed bar TRAY button shows an on-screen message instead of a
+  message box. The README says that the Admin edition does not tile windows running
+  as administrator.
+- **Super + `** is Omarchy's drop-down console: the first press starts your terminal
+  and drops its window over the top half of the screen, on top; the key then hides
+  and shows it. It floats outside the tiles, and pause, exit and crash recovery take
+  it off the top. It takes Windows Terminal's own Win + ` quake key.
+- The scratchpad holds up to eight windows per workspace, like Omarchy's special
+  workspace: **Super + Alt + S** adds the focused window or takes it out again, and
+  **Super + S** shows them all or hides them all.
+- **Status indicators** on the bar, as Omarchy's: Stay awake, pending reminders,
+  microphone off and (with more than one keyboard layout) the current layout. The
+  icon shows the most urgent one and the tooltip lists them all; nothing shows when
+  there is nothing to say. New bars have it at the right; add it to an existing bar
+  with Appearance > Top bar > Bar items.
+- Reminders survive a restart or sign-out, as Omarchy's do: they are kept in
+  `reminders.json` and come late if the PC was off. `remind 25 Stretch` adds a
+  message to show instead of "25 minutes are up."
+- **Screensaver and idle lock** (Appearance > Screensaver and idle lock), Omarchy's
+  idle settings: a themed screensaver with a large clock, and locking the PC, each
+  after a chosen time without input. Both are off by default, since Windows has its
+  own lock timeout. Neither starts while a video or another app keeps the screen on,
+  or while Stay awake is on.
+- **Super + Print** picks a color from the screen, as Omarchy's color picker does:
+  the screen freezes under a crosshair with the color and its hex value beside the
+  pointer, and a click copies the hex value. Escape or a right-click cancels. It takes
+  Windows' Super + Print screenshot key; remove the line from binds.conf to keep it.
+- The on-screen message is an Omarchy-style card in the theme's colors and font: an
+  icon, the text and, for volume and brightness, a level bar. Volume keys, mute and
+  the brightness keys now show it too.
+- The selection, selected-text and link colors of classic Windows controls (list
+  boxes, edit boxes, menus and older dialogs) follow the theme accent, as Omarchy's
+  GTK and Qt apps do. Window and text colors stay as they are. The originals are
+  journaled and put back on exit, Restore and after a crash.
+- **Font > Install JetBrains Mono for Windows Terminal and other apps** installs the
+  bundled JetBrains Mono Nerd Fonts for this Windows user (no administrator rights),
+  so the themed Terminal profile uses Omarchy's font. Like every other change it is
+  undone on exit and after a crash, and put back at the next start while turned on.
+  Fonts you already had are never touched.
+- **One font**, as omarchy-font-set: choosing a font on the Font page sets it for the
+  menus, the top bar and the themed Windows Terminal profile. Terminal uses it when
+  the font is installed in Windows (it cannot see the fonts bundled beside the exe).
+- The themed Windows Terminal profile and VS Code theme come back at every start
+  once turned on. Exit still takes them away, like every other change to Windows;
+  before, they stayed away until added again. **Restore the original Windows
+  appearance** turns them off.
+- The theme list shows a colour swatch for each theme (background, accent, text and
+  red), as Omarchy's theme switcher shows a preview.
+- The theme also sets the Windows accent palette, the lighter and darker shades of
+  the accent that Start and the taskbar use, so they match the theme instead of
+  Windows' last accent. It has its own journal and is restored with the accent.
+- **Window transparency** (Appearance > Window transparency): Omarchy's opaque,
+  transparent and glassy modes in one choice. Each sets the active and inactive
+  window opacity and the app window material together.
+- **VS Code colors** (Appearance > VS Code colors), as Omarchy themes VS Code: the
+  theme's colors fill Omarchy's VS Code color theme, installed as a local "Omarchy
+  Overlay" theme for VS Code, VS Code Insiders, VSCodium and Cursor, and selected in
+  settings.json. Only `workbench.colorTheme` changes there; comments and every other
+  setting stay. It follows theme changes, and Put back, exit and a crash restore the
+  theme you had unless you picked another one since.
+- **Dock**, after Omarchy's: on each monitor whose workspace uses the floating
+  layout, it shows the pinned apps (the app picker's favorites) and then the other
+  running apps, with a running dot. Click brings the app forward and cycles through
+  its windows (this workspace, then minimized, then other workspaces) or starts it;
+  middle-click opens a new window; right-click offers New window, Keep in dock /
+  Remove from dock and Close. The **Windows taskbar** page sets it to show on
+  floating workspaces (default), always (auto-hiding at the bottom edge) or never.
+  An app whose window flashes for attention gets an accent ring until you bring it
+  forward, as its taskbar button would flash.
+- **Floating layout**, Omarchy's floating workspace mode: a workspace set to it stops
+  tiling. Each window is placed once at min(1100, 64%) × min(760, 68%) of its
+  monitor, centred and stepped 24 px in a cycle of five, then left where you put it;
+  new windows open the same way. Switching back to a tiling layout re-tiles them.
+  Windows floated with **Super + T** or an app rule stay floating. Exit, a crash and
+  `RECOVER.cmd` put the windows back as for the tiled layouts.
+- **Super + Shift + L** and **Super + Alt + L** change the layout of the workspace in
+  front only. Before, they changed the default for every workspace unless that
+  workspace already had a layout of its own.
+- The Windows Terminal scheme uses each theme's own 16 terminal colors, cursor and
+  selection from its `colors.toml`. Before, every theme but Neon Ridge got Tokyo
+  Night's terminal colors.
+- **Super + Shift + Backspace** turns the gaps off or back on, as in Omarchy, instead
+  of opening the gaps page.
 - The Admin zip carries only the stock Omarchy theme backgrounds, not ones from
   `~/.config/omarchy/themes`.
 - Release builds run on GitHub Actions: a `v<version>` tag builds both zips and

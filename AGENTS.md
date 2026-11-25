@@ -14,3 +14,13 @@ names, paths or settings.
 
 - `src/main.rs` is the entry point. `src/windows.rs` and `src/bar.rs` are large: search for a symbol and read the lines around it.
 - `tests/` holds the PowerShell integration tests and `scripts/` the VM helpers. `profiles/`, `assets/`, `config/examples/` and `wallpapers/` are shipped resources.
+
+## Releases
+
+- Every release (a `v*` tag) updates README.md first, so the page on main describes
+  everything the release can do, not only what is new. Visible features get a
+  screenshot in `docs/screenshots/`, shown in the README. The Windows testing session
+  can take them on request (ask in `docs/testing/conversation.md`); nothing private may
+  be on screen, and the desktop should use a stock theme and background.
+- `docs/testing/` is for work branches only: remove it before a branch merges into main.
+  CI fails a pull request into main, and the release workflow fails a tag, while it exists.

@@ -67,6 +67,22 @@ pub(super) enum Glyph {
     Char(char),
     Task(Rc<tasks::Identity>),
     Icon(Rc<picker_ui::Icon>),
+    /// A theme preview: four COLORREF colors drawn as a 2 x 2 swatch.
+    Swatch([u32; 4]),
+}
+/// Draws a 2 x 2 color swatch in `size` square at (x, y), with a hairline frame.
+unsafe fn swatch(hdc: HDC, x: i32, y: i32, size: i32, colors: &[u32; 4], frame: u32) {
+    let half = size / 2;
+    for (i, &color) in colors.iter().enumerate() {
+        let (cx, cy) = (x + (i as i32 % 2) * half, y + (i as i32 / 2) * half);
+        fill(hdc, &RECT { left: cx, top: cy, right: cx + half, bottom: cy + half }, color);
+    }
+    SetDCBrushColor(hdc, frame);
+    FrameRect(
+        hdc,
+        &RECT { left: x, top: y, right: x + 2 * half, bottom: y + 2 * half },
+        GetStockObject(DC_BRUSH) as HBRUSH,
+    );
 }
 
 #[derive(Clone)]
@@ -555,7 +571,31 @@ unsafe fn layout(hwnd: HWND) {
         SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE);
         return;
     }
-    let width = unit(WIDTH).min(work.right - work.left - unit(32));
+    // Omarchy's card is narrow, but never so narrow that a label is cut off: it grows
+    // to the widest row of this menu (label, detail and marks), up to 560 px.
+    let needed = with(|o| {
+        let f = o.fonts.as_ref()?;
+        let dc = GetDC(null_mut());
+        let widest = o
+            .view
+            .rows
+            .iter()
+            .map(|r| {
+                let detail = if r.detail.is_empty() { 0 } else { width_of(dc, f.small, &r.detail).min(unit(160)) + unit(12) };
+                let tag = if r.windows { unit(80) } else { 0 };
+                width_of(dc, f.text, &r.label) + detail + tag
+            })
+            .max()
+            .unwrap_or(0);
+        ReleaseDC(null_mut(), dc);
+        Some(widest)
+    })
+    .flatten()
+    .unwrap_or(0);
+    let chrome = unit(2 * PAD + 8 + ICON_BOX + 6 + 8 + 48);
+    let width = (needed + chrome)
+        .clamp(unit(WIDTH), unit(560).max(unit(WIDTH)))
+        .min(work.right - work.left - unit(32));
     let fit = ((work.bottom - work.top) * 7 / 10 - unit(2 * PAD + HEADER + 6)) / unit(ROW + GAP);
     let visible = fit.max(3) as usize;
     with(|o| {
@@ -848,6 +888,16 @@ unsafe fn paint(hwnd: HWND, target: HDC) {
                         DI_NORMAL,
                     );
                 }
+                Glyph::Swatch(colors) => {
+                    swatch(
+                        hdc,
+                        x + (icon_box - picture) / 2,
+                        y + (unit(ROW) - picture) / 2,
+                        picture,
+                        colors,
+                        blend(p.text, p.background, 0.6),
+                    );
+                }
                 _ => {}
             }
             x += icon_box + unit(6);
@@ -1050,6 +1100,10 @@ unsafe fn grid(hdc: HDC, o: &Overlay, f: &Fonts, client: &RECT) {
         let icon = match &row.icon {
             Glyph::Icon(icon) => icon.0,
             Glyph::Task(identity) => identity.icon,
+            Glyph::Swatch(colors) => {
+                swatch(hdc, ix, iy, picture, colors, blend(p.text, p.background, 0.6));
+                null_mut()
+            }
             Glyph::Char(c) => {
                 if fonts::available() {
                     let mut r = RECT {
@@ -1124,6 +1178,15 @@ fn key(o: &mut Overlay, vk: u16) -> Option<Act> {
         VK_RETURN | VK_RIGHT => {
             if vk == VK_RIGHT && !o.filter.is_empty() {
                 return None;
+            }
+            // Typed commands, as Omarchy's menu takes them: "remind 25 Stretch",
+            // "theme-install owner/repo". Any command binds.conf accepts; those that ask
+            // first still ask.
+            let typed = o.filter.trim();
+            if vk == VK_RETURN && (o.filtered.is_empty() || typed.contains(' ')) {
+                if let Ok(command) = crate::commands::parse(typed) {
+                    return Some(Act::Run(command));
+                }
             }
             // An information row does nothing; returning None keeps the selection.
             return o

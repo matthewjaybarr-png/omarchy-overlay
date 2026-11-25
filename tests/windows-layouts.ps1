@@ -28,8 +28,8 @@ public static class RecoverTest {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls,string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main",null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
-  public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
+  // The menu opens only at the first start; the main window's workspace property says it is running.
+  public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay()) || ReadyProp(main, "OmarchyOverlay.Workspace") != IntPtr.Zero); } [DllImport("user32.dll", CharSet=CharSet.Unicode, EntryPoint="GetPropW")] static extern IntPtr ReadyProp(IntPtr hwnd, string name);
   [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
   public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
   [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
@@ -199,10 +199,10 @@ try {
  Check 'Side columns stack two windows each' ((@($left|Sort-Object t)[0].b -le @($left|Sort-Object t)[1].t+20) -and (@($right|Sort-Object t)[0].b -le @($right|Sort-Object t)[1].t+20)) $detail
  Screen-Shot 'layout-centered.png'
 
- # Settings reads the layout from the shared list and can switch to monocle.
+# Settings reads the layout from the shared list (nine with floating) and can switch to monocle.
  Click ([RecoverTest]::MainWindow()) 3;$settings=[RecoverTest]::Settings()
  $combo=[RecoverTest]::GetDlgItem($settings,60)
- Check 'Settings layout list includes the two new layouts' ([RecoverTest]::SendMessage($combo,0x146,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32() -eq 8)
+ Check 'Settings layout list lists all nine layouts' ([RecoverTest]::SendMessage($combo,0x146,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32() -eq 9)
  Check 'Settings shows centered as the current layout' ([RecoverTest]::SendMessage($combo,0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32() -eq 6)
  Select-Index $settings 60 7;Click $settings 64;Pump 1500
  Check 'Settings saves monocle' ((Read-Profile $folder).settings.layout -eq 'monocle')

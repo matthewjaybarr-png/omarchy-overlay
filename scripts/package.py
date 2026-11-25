@@ -90,11 +90,13 @@ def build(exe: Path, out: Path, pictures: list[tuple[Path, str]] = ()) -> list[P
             if edition == 'admin':
                 z.write(ROOT / 'packaging/INSTALL.cmd', 'INSTALL.cmd')
                 z.writestr('edition-admin', '')
-                if pictures:
-                    z.writestr('themes/NOTICE.txt', NOTICE.replace('\n', '\r\n'))
-                    z.write(ROOT / 'packaging/OMARCHY-LICENSE.txt', 'themes/OMARCHY-LICENSE.txt')
-                for source, name in pictures:
-                    z.write(source, name, zipfile.ZIP_STORED)
+            # Both editions carry the stock theme backgrounds, so every theme sets its own
+            # wallpaper without a download.
+            if pictures:
+                z.writestr('themes/NOTICE.txt', NOTICE.replace('\n', '\r\n'))
+                z.write(ROOT / 'packaging/OMARCHY-LICENSE.txt', 'themes/OMARCHY-LICENSE.txt')
+            for source, name in pictures:
+                z.write(source, name, zipfile.ZIP_STORED)
         zips.append(path)
     sums = ''.join(f'{hashlib.sha256(z.read_bytes()).hexdigest()}  {z.name}\n' for z in zips)
     (out / 'SHA256SUMS.txt').write_text(sums)
@@ -127,8 +129,10 @@ def selftest() -> None:
         assert sums == [f'{hashlib.sha256(z.read_bytes()).hexdigest()}  {z.name}' for z in (standard, admin)], sums
         picture = temp / 'a.jpg'
         picture.write_bytes(b'jpg')
-        _, admin = build(exe, temp / 'dist', [(picture, 'themes/nord/backgrounds/nord-a.jpg')])
-        assert {'themes/NOTICE.txt', 'themes/OMARCHY-LICENSE.txt', 'themes/nord/backgrounds/nord-a.jpg'} <= set(zipfile.ZipFile(admin).namelist())
+        standard, admin = build(exe, temp / 'dist', [(picture, 'themes/nord/backgrounds/nord-a.jpg')])
+        pictures = {'themes/NOTICE.txt', 'themes/OMARCHY-LICENSE.txt', 'themes/nord/backgrounds/nord-a.jpg'}
+        assert pictures <= set(zipfile.ZipFile(standard).namelist())
+        assert pictures <= set(zipfile.ZipFile(admin).namelist())
     print('package selftest passed')
 
 

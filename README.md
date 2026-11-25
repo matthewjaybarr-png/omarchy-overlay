@@ -39,15 +39,36 @@ Admin on your own PC when its keys must also work in apps running as administrat
 ## What it does
 
 - **Tiles windows:** main-stack, columns, rows, grid, dwindle, a scrolling
-  layout inspired by Niri, centered main for wide monitors and monocle. You can resize windows by dragging their shared edges.
-- **Super keys:** an app grid, a command menu, a keybind list and window
-  actions, defined in `config\binds.conf`.
-- **Top bar:** ten workspaces of its own, the active app, a clock,
-  a tray and modules.
+  layout inspired by Niri, centered main for wide monitors, monocle and floating.
+  You can resize windows by dragging their shared edges.
+- **Floating workspaces:** as in Omarchy, a workspace set to the floating layout
+  stops tiling. Each window is placed once at a comfortable size in the middle of
+  its monitor, stepped so they don't stack exactly, and then stays where you put
+  it. Switching the workspace back to a tiling layout tiles them again.
+  **Super + Shift + L** and **Super + Alt + L** cycle the layout of the workspace
+  in front only; the default for other workspaces stays as it is.
+- **Dock:** Omarchy's dock on floating workspaces (or always, auto-hiding): pinned
+  apps, running apps, click to cycle an app's windows, an accent ring for an app that
+  wants attention.
+- **Workspaces like Omarchy's:** ten of them, optionally per monitor; groups with
+  tabs; a scratchpad of several windows; a drop-down console on Super + `; pseudo-tile
+  and a square single window.
+- **Super keys:** an app grid, a command menu (type any command into it), a keybind
+  list and window actions, defined in `config\binds.conf`. New default keys reach
+  your own binds.conf by themselves.
+- **Top bar:** at the top or bottom, ten workspaces of its own, the active app, a
+  clock, a tray, status indicators and modules.
 - **Themes:** every stock Omarchy theme (Tokyo Night, the default, Catppuccin,
-  Gruvbox, Nord and more) built in, plus a few extra themes, Mica and
-  Acrylic materials and window opacity. It can apply the theme to Windows'
-  own settings and puts the originals back on exit.
+  Gruvbox, Nord and more) built in with its backgrounds, plus a few extra themes and
+  any theme installed from git. The theme also colors Windows (accent, accent shades,
+  dark mode, selection colors, wallpaper), Windows Terminal, VS Code and Obsidian,
+  with one font throughout, Mica and Acrylic materials and Omarchy's opaque,
+  transparent and glassy modes. Everything it changes is put back on exit.
+- **Omarchy's utilities:** a color picker, an on-screen card for volume and
+  brightness, reminders that survive a restart, an idle screensaver and lock.
+- **Admin edition extras:** keys and theme colors over apps running as
+  administrator, the browsers' toolbar color, the lock screen picture and restart
+  into BIOS/UEFI.
 - **Runs from a flash drive:** the Standard edition needs no install, so it can
   run from a USB stick and take your settings with it. See below.
 - **Recovery:** if the program exits or crashes, it restores the taskbar,
@@ -105,6 +126,9 @@ The Admin release has an `edition-admin` file beside the exe, which adds
   installed it, so its keys also work in apps running as administrator;
 - adds a Start menu shortcut that runs that task, and an entry in **Settings > Apps**.
 
+Windows running as administrator take its keys and its look (frame colors, corners,
+materials, opacity and the focus outline) but are not tiled: they keep their own
+place, so an elevated tool never moves under you.
 Apps you start from it still open without administrator rights.
 
 **Updating:** run `INSTALL.cmd` (or **Update the installed copy…** in the tray) from
@@ -217,9 +241,11 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
   move left, right, up and down, Page Up/Down and the mouse wheel scroll by rows.
 - The theme sets the Windows accent color and its first background, at start
   and whenever you choose one. **Super+Ctrl+Space** opens the background switcher for the theme's
-  `backgrounds` folder. The Admin edition ships Omarchy's backgrounds for every theme in
+  `backgrounds` folder. Both editions ship Omarchy's backgrounds for every theme in
   `themes\<id>\backgrounds` beside the exe.
 
+- **Appearance > Window transparency** picks Omarchy's opaque, transparent (barely
+  see-through) or glassy (75% with Acrylic) windows in one step.
 - **Appearance > Window corners** draws every window with square, round or
   slightly round corners, or leaves them as Windows draws them.
 - **Background > Apply to** sets a background on one monitor only (counted left to
@@ -228,6 +254,24 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
 
 Every Windows setting this changes is recorded first and restored on exit, from
 the recovery menu, and after a crash.
+
+### Dock
+
+As in Omarchy, a dock shows at the bottom of each monitor whose workspace uses the
+floating layout. It holds your pinned apps, then every other running app, with a
+dot under each running one (a wider accent dot for the app in front).
+
+- **Pinned apps** are the app picker's favorites (★). Right-click an app in the dock
+  and choose **Keep in dock** or **Remove from dock** to change them.
+- **Click** brings the app forward: a window on this workspace first, then a
+  minimized one, then one on another workspace. Click again to move on to its
+  next window. An app that isn't running starts.
+- **Middle-click** opens a new window. **Right-click** also offers **Close window**.
+- An app that flashes for attention, as its taskbar button would, gets an accent
+  ring until you bring it forward.
+- **Windows taskbar** page: choose whether the dock shows on floating workspaces
+  (the default), always (it then hides until the pointer reaches the bottom edge of
+  the screen), or never.
 
 ### Windows behavior
 
@@ -283,6 +327,16 @@ value; **Enter** changes it.
   a crash.
 - **Apps Omarchy Overlay cannot theme** lists Office, Teams, Chrome/Edge and CAD programs
   with where each one's own theme setting is.
+
+
+### VS Code colors
+
+**Appearance > VS Code colors** themes VS Code, VS Code Insiders, VSCodium and
+Cursor like Omarchy does: the current theme fills Omarchy's VS Code color theme,
+which is added as a local **Omarchy Overlay** theme and selected. Only the
+`workbench.colorTheme` line in settings.json changes. It follows every theme change.
+**Put back**, exit and a crash restore the theme you had, unless you chose another
+one in VS Code since.
 
 ### Windows that always float
 
@@ -410,6 +464,13 @@ mode = "dark"
 `scripts/import_omarchy_themes.py` refreshes the embedded themes from an
 Omarchy install; `--out DIR` also writes theme folders to copy to a PC.
 
+
+To install a theme from its git repository, as Omarchy does, open the menu, type
+`theme-install owner/repo` (for example `theme-install bjarneo/omarchy-ash-theme`) and
+press Enter. Omarchy Overlay downloads it with git (Git for Windows must be
+installed), keeps only `colors.toml` and the background pictures in
+`config\themes\<id>`, and switches to it.
+
 ### Commands
 
 Used in binds.conf and menu.json.
@@ -477,11 +538,11 @@ Used in binds.conf and menu.json.
 | `workspace <1-10>` | Shows that workspace |
 | `move-to-workspace <1-10>` | Moves the focused window to that workspace and goes there |
 | `move-to-workspace-silent <1-10>` | Moves the focused window to that workspace and stays |
-| `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling`, `centered`, `monocle` |
+| `layout <name>` | `main-stack`, `columns`, `rows`, `grid`, `dwindle`, `scrolling`, `centered`, `monocle`, `floating` |
 | `theme <name>` | Switches theme, for example `theme tokyo-night` |
 | `settings <page>` | Opens a Windows Settings page, for example `settings sound` |
 | `resize width\|height <pixels>` | Resizes the focused tile, for example `resize width -100` |
-| `remind <minutes>` | Shows a Windows notification after 1 to 1440 minutes, for example `remind 15` |
+| `remind <minutes> [message]` | Shows a Windows notification after 1 to 1440 minutes, for example `remind 15` or `remind 25 Stretch`. Reminders are kept across restarts |
 | `action <id>` | Runs a window action, for example `action close-window` |
 | `launch <file> [arguments]` | Runs a program or script stored inside the config folder, as you |
 
@@ -518,8 +579,9 @@ them in a libvirt Windows guest through `scripts/vm.py`. Set `OVERLAY_VM`,
 After the release build, `python3 scripts/package.py` writes two zips to `dist\`
 from the same exe, and `SHA256SUMS.txt` with their checksums:
 
-- `OmarchyOverlay-<version>-standard.zip`: the exe, `RECOVER.cmd`, `fonts\` and
-  `config\examples\`. Unzip and run; no administrator rights.
+- `OmarchyOverlay-<version>-standard.zip`: the exe, `RECOVER.cmd`, `fonts\`,
+  `config\examples\` and the stock theme backgrounds in `themes\`. Unzip and run; no
+  administrator rights.
 - `OmarchyOverlay-<version>-admin.zip`: the same, plus `INSTALL.cmd` and the
   `edition-admin` marker. Run `INSTALL.cmd` to install (see Admin edition).
 

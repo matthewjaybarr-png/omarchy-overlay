@@ -25,8 +25,8 @@ public static class Desktop {
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string name, string title);
   public static IntPtr MainWindow() { return FindWindow("OmarchyOverlay.Main", null); }
   public static IntPtr Overlay() { return FindWindow("OmarchyOverlay.Overlay", null); }
-  // 0.16 opens the Omarchy Overlay menu at startup; the 0.15 dashboard stays hidden until asked for.
-  public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay())); }
+  // The menu opens only at the first start; the main window's workspace property says it is running.
+  public static bool Ready(IntPtr main) { return main != IntPtr.Zero && (IsWindowVisible(main) || IsWindowVisible(Overlay()) || ReadyProp(main, "OmarchyOverlay.Workspace") != IntPtr.Zero); } [DllImport("user32.dll", CharSet=CharSet.Unicode, EntryPoint="GetPropW")] static extern IntPtr ReadyProp(IntPtr hwnd, string name);
   [DllImport("user32.dll", EntryPoint="PostMessageW")] static extern bool PostToApp(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
   public static void CloseMenu() { IntPtr menu = Overlay(); if (IsWindowVisible(menu)) PostToApp(menu, 0x100, (IntPtr)0x1b, IntPtr.Zero); }
   [DllImport("user32.dll", EntryPoint="ShowWindow")] static extern bool ShowAppWindow(IntPtr hwnd, int command);
@@ -186,6 +186,8 @@ $fixtureExcluded=@('Taskmgr.exe','mstsc.exe','msrdc.exe','ApplicationFrameHost.e
 $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|ConvertTo-Json -Depth 5)
  $config=@{excluded_processes=$fixtureExcluded;start_tiling=$false;rules=@(@{executable='powershell.exe';window_class='ConsoleWindowClass';mode='ignore'},@{executable='conhost.exe';mode='ignore'},@{executable='OpenConsole.exe';mode='ignore'},@{executable='WindowsTerminal.exe';mode='ignore'})}
  [IO.File]::WriteAllText($configPath,($config|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false));$configTouched=$true
+ $layoutFile=Join-Path (Split-Path $configPath) 'workspace-layouts.json';$originalLayouts=if(Test-Path $layoutFile){[IO.File]::ReadAllBytes($layoutFile)}else{$null}
+ [IO.File]::WriteAllText($layoutFile,'{"entries":[]}');$layoutTouched=$true
  for($i=0;$i -lt 3;$i++){$windows+=,[ResizeTest]::Fixture($i)}
  Wait-Desktop 400;$originals=@($windows|ForEach-Object{,(Bounds $_)})
  $app=Start-Process (Join-Path $root 'OmarchyOverlay.exe') -PassThru
@@ -230,7 +232,8 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
   Check "$mode resizes the neighboring pane during drag" ([ResizeTest]::LiveChanged)
  }
  Click $main 15;Wait-Desktop 900
- Check 'Cycle-layout action reaches grid and saves it' ((Get-Content -Raw $configPath|ConvertFrom-Json).layout -eq 'grid')
+ # The layout key saves a choice for the workspace in front, not the default layout.
+ Check 'Cycle-layout action reaches grid and saves it' ((Get-Content -Raw $layoutFile) -match '"grid"')
  $ordered=@($windows|Sort-Object @{Expression={(Bounds $_)[1]}},@{Expression={(Bounds $_)[0]}})
  $gridBefore=@($ordered|ForEach-Object{,(Bounds $_)})
  Check 'Landscape grid arranges three windows in two rows' ([Math]::Abs($gridBefore[0][1]-$gridBefore[1][1])-le 3 -and $gridBefore[2][1]-gt $gridBefore[0][1]+100)
@@ -239,7 +242,7 @@ $fixtureDefaults=(@{excluded_processes=$fixtureExcluded;start_tiling=$false}|Con
  Click $main 27;Wait-Desktop 700
  Check 'Rebalance restores equal grid panes' ([Math]::Abs((Bounds $ordered[0])[2]-$gridBefore[0][2])-le 3)
  Click $main 3;$panel=[Desktop]::Settings()
- Check 'Settings reflects the grid layout choice' ([Desktop]::SendMessage([Desktop]::GetDlgItem($panel,60),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 3)
+ Check 'Settings keeps the default layout after a workspace choice' ([Desktop]::SendMessage([Desktop]::GetDlgItem($panel,60),0x147,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()-eq 0)
  [void][Desktop]::SendMessage($panel,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
  Click $main 1;Wait-Desktop 700
  for($i=0;$i -lt 3;$i++){Check "Pause restores pre-tiling fixture $i after shared resizing" (((Bounds $windows[$i])-join ',') -eq ($originals[$i]-join ','))}
@@ -250,6 +253,7 @@ finally{
  if($null -ne $app -and -not $app.HasExited){[void][Desktop]::PostMessage([Desktop]::MainWindow(),0x312,[IntPtr]105,[IntPtr]::Zero);Wait-Desktop 1500}
  foreach($hwnd in $windows){[void][ResizeTest]::DestroyWindow($hwnd)}
  if($null -ne $originalTaskbar){[Desktop]::SetTaskbarState($originalTaskbar)}
+ if($layoutTouched){if($null -ne $originalLayouts){[IO.File]::WriteAllBytes($layoutFile,$originalLayouts)}else{Remove-Item -LiteralPath $layoutFile -ErrorAction SilentlyContinue}}
  if($configTouched){if($null -ne $originalConfig){[IO.File]::WriteAllText($configPath,$originalConfig,[Text.UTF8Encoding]::new($false))}elseif(Test-Path $configPath){Remove-Item $configPath}}
  if($configTouched){
   if($null -ne $originalUpgradeBackup){[IO.File]::WriteAllBytes($upgradeBackupPath,$originalUpgradeBackup)}

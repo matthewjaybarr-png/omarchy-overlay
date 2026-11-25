@@ -48,6 +48,12 @@ pub(super) unsafe fn toggle_mic_mute() -> Option<bool> {
     mic.SetMute(muted, std::ptr::null()).ok()?;
     Some(muted)
 }
+/// Whether the default microphone is muted; None without one.
+pub(super) unsafe fn mic_muted() -> Option<bool> {
+    let _apartment = Apartment::enter();
+    let mic = device(eCapture, eCommunications).ok()?;
+    Some(mic.GetMute().ok()?.as_bool())
+}
 pub(super) unsafe fn volume() -> Option<(u8, bool)> {
     let _apartment = Apartment::enter();
     let endpoint = endpoint().ok()?;
@@ -250,6 +256,27 @@ pub(super) unsafe fn shortcut_app_id(path: &std::path::Path) -> Option<String> {
     )
     .ok()?;
     store_string(&store, &PKEY_AppUserModel_ID)
+}
+/// The file a shortcut points at, as Windows parses it; None for a shortcut to
+/// something that is not a file, such as a packaged app.
+pub(super) unsafe fn shortcut_target(path: &std::path::Path) -> Option<String> {
+    use ::windows::{
+        core::HSTRING,
+        Win32::{
+            Storage::EnhancedStorage::PKEY_Link_TargetParsingPath,
+            UI::Shell::PropertiesSystem::{
+                IPropertyStore, SHGetPropertyStoreFromParsingName, GPS_DEFAULT,
+            },
+        },
+    };
+    let _apartment = Apartment::enter();
+    let store: IPropertyStore = SHGetPropertyStoreFromParsingName(
+        &HSTRING::from(&*path.to_string_lossy()),
+        None,
+        GPS_DEFAULT,
+    )
+    .ok()?;
+    store_string(&store, &PKEY_Link_TargetParsingPath)
 }
 /// Small icon from an "path,index" icon resource string.
 pub(super) unsafe fn resource_icon(

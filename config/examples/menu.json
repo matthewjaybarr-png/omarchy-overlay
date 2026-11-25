@@ -32,6 +32,7 @@
         { "label": "Toggle", "icon": "F050E", "command": "menu toggle" },
         { "label": "Emoji", "icon": "F118", "command": "emoji" },
         { "label": "Clipboard history", "icon": "F0147", "command": "clipboard" },
+        { "label": "Voice typing", "icon": "F036C", "command": "voice-typing" },
         { "label": "Capture", "icon": "F030", "command": "capture" },
         { "label": "Screen recording", "icon": "F03D", "command": "record-screen" },
         { "label": "Copy text from screen", "icon": "F031", "command": "extract-text" },
@@ -80,12 +81,16 @@
         { "label": "Top bar", "icon": "F035C", "command": "menu bar" },
         { "label": "Windows look", "icon": "F05B2", "command": "menu look" },
         { "label": "Layouts by workspace", "icon": "F0DB", "command": "page workspace-layouts" },
+        { "label": "Window transparency", "icon": "F00B5", "command": "page transparency" },
+        { "label": "Screensaver and idle lock", "icon": "F0379", "command": "page idle" },
         { "label": "Animations", "icon": "F05D8", "command": "page animations" },
         { "label": "Layout", "icon": "F10AC", "command": "page layout" },
         { "label": "On-screen messages", "icon": "F0EB", "command": "page osd" },
         { "label": "Apply theme to Windows", "icon": "F17A", "command": "page windows-theme" },
         { "label": "Apps Omarchy Overlay cannot theme", "icon": "F071", "command": "page windows-checklist" },
         { "label": "Windows Terminal colors", "icon": "F120", "command": "page terminal-colors" },
+        { "label": "VS Code colors", "icon": "F0A1E", "command": "page vscode-colors" },
+        { "label": "Obsidian colors", "icon": "F0219", "command": "page obsidian-colors" },
         { "label": "Windows taskbar", "icon": "F0C9", "command": "page taskbar" }
       ]
     },
@@ -94,6 +99,7 @@
       "title": "Top bar",
       "items": [
         { "label": "Show or hide", "icon": "F0208", "command": "toggle-bar" },
+        { "label": "Bar position", "icon": "F0CA", "command": "page bar-position" },
         { "label": "Bar height", "icon": "F065", "command": "page bar-height" },
         { "label": "Bar opacity", "icon": "F00B5", "command": "page bar-opacity" },
         { "label": "Clock", "icon": "F017", "command": "page clock" },
@@ -212,8 +218,10 @@
       "items": [
         { "label": "Lock", "icon": "F023", "command": "lock" },
         { "label": "Sleep", "icon": "F04B2", "command": "sleep", "confirm": true },
+        { "label": "Hibernate", "icon": "F04B2", "command": "hibernate", "confirm": true },
         { "label": "Sign out", "icon": "F0343", "command": "sign-out", "confirm": true },
         { "label": "Restart", "icon": "F0709", "command": "restart-pc", "confirm": true },
+        { "label": "Restart into BIOS/UEFI", "icon": "F0709", "command": "restart-to-firmware", "confirm": true },
         { "label": "Shut down", "icon": "F0425", "command": "shutdown", "confirm": true }
       ]
     }

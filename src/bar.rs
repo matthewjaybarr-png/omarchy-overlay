@@ -12,6 +12,8 @@ use windows_sys::Win32::{
 const CLASS: &str = "OmarchyOverlay.TopBar";
 const CALLBACK: u32 = WM_APP + 30;
 const RELAYOUT: u32 = WM_APP + 31;
+/// A workspace button was clicked: wParam the workspace, lParam the bar's monitor.
+pub(super) const BAR_WORKSPACE: u32 = WM_APP + 79;
 
 struct Panel {
     hwnd: HWND,
@@ -47,11 +49,14 @@ struct State {
     network: String,
     sound: String,
     power: String,
+    indicators: String,
     clock: String,
     ticks: u32,
     opacity: u8,
     config: BarConfig,
     desktop: Option<crate::desktops::Snapshot>,
+    /// Per-monitor workspaces: what each monitor shows, so each bar shows its own.
+    monitor_workspaces: HashMap<isize, usize>,
     tasks: Vec<tasks::Task>,
 }
 thread_local! { static BAR: RefCell<Option<State>> = const { RefCell::new(None) }; }
@@ -158,11 +163,13 @@ pub(super) unsafe fn start(
         network: String::new(),
         sound: "SOUND".into(),
         power: String::new(),
+        indicators: String::new(),
         clock: String::new(),
         ticks: 0,
         opacity,
         config: config.clone(),
         desktop: desktops::poll(),
+        monitor_workspaces: HashMap::new(),
         tasks: vec![],
     };
     state.rebuild();
@@ -200,6 +207,29 @@ pub(super) unsafe fn stop() {
             DeleteObject(state.brush);
             if state.brush != state.class_brush {
                 DeleteObject(state.class_brush);
+            }
+        }
+    });
+}
+/// Per-monitor workspaces: the workspace each monitor shows (empty when they all show
+/// the same one).
+pub(super) unsafe fn set_monitor_workspaces(map: HashMap<isize, usize>) {
+    BAR.with(|cell| {
+        if let Some(state) = cell.borrow_mut().as_mut() {
+            if state.monitor_workspaces != map {
+                state.monitor_workspaces = map;
+                state.redraw();
+            }
+        }
+    });
+}
+/// The status indicators text, words joined by two spaces; empty hides the module.
+pub(super) unsafe fn set_indicators(text: String) {
+    BAR.with(|cell| {
+        if let Some(state) = cell.borrow_mut().as_mut() {
+            if state.indicators != text {
+                state.indicators = text;
+                state.redraw();
             }
         }
     });
@@ -508,6 +538,16 @@ impl State {
                     }
                 ),
                 Module::Divider => String::new(),
+                Module::Indicators => label
+                    .split("  ")
+                    .map(|part| match part {
+                        "AWAKE" => "Stay awake is on".to_string(),
+                        "MIC OFF" => "Microphone is off".to_string(),
+                        p if p.starts_with("REMIND") => format!("Reminders waiting: {}", p.trim_start_matches("REMIND ")),
+                        p => format!("Keyboard: {p}"),
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n"),
                 Module::Notifications
                 | Module::QuickSettings
                 | Module::Display
@@ -595,16 +635,17 @@ impl State {
             }
             if module == Workspaces {
                 if let Some(s) = &self.desktop {
+                    let current = self.monitor_workspaces.get(&(monitor as isize)).copied().unwrap_or(s.current);
                     let page = self.config.workspace_labels.len().min(4);
-                    let start = s.current / page * page;
-                    for i in start..(start + page).min(s.ids.len()) {
+                    let start = current / page * page;
+                    for i in start..(start + page).min(s.ids.len().max(current + 1)) {
                         let label = self
                             .config
                             .workspace_labels
                             .get(i)
                             .cloned()
                             .unwrap_or_else(|| (i + 1).to_string());
-                        items.push(item(module, label, 100 + i, i == s.current));
+                        items.push(item(module, label, 100 + i, i == current));
                     }
                 } else {
                     items.push(item(module, "DESKTOPS".into(), 90, false));
@@ -634,6 +675,7 @@ impl State {
                 Sound => (self.sound.clone(), 92, false),
                 Network => (self.network.clone(), 93, false),
                 Power => (self.power.clone(), 94, false),
+                Indicators => (self.indicators.clone(), usize::MAX, false),
                 Controls => ("≡".into(), 2, false),
                 Divider => (String::new(), usize::MAX, false),
                 Notifications => ("NOTIFY".into(), 200, false),
@@ -855,6 +897,8 @@ impl State {
             let mut tip_text = wide("");
             let mut tool: TTTOOLINFOW = zeroed();
             theme_tooltip(tooltip);
+            // Long tooltips (an error, the status indicators) wrap instead of running off screen.
+            SendMessageW(tooltip, TTM_SETMAXTIPWIDTH, 0, (420 * dpi / 96) as isize);
             // The v1 size is accepted by every common controls version.
             tool.cbSize = std::mem::offset_of!(TTTOOLINFOW, lpReserved) as u32;
             tool.uFlags = TTF_TRACK | TTF_ABSOLUTE;
@@ -891,16 +935,24 @@ impl State {
     unsafe fn layout(&mut self) {
         for panel in &mut self.panels {
             let height = self.config.height * panel.dpi as i32 / 96;
+            let bottom = self.config.position == "bottom";
             let mut data = APPBARDATA {
                 cbSize: size_of::<APPBARDATA>() as u32,
                 hWnd: panel.hwnd,
-                uEdge: ABE_TOP,
+                uEdge: if bottom { ABE_BOTTOM } else { ABE_TOP },
                 rc: panel.monitor_rect,
                 ..zeroed()
             };
-            data.rc.bottom = data.rc.top + height;
+            let place = |rc: &mut RECT| {
+                if bottom {
+                    rc.top = rc.bottom - height;
+                } else {
+                    rc.bottom = rc.top + height;
+                }
+            };
+            place(&mut data.rc);
             SHAppBarMessage(ABM_QUERYPOS, &mut data);
-            data.rc.bottom = data.rc.top + height;
+            place(&mut data.rc);
             if !panel.positioned || !same_rect(panel.rect, data.rc) {
                 SHAppBarMessage(ABM_SETPOS, &mut data);
                 panel.rect = data.rc;
@@ -1226,9 +1278,9 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                             }
                         }
                         100..=163 => {
-                            if desktops::select(slot.item.action - 100) {
-                                PostMessageW(state.owner, WM_TIMER, 1, 0);
-                            }
+                            // The owner switches: with per-monitor workspaces it is this
+                            // bar's monitor that switches, not the one in focus.
+                            PostMessageW(state.owner, BAR_WORKSPACE, slot.item.action - 100, panel.monitor as isize);
                         }
                         90 => desktops::task_view(),
                         91 => {
@@ -1385,6 +1437,8 @@ unsafe fn paint(state: &State, hwnd: HWND) {
                     },
                     if slot.item.module == Module::Power {
                         &state.power
+                    } else if slot.item.module == Module::Indicators {
+                        &state.indicators
                     } else {
                         &slot.item.tooltip
                     },

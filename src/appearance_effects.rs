@@ -30,7 +30,7 @@ pub(super) unsafe fn apply_monitor_wallpaper(
         let before = if all.exists() { read_journal(&all)?.before } else { None };
         let originals: Originals = monitors
             .iter()
-            .map(|(id, now)| (id.clone(), before.clone().unwrap_or_else(|| now.clone())))
+            .map(|(id, now)| (id.clone(), before.clone().unwrap_or_else(|| keep_original(directory, now))))
             .collect();
         write_json_atomic(&record, &originals)?;
     }
@@ -104,6 +104,26 @@ fn read_journal(path: &Path) -> Result<Journal, String> {
     }
     Ok(j)
 }
+/// Windows often reports its own cache, %APPDATA%\Microsoft\Windows\Themes\
+/// TranscodedWallpaper, as the wallpaper. Setting a new wallpaper overwrites that file,
+/// so putting it back later would show the new picture, or black. A copy of it is kept
+/// in the settings folder and recorded instead.
+fn keep_original(directory: &Path, current: &str) -> String {
+    let cached = Path::new(current)
+        .file_name()
+        .is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case("TranscodedWallpaper"));
+    if !cached {
+        return current.to_string();
+    }
+    let copy = directory.join("wallpaper-original.jpg");
+    match fs::copy(current, &copy) {
+        Ok(_) => copy.to_string_lossy().into_owned(),
+        Err(error) => {
+            log(&format!("Could not keep a copy of the current wallpaper: {error}"));
+            current.to_string()
+        }
+    }
+}
 pub(super) unsafe fn apply_wallpaper(directory: &Path, path: &Path) -> Result<(), String> {
     if !path.is_file() {
         return Err("Choose an existing wallpaper image on this PC.".into());
@@ -114,7 +134,7 @@ pub(super) unsafe fn apply_wallpaper(directory: &Path, path: &Path) -> Result<()
         read_journal(&record)?
     } else {
         Journal {
-            before: Some(current.clone()),
+            before: Some(keep_original(directory, &current)),
             acceptable: vec![],
         }
     };
@@ -149,7 +169,10 @@ fn color(value: u32) -> String {
         (value >> 16) & 255
     )
 }
-pub(super) fn apply_terminal(directory: &Path, theme_name: &str) -> Result<(), String> {
+/// Adds the themed Terminal profile. `font` is the Omarchy Overlay font; the profile
+/// uses it only when it is installed in Windows, since Terminal cannot see fonts that
+/// Omarchy Overlay loads for itself.
+pub(super) fn apply_terminal(directory: &Path, theme_name: &str, font: &str) -> Result<(), String> {
     let path = terminal_path(directory);
     let record = directory.join("terminal-appearance-restore.json");
     let current = if path.exists() {
@@ -173,11 +196,16 @@ pub(super) fn apply_terminal(directory: &Path, theme_name: &str) -> Result<(), S
         return Err("The Terminal fragment changed outside Omarchy Overlay; it was left intact.".into());
     }
     let palette = theme::palette(theme_name).ok_or("Unknown theme.")?;
+    let colors = crate::theme_files::resolve(theme_name)
+        .map(|t| t.colors)
+        .unwrap_or_default();
     let fragment = crate::appearance_profiles::terminal_fragment(
         theme_name,
         &color(palette.background),
         &color(palette.text),
         &color(palette.accent),
+        &colors,
+        Some(crate::font_names::terminal_face(font)).filter(|face| unsafe { fonts::in_windows(face) }).as_deref(),
     );
     let next = serde_json::to_string_pretty(&fragment).map_err(|e| e.to_string())?;
     let mut acceptable = current.into_iter().collect::<Vec<_>>();
@@ -274,6 +302,7 @@ pub(super) fn apply_theme_effects(directory: PathBuf, theme_name: String, dark: 
             let results = [
                 windows_personalization::apply(&directory, dark),
                 windows_accent::apply(&directory, accent),
+                windows_syscolors::apply(&directory, accent),
                 cycle_unlocked(&directory, &theme_name, true).map(|_| ()),
             ];
             for e in results.into_iter().filter_map(Result::err) {
@@ -319,7 +348,26 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     if colors {
         windows_accent::notify();
     }
+    if let Err(error) = windows_syscolors::restore(directory) {
+        errors.push(error);
+    }
     if let Err(error) = restore_terminal(directory) {
+        errors.push(error);
+    }
+    if let Err(error) = vscode_effects::restore(directory) {
+        errors.push(error);
+    }
+    if let Err(error) = obsidian_effects::restore(directory) {
+        errors.push(error);
+    }
+    if let Err(error) = browser_policy::restore(directory) {
+        errors.push(error);
+    }
+    if let Err(error) = lock_screen::restore(directory) {
+        errors.push(error);
+    }
+    // After the Terminal profile, which may name one of these fonts.
+    if let Err(error) = font_install::remove(directory) {
         errors.push(error);
     }
     if errors.is_empty() {

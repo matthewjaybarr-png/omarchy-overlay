@@ -15,7 +15,11 @@ mod config;
 #[cfg(any(windows, test))]
 mod control_theme;
 #[cfg(any(windows, test))]
+mod defaults_merge;
+#[cfg(any(windows, test))]
 mod desktops;
+#[cfg(any(windows, test))]
+mod dock;
 #[cfg(any(windows, test))]
 mod dwindle;
 #[cfg(any(windows, test))]
@@ -60,6 +64,8 @@ mod theme_files;
 mod tray_match;
 #[cfg(any(windows, test))]
 mod webapps;
+#[cfg(any(windows, test))]
+mod vscode_theme;
 #[cfg(windows)]
 mod windows;
 #[cfg(any(windows, test))]

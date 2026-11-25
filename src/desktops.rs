@@ -199,6 +199,8 @@ mod native {
             // Snipping Tool's own keys: screen recording, and text extractor (version 11.2503.29+).
             15 => chord(&[VK_LWIN, VK_SHIFT, b'R' as u16]),
             16 => chord(&[VK_LWIN, VK_SHIFT, b'T' as u16]),
+            // Windows voice typing.
+            17 => chord(&[VK_LWIN, b'H' as u16]),
             _ => true,
         }
     }
@@ -229,6 +231,15 @@ mod native {
                 c.current = index;
             }
             true
+        })
+    }
+    /// Per-monitor workspaces: shows `index` as the current workspace because focus moved
+    /// to a monitor showing it. Nothing switches, so the former workspace stays.
+    pub unsafe fn select_quiet(index: usize) {
+        DESKTOPS.with(|c| {
+            if index < LIMIT {
+                c.borrow_mut().current = index;
+            }
         })
     }
     pub unsafe fn select_former() -> bool {

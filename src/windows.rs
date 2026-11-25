@@ -5,6 +5,30 @@ use crate::{config::Config, profile};
 mod app_rules_ui;
 #[path = "appearance_effects.rs"]
 mod appearance_effects;
+#[path = "vscode_effects.rs"]
+mod vscode_effects;
+#[path = "obsidian_effects.rs"]
+mod obsidian_effects;
+#[path = "browser_policy.rs"]
+mod browser_policy;
+#[path = "lock_screen.rs"]
+mod lock_screen;
+#[path = "display_topology.rs"]
+mod display_topology;
+#[path = "font_install.rs"]
+mod font_install;
+#[path = "windows_syscolors.rs"]
+mod windows_syscolors;
+#[path = "color_picker.rs"]
+mod color_picker;
+#[path = "idle.rs"]
+mod idle;
+#[path = "console.rs"]
+mod console;
+#[path = "groupbar.rs"]
+mod groupbar;
+#[path = "theme_install.rs"]
+mod theme_install;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]
@@ -67,6 +91,12 @@ mod groups;
 mod reminders;
 #[path = "scrolling_runtime.rs"]
 mod scrolling_runtime;
+#[path = "floating_runtime.rs"]
+mod floating_runtime;
+#[path = "dock_ui.rs"]
+mod dock_ui;
+#[path = "dock_runtime.rs"]
+mod dock_runtime;
 #[path = "settings.rs"]
 mod settings;
 #[path = "shortcuts_ui.rs"]
@@ -331,13 +361,20 @@ struct App {
     layout_all_desktops: bool,
     layout_monitor: String,
     layout_desktop: String,
-    scratchpads: HashMap<String, window_actions::Scratchpad>,
+    /// Each workspace's scratchpad windows (Omarchy's special workspace).
+    scratchpads: HashMap<String, Vec<window_actions::Scratchpad>>,
     menu_target: Option<tasks::Task>,
     layout_sessions: HashMap<String, LayoutSession>,
+    /// Per-monitor workspaces: what each monitor shows, and the monitor in use.
+    monitor_workspace: HashMap<isize, usize>,
+    focus_monitor: isize,
+    /// A bar button asked this monitor to show this workspace.
+    monitor_request: Option<(isize, usize)>,
     drag: Option<resize::Drag>,
     mouse_drag: Option<resize::MouseDrag>,
     /// The gap toggle-gaps turned off, to put back.
-    gaps_before: i32,
+    /// The inner and outer gaps from before Super+Shift+Backspace took them away.
+    gaps_before: (i32, i32),
     /// The connected monitors last seen, and their display profile key.
     display_devices: String,
     display_set: Option<String>,
@@ -351,11 +388,29 @@ struct App {
     widths: HashMap<isize, i32>,
     /// Omarchy's window groups (Super+G): one tile, one window shown at a time.
     groups: Vec<groups::Group>,
+    /// Where each group's tab bar goes (by shown window), and which windows its tabs are.
+    groupbar_rects: HashMap<isize, Rect>,
+    groupbar_targets: Vec<Vec<isize>>,
     /// Due times of the reminders set with `remind <minutes>`.
-    reminders: Vec<(std::time::Instant, u32)>,
+    reminders: Vec<reminders::Reminder>,
     workspace_focus: HashMap<usize, isize>,
     seen_foreground: isize,
     floating: HashSet<isize>,
+    /// Windows the floating layout has already placed; it never moves them again.
+    float_placed: HashSet<isize>,
+    /// Pseudo-tiled windows: their own size, centred in their tile (Super+P).
+    pseudo: HashSet<isize>,
+    /// What each dock icon stands for, and the ids that match apps to dock pins.
+    dock_actions: Vec<dock_runtime::DockAction>,
+    dock_entry_ids: HashMap<String, Vec<String>>,
+    dock_window_ids: HashMap<(isize, u32), Vec<String>>,
+    dock_order: Vec<String>,
+    /// Windows that flashed for attention and have not been in front since.
+    attention: HashSet<isize>,
+    /// The SHELLHOOK message the shell sends to say a window flashed or came forward.
+    shell_hook: u32,
+    /// Explorer's "TaskbarCreated": the tray icon must be added again after it restarts.
+    taskbar_created: u32,
     saved: HashMap<isize, Saved>,
     signature: Vec<(isize, isize, Rect)>,
     dirty: bool,
@@ -382,6 +437,13 @@ struct App {
     /// True while every key is given back to Windows.
     keys_paused: bool,
     keep_awake: bool,
+    /// The idle lock fired; it waits for input before it can fire again.
+    idle_locked: bool,
+    indicator_ticks: u32,
+    /// The drop-down console window, and a terminal started for it.
+    console: Option<console::Console>,
+    console_pending: Option<console::Pending>,
+    mic_off: bool,
     pending_command: Option<(crate::commands::Command, bool)>,
     /// Sent with each Super key message so a key pressed before a reload is ignored.
     bind_generation: usize,
@@ -612,12 +674,15 @@ pub(crate) fn log(message: &str) {
         let _ = writeln!(f, "{message}");
     }
 }
+/// A message box in front of every window. Modal, so the overlay waits for OK; without
+/// MB_SETFOREGROUND and MB_TOPMOST it could open behind other windows and leave keys,
+/// tiling and the bar waiting with nothing on screen (seen in the Admin edition).
 unsafe fn message(text: &str) {
     MessageBoxW(
         null_mut(),
         wide(text).as_ptr(),
         wide(NAME).as_ptr(),
-        MB_OK | MB_ICONINFORMATION,
+        MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND | MB_TOPMOST,
     );
 }
 unsafe fn set_text(hwnd: HWND, text: &str) {
@@ -1396,6 +1461,7 @@ pub fn run() {
         for (i, c) in wide("Omarchy Overlay — paused").iter().enumerate() {
             tray.szTip[i] = *c;
         }
+        let saved_reminders = reminders::load(&directory);
         let mut app = App {
             main,
             launcher,
@@ -1448,9 +1514,12 @@ pub fn run() {
             scratchpads: HashMap::new(),
             menu_target: None,
             layout_sessions: HashMap::new(),
+            monitor_workspace: HashMap::new(),
+            focus_monitor: 0,
+            monitor_request: None,
             drag: None,
             mouse_drag: None,
-            gaps_before: 0,
+            gaps_before: (0, 0),
             display_devices: String::new(),
             display_set: None,
             order: vec![],
@@ -1459,10 +1528,21 @@ pub fn run() {
             full_screen: HashMap::new(),
             widths: HashMap::new(),
             groups: Vec::new(),
-            reminders: Vec::new(),
+            groupbar_rects: HashMap::new(),
+            groupbar_targets: vec![],
+            reminders: saved_reminders,
             workspace_focus: HashMap::new(),
             seen_foreground: 0,
             floating: HashSet::new(),
+            float_placed: HashSet::new(),
+            pseudo: HashSet::new(),
+            dock_actions: vec![],
+            dock_entry_ids: HashMap::new(),
+            dock_window_ids: HashMap::new(),
+            dock_order: vec![],
+            attention: HashSet::new(),
+            shell_hook: 0,
+            taskbar_created: RegisterWindowMessageW(wide("TaskbarCreated").as_ptr()),
             saved: HashMap::new(),
             scrolling: HashMap::new(),
             signature: vec![],
@@ -1488,6 +1568,11 @@ pub fn run() {
             confirm_choice: None,
             keys_paused: false,
             keep_awake: false,
+            idle_locked: false,
+            indicator_ticks: 0,
+            console: None,
+            console_pending: None,
+            mic_off: false,
             pending_command: None,
             bind_generation: 0,
             last_profile: None,
@@ -1513,6 +1598,7 @@ pub fn run() {
                 theme::current().dark,
                 theme::windows_accent(&app.config.theme, theme::current()),
             );
+            app.apply_app_colors();
             bar::start(
                 main,
                 &app.directory,
@@ -1523,6 +1609,15 @@ pub fn run() {
                 &app.config.bar,
             );
         });
+        // Window flashes reach the taskbar through the shell hook; the dock listens too.
+        if RegisterShellHookWindow(main) != 0 {
+            let hook = RegisterWindowMessageW(wide("SHELLHOOK").as_ptr());
+            APP.with(|cell| {
+                if let Some(app) = cell.borrow_mut().as_mut() {
+                    app.shell_hook = hook;
+                }
+            });
+        }
         SetTimer(main, 1, 650, None);
         SetTimer(main, 2, 40, None);
         SetTimer(main, STICK_TIMER, 2000, None);
@@ -1531,7 +1626,12 @@ pub fn run() {
         APP.with(|cell| {
             if let Some(app) = cell.borrow_mut().as_mut() {
                 overlay::set_font(&app.config.menu_font, app.config.menu_font_size);
-                app.open_menu("main");
+                // Only the first start opens the menu, as a welcome; Omarchy starts quietly.
+                if !app.config.welcomed {
+                    app.open_menu("main");
+                    app.config.welcomed = true;
+                    app.save_config();
+                }
             }
         });
         APP.with(|cell| {
@@ -1667,6 +1767,8 @@ pub fn run() {
             }
         }
         bar::stop();
+        dock_ui::stop();
+        groupbar::stop();
         APP.with(|cell| {
             if let Some(mut app) = cell.borrow_mut().take() {
                 app.restore();
@@ -2122,6 +2224,7 @@ impl App {
     unsafe fn apply_theme(&mut self, name: &str) {
         self.config.theme = name.into();
         theme::set(name);
+        dock_ui::redraw();
         let old = self.brush;
         self.brush = CreateSolidBrush(theme::current().background);
         let dark: i32 = i32::from(theme::current().dark);
@@ -2160,16 +2263,75 @@ impl App {
             theme::windows_accent(name, theme::current()),
         );
         bar::appearance(self.config.bar_opacity);
-        if self
-            .directory
-            .join("terminal-appearance-restore.json")
-            .exists()
-        {
-            if let Err(error) = appearance_effects::apply_terminal(&self.directory, name) {
+        self.apply_app_colors();
+        self.save_config();
+    }
+    /// Re-themes Windows Terminal and VS Code when they are turned on: after a theme
+    /// change, and at start, since exit put back what they had.
+    fn apply_app_colors(&self) {
+        let name = &self.config.theme;
+        if self.config.install_fonts {
+            if let Err(error) = unsafe { font_install::install(&self.directory) } {
                 log(&error);
             }
         }
-        self.save_config();
+        if self.config.terminal_colors {
+            if let Err(error) = appearance_effects::apply_terminal(&self.directory, name, &self.config.menu_font) {
+                log(&error);
+            }
+        }
+        if self.config.vscode_colors {
+            if let Err(error) = vscode_effects::apply(&self.directory, name) {
+                log(&error);
+            }
+        }
+        if self.config.obsidian_colors {
+            if let Err(error) = obsidian_effects::apply(&self.directory, name) {
+                log(&error);
+            }
+        }
+        if self.config.lock_screen {
+            if let Err(error) = unsafe { lock_screen::apply(&self.directory, name) } {
+                log(&error);
+            }
+        }
+        if self.config.browser_colors {
+            if let Some(palette) = theme::palette(name) {
+                if let Err(error) = unsafe { browser_policy::apply(&self.directory, palette.background) } {
+                    log(&error);
+                }
+            }
+        }
+    }
+    /// The bar's status indicators, as Omarchy's bar shows them.
+    unsafe fn update_indicators(&mut self) {
+        let mut parts: Vec<String> = vec![];
+        if self.keep_awake {
+            parts.push("AWAKE".into());
+        }
+        if !self.reminders.is_empty() {
+            parts.push(format!("REMIND {}", self.reminders.len()));
+        }
+        // The microphone is asked every other tick: it goes through COM.
+        self.indicator_ticks = self.indicator_ticks.wrapping_add(1);
+        if self.indicator_ticks.is_multiple_of(2) {
+            self.mic_off = native_status::mic_muted() == Some(true);
+        }
+        if self.mic_off {
+            parts.push("MIC OFF".into());
+        }
+        // The keyboard layout, only on a PC with more than one.
+        if GetKeyboardLayoutList(0, null_mut()) > 1 {
+            let thread = GetWindowThreadProcessId(GetForegroundWindow(), null_mut());
+            let language = (GetKeyboardLayout(thread) as usize & 0xffff) as u32;
+            let mut name = [0u16; 85];
+            let n = windows_sys::Win32::Globalization::LCIDToLocaleName(language, name.as_mut_ptr(), name.len() as i32, 0);
+            if n > 1 {
+                let locale = String::from_utf16_lossy(&name[..n as usize - 1]);
+                parts.push(locale.split('-').next().unwrap_or(&locale).to_uppercase());
+            }
+        }
+        bar::set_indicators(parts.join("  "));
     }
     unsafe fn appearance_poll(&mut self) {
         let foreground = GetForegroundWindow();
@@ -2181,14 +2343,14 @@ impl App {
             1
         }
         EnumWindows(Some(enumerate), &mut windows as *mut _ as isize);
-        if basic_eligible(foreground) && !elevated(foreground) && foreground != self.selected {
+        if basic_eligible(foreground) && !out_of_reach(foreground) && foreground != self.selected {
             self.selected = foreground;
             if IsWindowVisible(self.appearance) != 0 {
                 self.update_appearance();
             }
         }
         let frame_windows = windows.clone();
-        windows.retain(|&hwnd| !elevated(hwnd) && can_change_opacity(&self.config, hwnd));
+        windows.retain(|&hwnd| !out_of_reach(hwnd) && can_change_opacity(&self.config, hwnd));
         self.opacity
             .enforce_rules(|hwnd| can_change_opacity(&self.config, hwnd));
         let config = &self.config;
@@ -2210,7 +2372,7 @@ impl App {
                     || p.coordinate_theme
                     || p.material_explicit && p.backdrop != 0)
                 && !excluded
-                && !elevated(h))
+                && !out_of_reach(h))
             .then_some((
                 p.coordinate_theme,
                 // Borders alone must not apply the global material (pre-border behaviour).
@@ -2245,7 +2407,7 @@ impl App {
                     message("Focus a regular application window first, then reopen Appearance.");
                     return;
                 }
-                if !basic_eligible(self.selected) || elevated(self.selected) {
+                if !basic_eligible(self.selected) || out_of_reach(self.selected) {
                     message("The selected window is now minimized, full-screen, or protected. Focus a regular app window before changing its opacity.");
                     return;
                 }
@@ -2266,7 +2428,7 @@ impl App {
     }
     unsafe fn opacity_hotkey(&mut self, index: u32) {
         let hwnd = GetForegroundWindow();
-        if !basic_eligible(hwnd) || elevated(hwnd) || !can_change_opacity(&self.config, hwnd) {
+        if !basic_eligible(hwnd) || out_of_reach(hwnd) || !can_change_opacity(&self.config, hwnd) {
             return;
         }
         self.selected = hwnd;
@@ -2455,6 +2617,7 @@ impl App {
     unsafe fn restore(&mut self) {
         self.finish_motion(false);
         self.restore_scratchpads();
+        self.release_console();
         window_actions::unpop_all();
         self.tiled.clear();
         self.dwindle.clear();
@@ -2472,6 +2635,8 @@ impl App {
         self.forget_workspaces();
         self.order.clear();
         self.floating.clear();
+        self.float_placed.clear();
+        self.pseudo.clear();
         self.signature.clear();
         self.routed.clear();
     }
@@ -2507,7 +2672,9 @@ impl App {
         }
         self.check_display_set();
         self.sync_workspace();
-        if let Some(desktop) = workspace_ui::current_desktop() {
+        // With per-monitor workspaces the shown workspace changes as focus moves between
+        // monitors; swapping the tiling session then would reshuffle the other monitors.
+        if let Some(desktop) = workspace_ui::current_desktop().filter(|_| !self.config.per_monitor_workspaces) {
             if desktop != self.layout_desktop {
                 if !self.layout_desktop.is_empty() {
                     self.layout_sessions.insert(
@@ -2562,6 +2729,7 @@ impl App {
             if self
                 .scratchpads
                 .values()
+                .flatten()
                 .any(|pad| pad.task.hwnd as isize == key && pad.task.valid())
             {
                 return false;
@@ -2593,6 +2761,8 @@ impl App {
             }
         }
         self.floating.retain(|&key| IsWindow(key as HWND) != 0);
+        self.float_placed.retain(|&key| IsWindow(key as HWND) != 0);
+        self.pseudo.retain(|&key| IsWindow(key as HWND) != 0);
         self.order
             .retain(|key| found.contains(key) && !self.floating.contains(key));
         // Reverse z-order makes existing windows enter in a stable, bottom-to-top order.
@@ -2665,6 +2835,13 @@ impl App {
             };
             let area = &layout::outer(*area, self.config.gap, self.config.outer_gap);
             let mode = self.layout_for_monitor(monitor as HMONITOR);
+            if mode == "floating" {
+                self.float_layout(monitor, &group, *area);
+                continue;
+            }
+            for (key, _, _) in &group {
+                self.float_placed.remove(key);
+            }
             if mode == "scrolling" {
                 self.tile_scrolling(monitor, &group, *area);
                 continue;
@@ -2674,7 +2851,10 @@ impl App {
                 let keys = group.iter().map(|(key, _, _)| *key).collect::<Vec<_>>();
                 let tree = self.dwindle.entry(monitor).or_default();
                 tree.sync(&keys, self.last_tiled_focus, *area, gap);
-                let placements = tree.rects(*area, gap);
+                let mut placements = tree.rects(*area, gap);
+                if placements.len() == 1 && self.config.single_window_square {
+                    placements[0].1 = layout::square(*area);
+                }
                 self.tiled.insert(
                     monitor,
                     resize::TiledGroup {
@@ -2747,7 +2927,11 @@ impl App {
                     mode: mode.clone(),
                     gap,
                     ratio: self.config.main_ratio,
-                    rects: layout::arrange(*area, count, gap, self.config.main_ratio, &mode),
+                    rects: if count == 1 && self.config.single_window_square && mode != "monocle" {
+                        vec![layout::square(*area)]
+                    } else {
+                        layout::arrange(*area, count, gap, self.config.main_ratio, &mode)
+                    },
                 };
             }
             let rects = cached.rects.clone();
@@ -2954,7 +3138,7 @@ impl App {
     unsafe fn show_search(&mut self, commands: bool) {
         self.command_menu = commands;
         let foreground = GetForegroundWindow();
-        if basic_eligible(foreground) && !elevated(foreground) {
+        if basic_eligible(foreground) && !out_of_reach(foreground) {
             self.selected = foreground;
         }
         // Opening search from our dashboard retains the last external selection.
@@ -3264,6 +3448,13 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
         }
     }
 
+    if msg == WM_PAINT && window_class(hwnd) == "OmarchyOverlay.OSD" {
+        osd::paint(hwnd);
+        return 0;
+    }
+    if msg == WM_ERASEBKGND && window_class(hwnd) == "OmarchyOverlay.OSD" {
+        return 1;
+    }
     if msg == WM_PAINT && window_class(hwnd) == "OmarchyOverlay.FocusOutline" {
         let mut paint: PAINTSTRUCT = zeroed();
         let dc = BeginPaint(hwnd, &mut paint);
@@ -3394,7 +3585,36 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 KillTimer(app.main, 3);
                 Some(0)
             }
+            m if m != 0 && m == app.taskbar_created => {
+                Shell_NotifyIconW(NIM_ADD, &app.tray);
+                Some(0)
+            }
+            m if m != 0 && m == app.shell_hook => {
+                app.shell_event(w, l as HWND);
+                Some(0)
+            }
+            bar::BAR_WORKSPACE => {
+                app.workspace_clicked(w, l);
+                Some(0)
+            }
+            theme_install::DONE if l != 0 => {
+                app.theme_installed(l as *mut Result<String, String>);
+                Some(0)
+            }
+            groupbar::CLICK => {
+                app.groupbar_click(w, l as usize);
+                Some(0)
+            }
+            color_picker::PICKED => {
+                app.show_card(Some('\u{F020A}'), &format!("{} copied", color_picker::hex(w as u32)), None);
+                Some(0)
+            }
+            dock_ui::DOCK_MESSAGE => {
+                app.dock_click(w, l as usize);
+                Some(0)
+            }
             WM_TIMER if w == 2 => {
+                dock_ui::reveal_tick();
                 app.resize_tick();
                 Some(0)
             }
@@ -3406,6 +3626,11 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 app.poll_system_action();
                 app.check_reminders();
                 app.tick();
+                app.dock_poll();
+                app.idle_tick();
+                app.update_indicators();
+                app.console_tick();
+                app.groupbar_poll();
                 app.tasks.refresh();
                 app.update_dashboard();
                 Some(0)
@@ -3620,10 +3845,13 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                     log(&error);
                 }
                 bar::stop();
+                dock_ui::stop();
                 Some(1)
             }
             n if n == WM_APP + 59 => {
-                message(&bar::tray_status());
+                // Not a message box: a modal box behind other windows froze the overlay.
+                log(&bar::tray_status());
+                app.show_card(Some(osd::INFO), "The Windows tray could not open; see the log", None);
                 Some(0)
             }
             BAR_SCROLL => {
@@ -3856,6 +4084,12 @@ unsafe fn elevated(hwnd: HWND) -> bool {
     }
     CloseHandle(process);
     !result || elevation.TokenIsElevated != 0
+}
+/// A window whose look Omarchy Overlay cannot change: one running as administrator,
+/// unless Omarchy Overlay runs elevated too (the installed Admin edition).
+unsafe fn out_of_reach(hwnd: HWND) -> bool {
+    static ELEVATED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    !*ELEVATED.get_or_init(crate::launch_unelevated::process_elevated) && elevated(hwnd)
 }
 unsafe fn position(hwnd: HWND, target: Rect) {
     if IsIconic(hwnd) != 0 {

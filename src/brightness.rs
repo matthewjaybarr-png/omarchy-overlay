@@ -13,13 +13,26 @@ use windows_sys::Win32::{
 };
 
 /// Moves every monitor's brightness by `percent` of its range. DDC takes tens of
-/// milliseconds per monitor, so it runs off the UI thread.
-pub(super) fn adjust(percent: i32) {
+/// milliseconds per monitor, so it runs off the UI thread. The first monitor's new level
+/// goes to `owner` for the on-screen message (OSD_MESSAGE, 2000 + percent).
+pub(super) fn adjust(percent: i32, owner: windows_sys::Win32::Foundation::HWND) {
+    let owner = owner as isize;
     std::thread::spawn(move || unsafe {
-        EnumDisplayMonitors(null_mut(), std::ptr::null(), Some(each), percent as isize);
+        let mut job = (percent, None::<u32>);
+        EnumDisplayMonitors(null_mut(), std::ptr::null(), Some(each), &mut job as *mut _ as isize);
+        if let Some(level) = job.1 {
+            windows_sys::Win32::UI::WindowsAndMessaging::PostMessageW(
+                owner as windows_sys::Win32::Foundation::HWND,
+                super::OSD_MESSAGE,
+                2000 + level.min(100) as usize,
+                0,
+            );
+        }
     });
 }
-unsafe extern "system" fn each(monitor: HMONITOR, _: HDC, _: *mut RECT, percent: LPARAM) -> i32 {
+unsafe extern "system" fn each(monitor: HMONITOR, _: HDC, _: *mut RECT, job: LPARAM) -> i32 {
+    let job = &mut *(job as *mut (i32, Option<u32>));
+    let percent = job.0;
     let mut count = 0;
     if GetNumberOfPhysicalMonitorsFromHMONITOR(monitor, &mut count) == 0 || count == 0 {
         return 1;
@@ -33,10 +46,11 @@ unsafe extern "system" fn each(monitor: HMONITOR, _: HDC, _: *mut RECT, percent:
                 != 0
                 && maximum > 0
             {
-                let next = crate::commands::brightness_step(current, maximum, percent as i32);
+                let next = crate::commands::brightness_step(current, maximum, percent);
                 if next != current {
                     SetVCPFeature(handle, 0x10, next);
                 }
+                job.1.get_or_insert(next * 100 / maximum);
             }
         }
         DestroyPhysicalMonitors(count, physical.as_ptr());
