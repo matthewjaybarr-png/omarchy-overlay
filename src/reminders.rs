@@ -101,12 +101,20 @@ impl App {
         self.reminders = waiting;
         self.save_reminders();
         for reminder in due {
+            let text = text(&reminder);
+            // On screen as well as a Windows notification: a notification can be held back
+            // (Focus, a tray icon Explorer lost), the card cannot.
+            self.show_card_for(Some('\u{f0020}'), &format!("Reminder: {text}"), None, 10_000);
             let mut tray = self.tray;
             tray.uFlags = NIF_INFO;
             tray.dwInfoFlags = NIIF_INFO;
             copy_wide(&mut tray.szInfoTitle, "Reminder");
-            copy_wide(&mut tray.szInfo, &text(&reminder));
-            Shell_NotifyIconW(NIM_MODIFY, &tray);
+            copy_wide(&mut tray.szInfo, &text);
+            if Shell_NotifyIconW(NIM_MODIFY, &tray) == 0 {
+                // Explorer restarted and dropped the icon: add it back, then notify.
+                Shell_NotifyIconW(NIM_ADD, &self.tray);
+                Shell_NotifyIconW(NIM_MODIFY, &tray);
+            }
         }
     }
 }

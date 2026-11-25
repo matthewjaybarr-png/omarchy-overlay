@@ -409,6 +409,8 @@ struct App {
     attention: HashSet<isize>,
     /// The SHELLHOOK message the shell sends to say a window flashed or came forward.
     shell_hook: u32,
+    /// Explorer's "TaskbarCreated": the tray icon must be added again after it restarts.
+    taskbar_created: u32,
     saved: HashMap<isize, Saved>,
     signature: Vec<(isize, isize, Rect)>,
     dirty: bool,
@@ -1540,6 +1542,7 @@ pub fn run() {
             dock_order: vec![],
             attention: HashSet::new(),
             shell_hook: 0,
+            taskbar_created: RegisterWindowMessageW(wide("TaskbarCreated").as_ptr()),
             saved: HashMap::new(),
             scrolling: HashMap::new(),
             signature: vec![],
@@ -3580,6 +3583,10 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             WM_TIMER if w == 3 => {
                 ShowWindow(app.osd, SW_HIDE);
                 KillTimer(app.main, 3);
+                Some(0)
+            }
+            m if m != 0 && m == app.taskbar_created => {
+                Shell_NotifyIconW(NIM_ADD, &app.tray);
                 Some(0)
             }
             m if m != 0 && m == app.shell_hook => {

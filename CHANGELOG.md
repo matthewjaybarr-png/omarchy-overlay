@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- A reminder also shows on screen for 10 seconds, so it is seen even when Windows holds
+  the notification back, and the tray icon comes back after Explorer restarts (a lost
+  icon could not show the reminder at all).
 - Omarchy's display keys: **Super + Ctrl + Delete** turns the laptop screen off (external
   screens only) or back on, and **Super + Ctrl + Shift + Delete** mirrors the screens or
   extends them again, through Windows' own display switching (as Win + P).

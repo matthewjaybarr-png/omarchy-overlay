@@ -129,6 +129,10 @@ impl App {
     }
     /// Shows the card: an icon, the text and an optional 0–100 level bar.
     pub(super) unsafe fn show_card(&self, icon: Option<char>, text: &str, level: Option<u8>) {
+        self.show_card_for(icon, text, level, 1200);
+    }
+    /// The card, shown for `ms` milliseconds.
+    pub(super) unsafe fn show_card_for(&self, icon: Option<char>, text: &str, level: Option<u8>, ms: u32) {
         if !self.config.show_osd {
             return;
         }
@@ -178,7 +182,7 @@ impl App {
             SWP_NOACTIVATE | SWP_SHOWWINDOW,
         );
         InvalidateRect(self.osd, null(), 0);
-        SetTimer(self.main, 3, 1200, None);
+        SetTimer(self.main, 3, ms, None);
     }
     pub(super) unsafe fn feedback_message(&self, kind: usize) {
         if kind == 0 {

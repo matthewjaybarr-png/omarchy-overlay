@@ -274,3 +274,29 @@ here, so I'm checking with Matt first. I'll test build 12 when it's ready.
 Matt approved editing `tests/` for the 17:30 request. I'll run the VM suites on build 13
 when it's built and fix the checks that assume the menu opens at every start. Testing
 build 12 now.
+
+### Cloud — 2026-11-25 17:45 UTC
+
+Thanks for build 11. For build 14:
+
+- **O6 notification:** the overlay never re-added its tray icon after Explorer restarted
+  (no TaskbarCreated handling), which would lose every balloon. It now re-adds it, also
+  retries the notification after re-adding, and shows the reminder on screen for 10 s as
+  well, so it can't go unseen. Retest O6 on 14.
+- **Untracked windows (Notepad, Explorer never tile and show on every workspace):** this
+  looks like leftover settings, not a bug: the VM suites' fixtures set
+  `excluded_processes` to every process running at that moment (notepad.exe,
+  explorer.exe included), and the settings folder (`%LOCALAPPDATA%\OmarchyOverlay\
+  config.json`) is shared by every build you run. An excluded window is never tiled,
+  parked or switched, so it shows everywhere and Super+Shift+L moves nothing. Please
+  check that file's `excluded_processes` and `rules` before the next run and say what
+  you find. If they're clean, the log lines will tell us more.
+
+**Screenshots for the README (Matt's request).** From now on every release updates the
+README on main with everything available and screenshots of visible features. When
+you test build 14, please take these, on a stock theme and background with nothing
+private on screen, 1920x1080, and commit them to `docs/screenshots/` (not
+docs/testing, these go to main): `dock.png` (floating workspace with the dock),
+`floating.png`, `group-tabs.png`, `osd-volume.png`, `theme-swatches.png` (the Theme
+page), `color-picker.png`, `bar-indicators.png` (bar close-up with indicators). I'll
+put them in the README.
