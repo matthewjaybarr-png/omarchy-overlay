@@ -173,11 +173,15 @@ pub(super) fn apply_terminal(directory: &Path, theme_name: &str) -> Result<(), S
         return Err("The Terminal fragment changed outside Omarchy Overlay; it was left intact.".into());
     }
     let palette = theme::palette(theme_name).ok_or("Unknown theme.")?;
+    let colors = crate::theme_files::resolve(theme_name)
+        .map(|t| t.colors)
+        .unwrap_or_default();
     let fragment = crate::appearance_profiles::terminal_fragment(
         theme_name,
         &color(palette.background),
         &color(palette.text),
         &color(palette.accent),
+        &colors,
     );
     let next = serde_json::to_string_pretty(&fragment).map_err(|e| e.to_string())?;
     let mut acceptable = current.into_iter().collect::<Vec<_>>();

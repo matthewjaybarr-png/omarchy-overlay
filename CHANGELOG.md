@@ -11,6 +11,9 @@
 - **Super + Shift + L** and **Super + Alt + L** change the layout of the workspace in
   front only. Before, they changed the default for every workspace unless that
   workspace already had a layout of its own.
+- The Windows Terminal scheme uses each theme's own 16 terminal colors, cursor and
+  selection from its `colors.toml`. Before, every theme but Neon Ridge got Tokyo
+  Night's terminal colors.
 - **Super + Shift + Backspace** turns the gaps off or back on, as in Omarchy, instead
   of opening the gaps page.
 - The Admin zip carries only the stock Omarchy theme backgrounds, not ones from

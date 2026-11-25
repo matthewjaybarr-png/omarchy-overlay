@@ -111,17 +111,47 @@ pub fn builtins() -> Vec<Profile> {
         })
         .collect()
 }
+/// Windows Terminal scheme keys and the Omarchy colors.toml keys that fill them, in
+/// order of preference.
+const TERMINAL_COLORS: &[(&str, &[&str])] = &[
+    ("black", &["black"]),
+    ("red", &["red"]),
+    ("green", &["green"]),
+    ("yellow", &["yellow"]),
+    ("blue", &["blue"]),
+    ("purple", &["magenta"]),
+    ("cyan", &["cyan"]),
+    ("white", &["white"]),
+    ("brightBlack", &["bright_black"]),
+    ("brightRed", &["bright_red"]),
+    ("brightGreen", &["bright_green"]),
+    ("brightYellow", &["bright_yellow"]),
+    ("brightBlue", &["bright_blue"]),
+    ("brightPurple", &["bright_magenta"]),
+    ("brightCyan", &["bright_cyan"]),
+    ("brightWhite", &["bright_white"]),
+    ("cursorColor", &["cursor"]),
+    ("selectionBackground", &["selection_background", "selection"]),
+];
+/// The Terminal fragment for a theme. `colors` holds the theme's colors.toml values
+/// (0xrrggbb by key); every terminal color the theme defines replaces the default.
 pub fn terminal_fragment(
     theme: &str,
     background: &str,
     foreground: &str,
     accent: &str,
+    colors: &std::collections::BTreeMap<String, u32>,
 ) -> serde_json::Value {
     let name = format!("Omarchy Overlay {theme}");
     let mut fragment = serde_json::json!({"profiles":[{"name":"Omarchy Overlay","commandline":"powershell.exe","colorScheme":name}],
         "schemes":[{"name":name,"background":background,"foreground":foreground,"cursorColor":accent,"selectionBackground":accent,
             "black":"#1A1B26","red":"#F7768E","green":"#9ECE6A","yellow":"#E0AF68","blue":accent,"purple":"#BB9AF7","cyan":"#7DCFFF","white":foreground,
             "brightBlack":"#565F89","brightRed":"#FF9EAD","brightGreen":"#B9F27C","brightYellow":"#FFD694","brightBlue":accent,"brightPurple":"#D2B1FF","brightCyan":"#A4E4FF","brightWhite":"#FFFFFF"}]});
+    for (key, sources) in TERMINAL_COLORS {
+        if let Some(value) = sources.iter().find_map(|k| colors.get(*k)) {
+            fragment["schemes"][0][key] = serde_json::json!(format!("#{value:06X}"));
+        }
+    }
     if theme == "neon-ridge" {
         for (key, value) in [
             ("black", "#0a1028"),
@@ -163,9 +193,25 @@ mod tests {
             assert_eq!(c.layout, "dwindle");
             assert_eq!(c.terminal, "my-terminal.exe");
         }
-        let f = terminal_fragment("Tokyo Night", "#1A1B26", "#C0CAF5", "#7AA2F7");
+        let f = terminal_fragment("Tokyo Night", "#1A1B26", "#C0CAF5", "#7AA2F7", &Default::default());
         assert_eq!(f["profiles"][0]["name"], "Omarchy Overlay");
         assert!(f.get("defaultProfile").is_none());
+    }
+    #[test]
+    fn terminal_uses_each_themes_own_terminal_colors() {
+        let gruvbox = crate::theme_files::built_in("gruvbox").unwrap();
+        let f = terminal_fragment("gruvbox", "#000000", "#FFFFFF", "#123456", &gruvbox.colors);
+        let scheme = &f["schemes"][0];
+        for (key, sources) in TERMINAL_COLORS {
+            if let Some(value) = sources.iter().find_map(|k| gruvbox.colors.get(*k)) {
+                assert_eq!(scheme[key], format!("#{value:06X}"), "{key}");
+            }
+        }
+        assert_eq!(scheme["red"], format!("#{:06X}", gruvbox.colors["red"]));
+        assert_ne!(scheme["red"], "#F7768E", "not Tokyo Night's red");
+        // A key the theme leaves out keeps the default.
+        let f = terminal_fragment("x", "#000000", "#FFFFFF", "#123456", &Default::default());
+        assert_eq!(f["schemes"][0]["red"], "#F7768E");
     }
 }
 
