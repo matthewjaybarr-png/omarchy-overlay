@@ -6,6 +6,9 @@ fn main() {
         let root = std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
         let path = root.join("app.manifest");
         println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
+        // app.manifest carries its own trustInfo; without this, older lld-link (Ubuntu CI)
+        // merges a second one and writes ms_asmv1:level, which Windows refuses to load.
+        println!("cargo:rustc-link-arg=/MANIFESTUAC:NO");
         // Windows copies the program into memory when it starts from removable or
         // network media, so it can restore the desktop after the stick is pulled out.
         println!("cargo:rustc-link-arg=/SWAPRUN:CD");
