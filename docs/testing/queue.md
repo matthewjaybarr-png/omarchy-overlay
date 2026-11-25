@@ -139,6 +139,9 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   a centred square ("A lone window stays square"); a second window tiles normally;
   closing it brings the square back; the key again fills the screen.
 
+- **K3** (build 11) Super+P on a tiled Notepad: it returns to its own size, centred in
+  its tile; Super+P again fills the tile. Exit restores it as usual.
+
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run
   RECOVER.cmd: windows, taskbar, accent, wallpaper, Terminal/VS Code colours, fonts

@@ -16,6 +16,13 @@ unsafe fn allowed() -> bool {
 impl App {
     pub(super) unsafe fn arrange_window(&mut self, h: HWND, target: Rect) {
         let target = self.groupbar_room(h, target);
+        let target = match self.saved.get(&(h as isize)).filter(|_| self.pseudo.contains(&(h as isize))) {
+            Some(saved) => {
+                let r = saved.normal_screen;
+                layout::pseudo(target, r.right - r.left, r.bottom - r.top)
+            }
+            None => target,
+        };
         if !self.config.animations
             || !allowed()
             || self.drag.is_some()

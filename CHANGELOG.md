@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Super + P** is Omarchy's pseudo-tile: the focused window keeps its own size,
+  centred in its tile, until you press it again. It takes Windows' Super + P (Project);
+  display projection stays in Settings > Display.
 - **Super + Ctrl + Backspace** is Omarchy's single-window aspect ratio: a workspace's
   only tiled window stays a centred square instead of stretching across a wide screen.
   Press it again to let it fill the screen.

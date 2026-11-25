@@ -186,6 +186,17 @@ impl App {
                     }
                 }
             }
+            "pseudo-tile" => {
+                let key = GetForegroundWindow() as isize;
+                if self.order.contains(&key) {
+                    if !self.pseudo.remove(&key) {
+                        self.pseudo.insert(key);
+                    }
+                    self.tiled.clear();
+                    self.dirty = true;
+                    self.tick();
+                }
+            }
             "single-window-square" => {
                 let mut c = self.config.clone();
                 c.single_window_square = !c.single_window_square;

@@ -35,6 +35,7 @@ pub const BUILTINS: &[(&str, &str)] = &[
     ("close-all", "Close every window on this workspace"),
     ("full-screen-desktop", "Hide the bar and the gaps, or bring them back"),
     ("single-window-square", "Keep a lone window square, or let it fill the screen"),
+    ("pseudo-tile", "Keep the window's own size inside its tile, or fill the tile"),
     ("group-window-1", "Show window 1 of the group"),
     ("group-window-2", "Show window 2 of the group"),
     ("group-window-3", "Show window 3 of the group"),

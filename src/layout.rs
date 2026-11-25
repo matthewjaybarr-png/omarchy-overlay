@@ -242,6 +242,11 @@ pub fn square(area: Rect) -> Rect {
         h: side,
     }
 }
+/// Hyprland's pseudotile: a window keeps its own size, shrunk to fit, centred in its tile.
+pub fn pseudo(tile: Rect, width: i32, height: i32) -> Rect {
+    let (w, h) = (width.clamp(1, tile.w.max(1)), height.clamp(1, tile.h.max(1)));
+    Rect { x: tile.x + (tile.w - w) / 2, y: tile.y + (tile.h - h) / 2, w, h }
+}
 pub fn transfer(window: Rect, source: Rect, target: Rect) -> Rect {
     let w = window.w.min(target.w).max(1);
     let h = window.h.min(target.h).max(1);
@@ -540,6 +545,12 @@ mod tests {
         let scaled = floating(Rect { x: 0, y: 0, w: 1920, h: 1032 }, 0, 120);
         assert_eq!((scaled.w, scaled.h), (1228, 701));
         assert!(tiny.w >= 1 && tiny.h >= 1);
+    }
+    #[test]
+    fn pseudo_tiles_keep_their_size_inside_the_tile() {
+        let tile = Rect { x: 0, y: 0, w: 1000, h: 800 };
+        assert_eq!(pseudo(tile, 600, 400), Rect { x: 200, y: 200, w: 600, h: 400 });
+        assert_eq!(pseudo(tile, 1600, 400), Rect { x: 0, y: 200, w: 1000, h: 400 });
     }
     #[test]
     fn a_lone_tile_can_be_a_centred_square() {

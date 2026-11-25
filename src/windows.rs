@@ -386,6 +386,8 @@ struct App {
     floating: HashSet<isize>,
     /// Windows the floating layout has already placed; it never moves them again.
     float_placed: HashSet<isize>,
+    /// Pseudo-tiled windows: their own size, centred in their tile (Super+P).
+    pseudo: HashSet<isize>,
     /// What each dock icon stands for, and the ids that match apps to dock pins.
     dock_actions: Vec<dock_runtime::DockAction>,
     dock_entry_ids: HashMap<String, Vec<String>>,
@@ -1518,6 +1520,7 @@ pub fn run() {
             seen_foreground: 0,
             floating: HashSet::new(),
             float_placed: HashSet::new(),
+            pseudo: HashSet::new(),
             dock_actions: vec![],
             dock_entry_ids: HashMap::new(),
             dock_window_ids: HashMap::new(),
@@ -2595,6 +2598,7 @@ impl App {
         self.order.clear();
         self.floating.clear();
         self.float_placed.clear();
+        self.pseudo.clear();
         self.signature.clear();
         self.routed.clear();
     }
@@ -2720,6 +2724,7 @@ impl App {
         }
         self.floating.retain(|&key| IsWindow(key as HWND) != 0);
         self.float_placed.retain(|&key| IsWindow(key as HWND) != 0);
+        self.pseudo.retain(|&key| IsWindow(key as HWND) != 0);
         self.order
             .retain(|key| found.contains(key) && !self.floating.contains(key));
         // Reverse z-order makes existing windows enter in a stable, bottom-to-top order.
