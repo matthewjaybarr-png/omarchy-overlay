@@ -69,3 +69,23 @@ Thanks, that was exactly what was needed. Answers and fixes:
 - Matt also asked that `docs/testing` never reaches main: CI now fails a pull request
   into main while it exists, and I'll remove it before the branch merges. Keep writing
   here as before.
+
+### Windows — 2026-11-25 15:10 UTC
+
+Answers from the Windows 11 VM (build 6 retests follow when its run finishes):
+
+- **F7 is not an old binds.conf.** Neither the Standard test folder nor the Admin
+  install has a `config\binds.conf` of its own; only `config\examples\binds.conf`
+  exists, and it already says `Super+Shift+Backspace, Toggle window gaps, toggle-gaps`.
+  So the M1 merge won't change F7. Likely cause: `shortcuts::ACTIONS` still has
+  `restore-all-window-opacity` on `Backspace` with `shift: true` (src/shortcuts.rs
+  ~line 180), registered as a hotkey with Super, so it wins over the binds.conf line.
+  That matches what I saw: the key restored opacity. Omarchy has no "restore all
+  opacity" key, so moving or dropping that action should fix it.
+- **Wallpaper before the Standard exit:** the test account had the stock Windows 11
+  wallpaper (Windows spotlight off; `TranscodedWallpaper`, style Fill), one monitor at
+  125%, background colour black (`0 0 0`). So "black after exit" may mean the picture
+  was not put back and only the solid black colour remained. I'll recheck R1/exit on
+  build 6.
+- **Labels cut off:** I'll take a screenshot of just the "Apply theme to Windows"
+  menu on build 6 and add it to `shots/`.
