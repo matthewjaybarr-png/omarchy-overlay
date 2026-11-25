@@ -410,6 +410,8 @@ struct App {
     keep_awake: bool,
     /// The idle lock fired; it waits for input before it can fire again.
     idle_locked: bool,
+    indicator_ticks: u32,
+    mic_off: bool,
     pending_command: Option<(crate::commands::Command, bool)>,
     /// Sent with each Super key message so a key pressed before a reload is ignored.
     bind_generation: usize,
@@ -1524,6 +1526,8 @@ pub fn run() {
             keys_paused: false,
             keep_awake: false,
             idle_locked: false,
+            indicator_ticks: 0,
+            mic_off: false,
             pending_command: None,
             bind_generation: 0,
             last_profile: None,
@@ -2230,6 +2234,36 @@ impl App {
                 log(&error);
             }
         }
+    }
+    /// The bar's status indicators, as Omarchy's bar shows them.
+    unsafe fn update_indicators(&mut self) {
+        let mut parts: Vec<String> = vec![];
+        if self.keep_awake {
+            parts.push("AWAKE".into());
+        }
+        if !self.reminders.is_empty() {
+            parts.push(format!("REMIND {}", self.reminders.len()));
+        }
+        // The microphone is asked every other tick: it goes through COM.
+        self.indicator_ticks = self.indicator_ticks.wrapping_add(1);
+        if self.indicator_ticks.is_multiple_of(2) {
+            self.mic_off = native_status::mic_muted() == Some(true);
+        }
+        if self.mic_off {
+            parts.push("MIC OFF".into());
+        }
+        // The keyboard layout, only on a PC with more than one.
+        if GetKeyboardLayoutList(0, null_mut()) > 1 {
+            let thread = GetWindowThreadProcessId(GetForegroundWindow(), null_mut());
+            let language = (GetKeyboardLayout(thread) as usize & 0xffff) as u32;
+            let mut name = [0u16; 85];
+            let n = windows_sys::Win32::Globalization::LCIDToLocaleName(language, name.as_mut_ptr(), name.len() as i32, 0);
+            if n > 1 {
+                let locale = String::from_utf16_lossy(&name[..n as usize - 1]);
+                parts.push(locale.split('-').next().unwrap_or(&locale).to_uppercase());
+            }
+        }
+        bar::set_indicators(parts.join("  "));
     }
     unsafe fn appearance_poll(&mut self) {
         let foreground = GetForegroundWindow();
@@ -3497,6 +3531,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 app.tick();
                 app.dock_poll();
                 app.idle_tick();
+                app.update_indicators();
                 app.tasks.refresh();
                 app.update_dashboard();
                 Some(0)

@@ -47,6 +47,7 @@ struct State {
     network: String,
     sound: String,
     power: String,
+    indicators: String,
     clock: String,
     ticks: u32,
     opacity: u8,
@@ -158,6 +159,7 @@ pub(super) unsafe fn start(
         network: String::new(),
         sound: "SOUND".into(),
         power: String::new(),
+        indicators: String::new(),
         clock: String::new(),
         ticks: 0,
         opacity,
@@ -200,6 +202,17 @@ pub(super) unsafe fn stop() {
             DeleteObject(state.brush);
             if state.brush != state.class_brush {
                 DeleteObject(state.class_brush);
+            }
+        }
+    });
+}
+/// The status indicators text, words joined by two spaces; empty hides the module.
+pub(super) unsafe fn set_indicators(text: String) {
+    BAR.with(|cell| {
+        if let Some(state) = cell.borrow_mut().as_mut() {
+            if state.indicators != text {
+                state.indicators = text;
+                state.redraw();
             }
         }
     });
@@ -508,6 +521,16 @@ impl State {
                     }
                 ),
                 Module::Divider => String::new(),
+                Module::Indicators => label
+                    .split("  ")
+                    .map(|part| match part {
+                        "AWAKE" => "Stay awake is on".to_string(),
+                        "MIC OFF" => "Microphone is off".to_string(),
+                        p if p.starts_with("REMIND") => format!("Reminders waiting: {}", p.trim_start_matches("REMIND ")),
+                        p => format!("Keyboard: {p}"),
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n"),
                 Module::Notifications
                 | Module::QuickSettings
                 | Module::Display
@@ -634,6 +657,7 @@ impl State {
                 Sound => (self.sound.clone(), 92, false),
                 Network => (self.network.clone(), 93, false),
                 Power => (self.power.clone(), 94, false),
+                Indicators => (self.indicators.clone(), usize::MAX, false),
                 Controls => ("≡".into(), 2, false),
                 Divider => (String::new(), usize::MAX, false),
                 Notifications => ("NOTIFY".into(), 200, false),

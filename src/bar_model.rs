@@ -59,6 +59,8 @@ pub enum Module {
     Power,
     Controls,
     Divider,
+    /// Omarchy's status indicators: Stay awake, reminders, microphone off, keyboard layout.
+    Indicators,
 }
 impl Module {
     pub fn name(self) -> &'static str {
@@ -86,10 +88,11 @@ impl Module {
             Self::Power => "power",
             Self::Controls => "controls",
             Self::Divider => "divider",
+            Self::Indicators => "indicators",
         }
     }
 }
-pub const DISPLAY_MODULES: [(Module, &str); 22] = [
+pub const DISPLAY_MODULES: [(Module, &str); 23] = [
     (Module::Start, "Windows Start menu"),
     (Module::Launcher, "Omarchy Overlay app picker"),
     (Module::Menu, "Omarchy Overlay menu"),
@@ -102,6 +105,7 @@ pub const DISPLAY_MODULES: [(Module, &str); 22] = [
     (Module::Sound, "Sound"),
     (Module::Network, "Network"),
     (Module::Power, "Power"),
+    (Module::Indicators, "Status indicators"),
     (Module::Controls, "Controls"),
     (Module::AppDrawer, "Open-window drawer"),
     (Module::Notifications, "Windows notifications"),
@@ -274,6 +278,11 @@ pub fn omarchy_glyph(module: Module, active: bool, status: &str) -> Option<char>
         Module::Notifications => Some('\u{f009a}'),
         Module::Clipboard => Some('\u{f014c}'),
         Module::Capture => Some('\u{f0ec2}'),
+        // The most urgent indicator shown; the text lists them all.
+        Module::Indicators if status.contains("MIC OFF") => Some('\u{f036d}'),
+        Module::Indicators if status.contains("AWAKE") => Some('\u{f0176}'),
+        Module::Indicators if status.contains("REMIND") => Some('\u{f0020}'),
+        Module::Indicators => Some('\u{f030c}'),
         _ => None,
     }
 }
@@ -298,7 +307,7 @@ impl Default for BarConfig {
             // Omarchy's Waybar: logo menu and workspaces, clock, tray and status icons.
             left: vec![Menu, Workspaces],
             center: vec![Clock],
-            right: vec![SystemTray, Sound, Network, Power],
+            right: vec![Indicators, SystemTray, Sound, Network, Power],
         }
     }
 }
@@ -445,7 +454,7 @@ mod tests {
         let c = BarConfig::default();
         assert_eq!(c.left, vec![Menu, Workspaces]);
         assert_eq!(c.center, vec![Clock]);
-        assert_eq!(c.right, vec![SystemTray, Sound, Network, Power]);
+        assert_eq!(c.right, vec![Indicators, SystemTray, Sound, Network, Power]);
         assert_eq!(
             (c.font_family.as_str(), c.font_size),
             ("JetBrainsMono Nerd Font", 14)
@@ -651,6 +660,7 @@ impl Module {
             Self::Sound => "Volume and mute; opens native Windows Quick Settings.",
             Self::Network => "Connection status; opens Windows Quick Settings.",
             Self::Power => "Power status and native Windows controls.",
+            Self::Indicators => "Stay awake, pending reminders, microphone off and the keyboard layout, when there is something to show.",
             Self::Title => "Title of the focused window.",
             Self::Divider => "A visual separator; can appear more than once.",
             Self::Notifications => "Open native Windows notifications and calendar.",

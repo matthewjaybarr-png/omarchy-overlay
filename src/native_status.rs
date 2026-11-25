@@ -48,6 +48,12 @@ pub(super) unsafe fn toggle_mic_mute() -> Option<bool> {
     mic.SetMute(muted, std::ptr::null()).ok()?;
     Some(muted)
 }
+/// Whether the default microphone is muted; None without one.
+pub(super) unsafe fn mic_muted() -> Option<bool> {
+    let _apartment = Apartment::enter();
+    let mic = device(eCapture, eCommunications).ok()?;
+    Some(mic.GetMute().ok()?.as_bool())
+}
 pub(super) unsafe fn volume() -> Option<(u8, bool)> {
     let _apartment = Apartment::enter();
     let endpoint = endpoint().ok()?;

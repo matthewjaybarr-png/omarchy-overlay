@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Status indicators** on the bar, as Omarchy's: Stay awake, pending reminders,
+  microphone off and (with more than one keyboard layout) the current layout. The
+  icon shows the most urgent one and the tooltip lists them all; nothing shows when
+  there is nothing to say. New bars have it at the right; add it to an existing bar
+  with Appearance > Top bar > Bar items.
 - Reminders survive a restart or sign-out, as Omarchy's do: they are kept in
   `reminders.json` and come late if the PC was off. `remind 25 Stretch` adds a
   message to show instead of "25 minutes are up."
