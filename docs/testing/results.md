@@ -2,6 +2,54 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 11 (0a27206) — 2026-11-25 17:03 UTC, Windows 11 VM, Standard
+
+- **K2** PASS. A lone Notepad on workspace 4 with Super+Ctrl+Backspace becomes a centred
+  square (![](shots/11-K2-square.png)). A second Notepad tiles normally side by side
+  (![](shots/11-K2-two.png)). Closing it brings the square back
+  (![](shots/11-K2-back.png)), and the key again fills the screen
+  (![](shots/11-K2-off.png)).
+- **K3** PASS. Super+P on the right tile returns Notepad to its own height, centred
+  vertically in the tile; its own width is wider than the tile, so it stays tile-wide
+  (![](shots/11-K3-pseudo.png)). Super+P again fills the tile.
+- **TH1** PASS (git installed). Typing `theme-install bjarneo/omarchy-ash-theme` shows
+  "Theme ash installed" within 3 s and the theme switches
+  (![](shots/11-TH1-installed.png), ![](shots/11-TH1-applied.png)). I didn't see
+  "Installing…", which may just have been too quick. `config\themes\ash` holds only
+  `colors.toml` and `backgrounds\` (1-ash.jpg, 2-dothash-dark.jpg).
+- **close-all** (typed in the menu) PASS for tracked windows: the workspace 4 Notepad
+  closed and workspace 1's tiled stack was left alone (![](shots/11-closeall.png)). It
+  didn't close the two untracked windows below, which show on every workspace.
+- **O6**
+  - Typed command PASS. `remind 2 Test message` shows "Reminder in 2 min" and the bar
+    alarm icon (![](shots/11-O6-set.png)).
+  - Persistence PASS. The icon is still there after killing and restarting the overlay
+    (![](shots/11-O6-after-restart.png)).
+  - Notification **FAIL**. At the due time the icon goes away, but no Windows
+    notification appears and Win+N shows "No new notifications". This happens with and
+    without a restart (I also tried `remind 1`). Toast settings are at their defaults.
+  - Control: a PowerShell NotifyIcon `ShowBalloonTip` does show
+    (![](shots/11-O6-control.png)), so balloons work on this VM.
+  - The log has these lines at every start, so the tray icon may not be registered
+    when `NIM_MODIFY` sends the balloon:
+    `Tray lookup: No supported hidden-icons control was found; SystemTrayIcon classes: []`
+    and `Tray preparation: Tray control lookup failed (0x80004005)`.
+- **Untracked windows**
+  - The Notepad that Notepad restored at start never tiled
+    (![](shots/11-notepad-not-tiling.png)). The overlay was started right after Notepad
+    in the same script, so the window may have appeared after the first scan.
+  - Super+T floats it centred, and Super+T again puts it back at the same rect.
+    Super+P does nothing.
+  - After Super+Shift+2 it shows on every workspace, and so does an Explorer I opened
+    on workspace 2.
+  - On workspace 2 (Floating from earlier tests), Super+Shift+L showed "This workspace:
+    Scrolling" but nothing moved.
+  - One Super+3 press didn't switch.
+  - I didn't save log lines before shutting the VM down. I'll grab them next time.
+- **Menu at start**: still opens on every start (3 starts) in build 11. Build 12/13
+  changes this.
+- Exit from the menu restored the desktop; the bar and wallpaper went back to Windows.
+
 ## Build 10 (ddcd9bd) — 2026-11-25 16:46 UTC, Windows 11 VM
 
 Standard zip runs portable from `C:\Users\Public\ovt\b10\std`. One 1920x1080 monitor.

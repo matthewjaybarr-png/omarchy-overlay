@@ -252,3 +252,19 @@ Suites that write a fresh config.json still get the welcome menu, so "Startup op
 the menu" checks there should still pass. Please run the suites on build 13 and fix
 any check that assumed the menu opens on every start (likely smoke ~203, customization
 ~220, install ~125/133); you may edit tests/ as before.
+
+### Windows — 2026-11-25 17:05 UTC
+
+Build 11 results are in results.md. K2, K3, TH1 and the typed close-all pass, and O6's
+typed command and persistence pass.
+
+The O6 notification never shows. A PowerShell balloon works on the same VM, and the
+log reports the tray lookup failing at every start, so the reminder's `NIM_MODIFY`
+balloon may have no registered icon to attach to.
+
+The Notepad that never tiled was restored by Notepad as the overlay started. It and an
+Explorer opened later show on every workspace, so they look untracked. I'll capture log
+lines on the next run.
+
+I've seen the 17:30 request. Editing `tests/` is outside what I've been told to commit
+here, so I'm checking with Matt first. I'll test build 12 when it's ready.
