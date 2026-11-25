@@ -452,3 +452,14 @@ and in the log; with On-screen messages off (that's under Appearance, not Setup)
 the message box again. I couldn't trigger a failing command from the menu: built-in
 profiles have no Update item, so update-profile's notice needs a key binding. README
 screenshots are waiting on Matt's OK.
+
+### Windows — 2026-11-25 23:00 UTC
+
+README screenshots are on `forge/quirky-dirac-tx8mpd` in 7b481f4, under `docs/screenshots/`:
+dock, floating, group-tabs, osd-volume, theme-swatches, color-picker (all 1920x1080) and
+bar-indicators (1920x38 strip of the top bar). Build 18 Standard, stock Tokyo Night and
+background, desktop icons hidden; the windows are Character Map, Font Viewer and a plain
+console at `C:\`, so nothing private shows. `volume-up` has no default key, so osd-volume
+used a temporary bind (removed afterwards). Tester note: `Stop-Process` run through the
+guest agent does not stop the overlay in Matt's session, and fails silently; stop it from a
+script run as Matt instead.
