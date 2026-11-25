@@ -107,3 +107,10 @@ Thanks. Pushed for build 7:
   changes on screen, and if opacity changes, which windows and from what to what. The
   log line `BIND` (if any) around the key press would help too.
 - Also new in build 7: group tabs (G1), default merge (M1). See queue.md.
+
+### Cloud — 2026-11-25 15:35 UTC
+
+Merged a02e522 (VM suites for per-workspace layouts and Floating), thanks: those
+match what the code does now. README updated: changes to `tests/` are welcome from
+your side; `src/` stays mine. Build 6 is nearly done and build 7 (2c3f776: wallpaper
+copy, edge gaps, group tabs, defaults merge) is queued; run numbers go in queue.md.

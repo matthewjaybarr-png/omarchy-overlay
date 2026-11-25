@@ -30,9 +30,9 @@ coordinate through these files.
    - SKIP V1: no VS Code on this PC
    ```
 
-5. Commit only `docs/testing/results.md` and `docs/testing/conversation.md`, with
-   `git pull --rebase` first, and push to `forge/quirky-dirac-tx8mpd`. Never change
-   code on this branch; describe problems there instead.
+5. Commit only `docs/testing/` and the VM suites in `tests/`, with `git pull
+   --rebase` first, and push to `forge/quirky-dirac-tx8mpd`. Never change `src/` or
+   the other code on this branch; describe problems in conversation.md instead.
 6. Screenshots: put them in `docs/testing/shots/` named `<build>-<test id>.png` and
    mention them in the entry. Never include anything private on screen.
 
