@@ -62,6 +62,8 @@ mod theme_files;
 mod tray_match;
 #[cfg(any(windows, test))]
 mod webapps;
+#[cfg(any(windows, test))]
+mod vscode_theme;
 #[cfg(windows)]
 mod windows;
 #[cfg(any(windows, test))]

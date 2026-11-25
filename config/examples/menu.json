@@ -86,6 +86,7 @@
         { "label": "Apply theme to Windows", "icon": "F17A", "command": "page windows-theme" },
         { "label": "Apps Omarchy Overlay cannot theme", "icon": "F071", "command": "page windows-checklist" },
         { "label": "Windows Terminal colors", "icon": "F120", "command": "page terminal-colors" },
+        { "label": "VS Code colors", "icon": "F0A1E", "command": "page vscode-colors" },
         { "label": "Windows taskbar", "icon": "F0C9", "command": "page taskbar" }
       ]
     },

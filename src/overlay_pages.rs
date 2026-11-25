@@ -846,6 +846,22 @@ impl App {
                 rows.push(info("Choices stay on this PC. Specific desktop/display choices override broader ones. Workspaces switch every monitor together."));
                 rows
             }
+            "vscode-colors" => {
+                let found = vscode_effects::found();
+                vec![
+                    Row::new(BRUSH, "Theme VS Code with the current theme", Act::Choose("vscode-colors", "apply".into()))
+                        .checked(vscode_effects::applied(&self.directory))
+                        .detail(format!("theme {}", self.config.theme)),
+                    Row::new(UNDO, "Put back the VS Code theme you had", Act::Choose("vscode-colors", "restore".into())),
+                    info(if found.is_empty() {
+                        "No VS Code, VS Code Insiders, VSCodium or Cursor settings were found for this user.".to_string()
+                    } else {
+                        format!("Found: {}.", found.join(", "))
+                    }),
+                    info("Adds a local \"Omarchy Overlay\" color theme built from Omarchy's VS Code template and selects it. Only that one setting changes in settings.json."),
+                    info("It follows every theme change. Put back, exit and a crash restore the theme you had, unless you picked another one since."),
+                ]
+            }
             "terminal-colors" => {
                 let applied = appearance_effects::terminal_applied(&self.directory);
                 vec![
@@ -1561,6 +1577,7 @@ impl App {
             Row::new(WINDOW, "Windows behavior (taskbar, File Explorer, snap, mouse focus)", Act::Open(Level::Page("windows-tweaks"))),
             Row::new(IMAGE, "Background", Act::Open(Level::Page("background"))),
             Row::new(BRUSH, "Windows Terminal colors", Act::Run(Command::Page("terminal-colors"))),
+            Row::new(BRUSH, "VS Code colors", Act::Run(Command::Page("vscode-colors"))),
             Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))),
             Row::new(INFO, "Apps Omarchy Overlay cannot theme", Act::Open(Level::Page("windows-checklist"))),
             info("Omarchy Overlay records the original values first and puts them back on Restore, on exit and after a crash."),
@@ -2563,6 +2580,18 @@ impl App {
                 };
                 let result =
                     result.and_then(|text| self.save_layout_choices(candidate).map(|()| text));
+                overlay::message(&match result {
+                    Ok(text) => text.to_string(),
+                    Err(error) => error,
+                });
+                true
+            }
+            "vscode-colors" => {
+                let result = match value {
+                    "apply" => vscode_effects::apply(&self.directory, &self.config.theme)
+                        .map(|_| "Done. VS Code switches to the Omarchy Overlay theme; restart it if it doesn't."),
+                    _ => vscode_effects::restore(&self.directory).map(|()| "Put back."),
+                };
                 overlay::message(&match result {
                     Ok(text) => text.to_string(),
                     Err(error) => error,

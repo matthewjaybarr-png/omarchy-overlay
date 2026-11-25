@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **VS Code colors** (Appearance > VS Code colors), as Omarchy themes VS Code: the
+  theme's colors fill Omarchy's VS Code color theme, installed as a local "Omarchy
+  Overlay" theme for VS Code, VS Code Insiders, VSCodium and Cursor, and selected in
+  settings.json. Only `workbench.colorTheme` changes there; comments and every other
+  setting stay. It follows theme changes, and Put back, exit and a crash restore the
+  theme you had unless you picked another one since.
 - **Dock**, after Omarchy's: on each monitor whose workspace uses the floating
   layout, it shows the pinned apps (the app picker's favorites) and then the other
   running apps, with a running dot. Click brings the app forward and cycles through

@@ -5,6 +5,8 @@ use crate::{config::Config, profile};
 mod app_rules_ui;
 #[path = "appearance_effects.rs"]
 mod appearance_effects;
+#[path = "vscode_effects.rs"]
+mod vscode_effects;
 #[path = "appearance_options.rs"]
 mod appearance_options;
 #[path = "appearance_ui.rs"]
@@ -2199,6 +2201,11 @@ impl App {
             .exists()
         {
             if let Err(error) = appearance_effects::apply_terminal(&self.directory, name) {
+                log(&error);
+            }
+        }
+        if vscode_effects::applied(&self.directory) {
+            if let Err(error) = vscode_effects::apply(&self.directory, name) {
                 log(&error);
             }
         }

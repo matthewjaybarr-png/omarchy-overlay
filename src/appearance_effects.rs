@@ -326,6 +326,9 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     if let Err(error) = restore_terminal(directory) {
         errors.push(error);
     }
+    if let Err(error) = vscode_effects::restore(directory) {
+        errors.push(error);
+    }
     if errors.is_empty() {
         Ok(())
     } else {

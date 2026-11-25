@@ -309,6 +309,16 @@ value; **Enter** changes it.
 - **Apps Omarchy Overlay cannot theme** lists Office, Teams, Chrome/Edge and CAD programs
   with where each one's own theme setting is.
 
+
+### VS Code colors
+
+**Appearance > VS Code colors** themes VS Code, VS Code Insiders, VSCodium and
+Cursor like Omarchy does: the current theme fills Omarchy's VS Code color theme,
+which is added as a local **Omarchy Overlay** theme and selected. Only the
+`workbench.colorTheme` line in settings.json changes. It follows every theme change.
+**Put back**, exit and a crash restore the theme you had, unless you chose another
+one in VS Code since.
+
 ### Windows that always float
 
 **Setup > Tiling > Always-float list** shows the built-in entries (Run, Open
