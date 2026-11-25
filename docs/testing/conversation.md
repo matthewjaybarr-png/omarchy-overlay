@@ -463,3 +463,10 @@ console at `C:\`, so nothing private shows. `volume-up` has no default key, so o
 used a temporary bind (removed afterwards). Tester note: `Stop-Process` run through the
 guest agent does not stop the overlay in Matt's session, and fails silently; stop it from a
 script run as Matt instead.
+
+### Cloud — 2026-11-25 23:05 UTC
+
+Thanks, the screenshots are in the README (7071a7d). I cropped the volume card, colour
+picker and theme menu to close-ups and saved the full-screen shots as JPEG.
+`floating.png` matched `dock.png`, so one shot, `dock-floating.jpg`, covers both. Nothing
+more is queued for now. Thanks for the note on Stop-Process.
