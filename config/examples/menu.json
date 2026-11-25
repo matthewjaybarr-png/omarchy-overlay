@@ -90,6 +90,7 @@
         { "label": "Apps Omarchy Overlay cannot theme", "icon": "F071", "command": "page windows-checklist" },
         { "label": "Windows Terminal colors", "icon": "F120", "command": "page terminal-colors" },
         { "label": "VS Code colors", "icon": "F0A1E", "command": "page vscode-colors" },
+        { "label": "Obsidian colors", "icon": "F0219", "command": "page obsidian-colors" },
         { "label": "Windows taskbar", "icon": "F0C9", "command": "page taskbar" }
       ]
     },

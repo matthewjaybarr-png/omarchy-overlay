@@ -71,10 +71,18 @@ pub fn resolved(colors: &BTreeMap<String, u32>) -> BTreeMap<String, u32> {
 /// Omarchy's VS Code color theme filled from a theme. Unknown placeholders fall back
 /// to the foreground color, so a theme missing a key still gives valid JSON.
 pub fn render(colors: &BTreeMap<String, u32>, dark: bool) -> String {
+    fill(TEMPLATE, colors, dark)
+}
+/// Omarchy's Obsidian theme (default/themed/obsidian.css.tpl) filled from a theme.
+pub fn obsidian_css(colors: &BTreeMap<String, u32>, dark: bool) -> String {
+    fill(include_str!("../assets/obsidian/omarchy.css.tpl"), colors, dark)
+}
+/// Fills an Omarchy template's `{{ key }}` and `{{ mix a b N% }}` placeholders.
+pub fn fill(template: &str, colors: &BTreeMap<String, u32>, dark: bool) -> String {
     let colors = resolved(colors);
     let fallback = colors.get("foreground").copied().unwrap_or(0x808080);
-    let mut out = String::with_capacity(TEMPLATE.len());
-    let mut rest = TEMPLATE;
+    let mut out = String::with_capacity(template.len());
+    let mut rest = template;
     while let Some(start) = rest.find("{{") {
         out.push_str(&rest[..start]);
         let Some(end) = rest[start..].find("}}") else {
@@ -228,6 +236,13 @@ mod tests {
             assert_eq!(value["type"], if theme.dark { "dark" } else { "light" }, "{id}");
             assert_eq!(value["colors"]["foreground"], format!("#{:06x}", theme.colors["foreground"]));
         }
+    }
+    #[test]
+    fn obsidian_css_has_no_placeholders_left() {
+        let theme = crate::theme_files::built_in("gruvbox").unwrap();
+        let css = obsidian_css(&theme.colors, theme.dark);
+        assert!(!css.contains("{{"));
+        assert!(css.contains(&format!("#{:06x}", theme.colors["red"])));
     }
     #[test]
     fn missing_colors_follow_omarchys_fallbacks() {

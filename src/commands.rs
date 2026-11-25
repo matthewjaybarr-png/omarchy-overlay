@@ -175,6 +175,7 @@ pub const PAGES: &[(&str, &str)] = &[
     ("version", "Omarchy Overlay version"),
     ("terminal-colors", "Windows Terminal colors"),
     ("vscode-colors", "VS Code colors"),
+    ("obsidian-colors", "Obsidian colors"),
     ("config-errors", "Config file problems"),
 ];
 

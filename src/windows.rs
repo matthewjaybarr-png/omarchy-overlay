@@ -7,6 +7,8 @@ mod app_rules_ui;
 mod appearance_effects;
 #[path = "vscode_effects.rs"]
 mod vscode_effects;
+#[path = "obsidian_effects.rs"]
+mod obsidian_effects;
 #[path = "font_install.rs"]
 mod font_install;
 #[path = "windows_syscolors.rs"]
@@ -2263,6 +2265,11 @@ impl App {
         }
         if self.config.vscode_colors {
             if let Err(error) = vscode_effects::apply(&self.directory, name) {
+                log(&error);
+            }
+        }
+        if self.config.obsidian_colors {
+            if let Err(error) = obsidian_effects::apply(&self.directory, name) {
                 log(&error);
             }
         }

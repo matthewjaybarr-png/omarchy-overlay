@@ -357,6 +357,9 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     if let Err(error) = vscode_effects::restore(directory) {
         errors.push(error);
     }
+    if let Err(error) = obsidian_effects::restore(directory) {
+        errors.push(error);
+    }
     // After the Terminal profile, which may name one of these fonts.
     if let Err(error) = font_install::remove(directory) {
         errors.push(error);

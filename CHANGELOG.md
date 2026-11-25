@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Obsidian colors** (Appearance > Obsidian colors), as Omarchy themes Obsidian: each
+  vault Obsidian lists gets an "Omarchy Overlay" theme from Omarchy's Obsidian template
+  in the current colors; pick it once in Obsidian's Appearance settings. Obsidian's own
+  settings are not edited. It follows theme changes, is removed on exit and comes back
+  at the next start while turned on.
 - **Typed commands in the menu:** type any binds.conf command into the menu's search
   and press Enter, as in Omarchy, for example `remind 25 Stretch`.
 - **Install themes from git**, as omarchy-theme-install: `theme-install owner/repo`

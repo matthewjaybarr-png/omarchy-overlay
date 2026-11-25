@@ -158,6 +158,11 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   switches; `config\themes\ash` holds only colors.toml and backgrounds\. Without git:
   a message saying to install it.
 
+- **OB1** (build 12) With Obsidian and a vault: Appearance > Obsidian colors > Add.
+  Obsidian > Settings > Appearance > Themes lists "Omarchy Overlay"; choosing it shows
+  the theme colours; a theme switch changes them; Exit removes the theme folder.
+  SKIP without Obsidian.
+
 ### Before hiding the taskbar by default
 - **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar while Omarchy
   Overlay runs", dock on floating workspaces. Then check each and note PASS/FAIL:

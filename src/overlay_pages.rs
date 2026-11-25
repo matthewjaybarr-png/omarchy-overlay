@@ -868,6 +868,13 @@ impl App {
                 rows.push(info("Choices stay on this PC. Specific desktop/display choices override broader ones. Workspaces switch every monitor together."));
                 rows
             }
+            "obsidian-colors" => vec![
+                Row::new(BRUSH, "Add the Omarchy Overlay theme to my Obsidian vaults", Act::Choose("obsidian-colors", "apply".into()))
+                    .checked(self.config.obsidian_colors)
+                    .detail(format!("{} vaults", obsidian_effects::vault_count())),
+                Row::new(UNDO, "Remove it from the vaults", Act::Choose("obsidian-colors", "restore".into())),
+                info("As in Omarchy: each vault gets an \"Omarchy Overlay\" theme in the current colors. Pick it once in Obsidian > Settings > Appearance > Themes. It follows theme changes; exit removes it and the next start adds it back."),
+            ],
             "vscode-colors" => {
                 let found = vscode_effects::found();
                 vec![
@@ -1641,6 +1648,7 @@ impl App {
             Row::new(IMAGE, "Background", Act::Open(Level::Page("background"))),
             Row::new(BRUSH, "Windows Terminal colors", Act::Run(Command::Page("terminal-colors"))),
             Row::new(BRUSH, "VS Code colors", Act::Run(Command::Page("vscode-colors"))),
+            Row::new(BRUSH, "Obsidian colors", Act::Run(Command::Page("obsidian-colors"))),
             Row::new(UNDO, "Restore the original Windows appearance", Act::Run(Command::Builtin("restore-windows-appearance"))),
             Row::new(INFO, "Apps Omarchy Overlay cannot theme", Act::Open(Level::Page("windows-checklist"))),
             info("Omarchy Overlay records the original values first and puts them back on Restore, on exit and after a crash."),
@@ -2688,6 +2696,20 @@ impl App {
                     Ok(text) => text.to_string(),
                     Err(error) => error,
                 });
+                true
+            }
+            "obsidian-colors" => {
+                let result = if value == "apply" {
+                    obsidian_effects::apply(&self.directory, &self.config.theme)
+                        .map(|n| format!("Added to {n} vaults. Choose it in Obsidian > Settings > Appearance."))
+                } else {
+                    obsidian_effects::restore(&self.directory).map(|()| "Removed.".to_string())
+                };
+                if result.is_ok() {
+                    self.config.obsidian_colors = value == "apply";
+                    self.save_config();
+                }
+                overlay::message(&result.unwrap_or_else(|e| e));
                 true
             }
             "vscode-colors" => {

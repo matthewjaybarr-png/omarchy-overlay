@@ -63,6 +63,7 @@ pub struct Config {
     /// away like every other change to Windows, and the next start puts them back.
     pub terminal_colors: bool,
     pub vscode_colors: bool,
+    pub obsidian_colors: bool,
     /// The bundled JetBrains Mono fonts are installed for this user while it runs.
     pub install_fonts: bool,
     /// Seconds without input before the screensaver and the lock (0: off).
@@ -186,6 +187,7 @@ impl Default for Config {
             dock: "floating".into(),
             terminal_colors: false,
             vscode_colors: false,
+            obsidian_colors: false,
             install_fonts: false,
             screensaver_after: 0,
             lock_after: 0,

@@ -396,6 +396,7 @@ impl App {
                     // Asked for the original look: Terminal and VS Code stay unthemed.
                     self.config.terminal_colors = false;
                     self.config.vscode_colors = false;
+                    self.config.obsidian_colors = false;
                     self.config.install_fonts = false;
                     self.save_config();
                     self.show_feedback("Original Windows appearance restored.")
