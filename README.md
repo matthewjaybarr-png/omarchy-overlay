@@ -30,6 +30,26 @@ focused window.*
 
 *The app grid (**Super + Alt + Space**): type to filter, arrow keys move in the grid.*
 
+![A floating workspace: a console and Character Map placed freely, with the dock at the bottom](docs/screenshots/dock-floating.jpg)
+
+*A floating workspace with Omarchy's dock: pinned and running apps, a dot under each
+running one and the accent dot for the app in front.*
+
+![Two font viewers grouped in one tile, with tabs above them](docs/screenshots/group-tabs.jpg)
+
+*Groups (**Super + G**): several windows share one tile, with a tab for each.*
+
+![The theme menu: each theme with its four-color swatch, Tokyo Night selected](docs/screenshots/theme-swatches.png)
+![The volume card at the top of the screen, at 78% with a level bar](docs/screenshots/osd-volume.png)
+![The color picker's crosshair with the color under it, #d94669](docs/screenshots/color-picker.png)
+
+*The theme menu with each theme's colors; the on-screen card for volume and
+brightness; the color picker (**Super + Print**), which copies the hex color.*
+
+![The top bar: menu, workspaces 1 to 4, the clock, and tray and status icons](docs/screenshots/bar-indicators.png)
+
+*The top bar: menu and workspaces, the clock, then the tray and status indicators.*
+
 **Status: early.** This is version 0.5.0. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
@@ -166,8 +186,8 @@ They are kept unless you run
   former workspace and **Super + K** lists every key.
 - **Universal clipboard:** **Super + C / V / X / A** copy, paste, cut and select
   all in any app, as on Omarchy. In Windows Terminal, copy and paste send
-  Ctrl + Shift + C / V so Ctrl + C still stops a command. Windows uses Super + C,
-  V, X and A itself, so these need the Admin edition, which can take Super keys.
+  Ctrl + Shift + C / V so Ctrl + C still stops a command. Both editions take
+  these keys from Windows' own Super + C, V, X and A.
 - **Groups:** **Super + G** makes the focused window a group, and
   **Super + Alt + arrows** move a window into the group of the tile in that
   direction. A group fills one tile and shows one window at a time:

@@ -166,7 +166,7 @@ try {
  [void][RecoverTest]::SetForegroundWindow((Menu));Capture (Menu) 'bar-editor.png'
  Menu-Go 'Add a module to this section'
  $catalog=@();for($i=0;$i -lt 40;$i++){$n=Menu-Name;if($n -in $catalog){break};$catalog+=$n;Menu-Key 0x28}
- Check 'Available module catalog includes native Windows controls and scrolling' ($catalog.Count -eq 23) ("count=$($catalog.Count)")
+ Check 'Available module catalog includes native Windows controls and scrolling' ($catalog.Count -eq 24) ("count=$($catalog.Count)")
  Check 'Scrolling navigation is discoverable in the module catalog' (@($catalog|Where-Object{$_ -like 'Add a module | Scroll tiled windows*'}).Count -eq 1)
  Menu-Type 'Windows clipboard history'
  Check 'Module selection explains its behavior' ((Menu-Name) -match 'clipboard history.*\|.*clipboard history') (Menu-Name)

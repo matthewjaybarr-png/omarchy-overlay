@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Menu commands that cannot run (sleep refused, a link that does not open, an Admin-only
+  item in the Standard edition) say so on the themed card for six seconds, as Omarchy's
+  notifications do, instead of a plain Windows message box. Text too long for the card
+  still uses a message box.
+- Fixed: when Windows refused the Standard edition's lock screen picture, every later
+  start stopped with "Recovery needs attention" and quit. A picture that was never
+  changed is no longer put back, and the lock screen, browser colors, VS Code, Obsidian
+  and font clean-ups never stop Omarchy Overlay from starting: a failure is logged and
+  retried at the next exit. The Standard lock screen also tries Windows' LockScreen API
+  when the personalization API refuses, and logs Windows' error codes.
+- **Every window is tiled**, as in Omarchy: the layouts no longer stop at a capacity
+  (5 windows in Main + stack at 1080p) and leave the rest where they were; panes get
+  as thin as needed.
 - A reminder also shows on screen for 10 seconds, so it is seen even when Windows holds
   the notification back, and the tray icon comes back after Explorer restarts (a lost
   icon could not show the reminder at all).

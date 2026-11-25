@@ -354,11 +354,12 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     if let Err(error) = restore_terminal(directory) {
         errors.push(error);
     }
-    if let Err(error) = vscode_effects::restore(directory) {
-        errors.push(error);
-    }
-    if let Err(error) = obsidian_effects::restore(directory) {
-        errors.push(error);
+    // App files (VS Code, Obsidian) can be held open by the app: a failure there is
+    // logged and retried at the next exit, never a reason to stop Omarchy Overlay starting.
+    for (what, result) in [("VS Code", vscode_effects::restore(directory)), ("Obsidian", obsidian_effects::restore(directory))] {
+        if let Err(error) = result {
+            log(&format!("{what} colors not put back yet: {error}"));
+        }
     }
     if let Err(error) = browser_policy::restore(directory) {
         errors.push(error);
@@ -368,7 +369,7 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
     }
     // After the Terminal profile, which may name one of these fonts.
     if let Err(error) = font_install::remove(directory) {
-        errors.push(error);
+        log(&format!("Fonts not removed yet: {error}"));
     }
     if errors.is_empty() {
         Ok(())

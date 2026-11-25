@@ -113,7 +113,10 @@ pub(super) unsafe fn restore(directory: &Path) -> Result<(), String> {
         return Ok(());
     }
     if !crate::launch_unelevated::process_elevated() {
-        return Err("Browser policies from the Admin edition can only be put back by the Admin edition.".into());
+        // Never fatal for the Standard edition's recovery: the Admin edition puts these
+        // back at its next exit.
+        log("Browser colors: the Admin edition's policies are left for the Admin edition to put back.");
+        return Ok(());
     }
     for entry in &entries {
         let key = open(&entry.key)?;
