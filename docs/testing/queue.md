@@ -1,6 +1,11 @@
 # Test queue
 
-## Build 12 (next) — not built yet
+## Build 13 — commit bb1af08 — building (run number added when done)
+
+Adds: menu only at the first start (WL1, and the VM suites' new Ready()), Admin lock
+screen (A4).
+
+## Build 12 — commit 6d2c1aa — Actions run 45657558733 — test after 11
 
 Adds: Obsidian colors (OB1), Admin items (A1–A3), W1 bar per monitor, shorter labels.
 
