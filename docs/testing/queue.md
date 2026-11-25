@@ -203,6 +203,12 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   previous lock screen picture back. If it says Windows doesn't allow it, note the
   Windows edition and the exact message.
 
+- **CB1** (any build, **Standard**) In Notepad, type a word, Super+A selects all,
+  Super+C copies, Super+V pastes it again; Super+X cuts. Windows' own Win+V (clipboard
+  history) and Win+A (Quick Settings) must not open. The README says these need the
+  Admin edition; the code doesn't gate them, so this checks whether Standard can do
+  them too.
+
 ### Before hiding the taskbar by default
 - **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar", dock on floating workspaces. Then check each and note PASS/FAIL:
   the Win key opens Start; Win+N opens notifications; Win+A Quick Settings; a toast
