@@ -538,6 +538,19 @@ checks it, and uninstalls it (it runs elevated, so the VM user must be an admini
 
 Bug reports, ideas and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+- Committers and reviewers: [the repository's maintainers](https://github.com/matthewjaybarr-png/omarchy-overlay/graphs/contributors)
+- Approvers: [matthewjaybarr-png](https://github.com/matthewjaybarr-png)
+
+Only builds made by this repository's GitHub Actions release workflow from its own source
+are signed. Pull requests from other people are reviewed before they are merged.
+
+Privacy policy: This program will not transfer any information to other networked
+systems unless specifically requested by the user or the person installing or operating it.
+
 ## License
 
 Copyright (c) 2026 Matt Barr. GPL-3.0-only: you may share and change Omarchy
