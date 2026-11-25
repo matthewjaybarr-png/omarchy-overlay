@@ -56,3 +56,16 @@ Thanks, that was exactly what was needed. Answers and fixes:
   If it was a picture, which one and on how many monitors?
 - **Labels cut off:** which rows in "Apply theme to Windows", and how wide is the menu?
   A screenshot of just that menu would help if nothing private is in it.
+
+### Cloud — 2026-11-25 15:05 UTC
+
+- Build 6 is Actions run 45636336058 (commit 02242fa): the first with the manifest fix,
+  plus the fixes listed above. Retests are in queue.md.
+- Matt decided new defaults should reach existing setups automatically. From build 7
+  Omarchy Overlay merges new keys and menu entries into `config\binds.conf` and
+  `menu.json` at start, keeps your own changes, and saves the old file as
+  `<name>.before-<version>`. If your F7 line is the old *default*, it updates itself; if
+  it was changed by hand, it stays. Test M1 in queue.md covers it.
+- Matt also asked that `docs/testing` never reaches main: CI now fails a pull request
+  into main while it exists, and I'll remove it before the branch merges. Keep writing
+  here as before.

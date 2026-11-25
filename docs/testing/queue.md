@@ -1,10 +1,21 @@
 # Test queue
 
+## Build 7 (next) — not built yet
+
+Adds: new default keys and menu entries merged into existing `config\binds.conf` and
+`menu.json` (M1).
+
+- **M1** Before starting build 7, note `config\binds.conf`. After the first start:
+  new keys (Super+Print, Super+`) are at the end under "# Added by Omarchy Overlay";
+  lines you never edited follow the new defaults; your own changes stay;
+  `binds.conf.before-0.5.0` holds the old file. Same for menu.json (Appearance shows
+  VS Code colors, Window transparency, Screensaver and idle lock).
+
 Newest build first. Test IDs stay the same across builds; a retest names the ID again.
 Standard zip unless marked Admin. Have 3–4 ordinary windows open (Notepad, File
 Explorer, a browser) before starting.
 
-## Build 6 — commit f8bfe3e — running (run number added when done)
+## Build 6 — commit 02242fa — Actions run 45636336058
 
 First build with the manifest fix, so the Actions exe starts. Retest **F1** (64% wide
 at 125%), **T1** (black, bright black, bright white now from the theme), **D1** (icons
