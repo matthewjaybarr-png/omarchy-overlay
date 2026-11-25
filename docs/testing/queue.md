@@ -1,6 +1,13 @@
 # Test queue
 
-## Build 7 (next) — not built yet
+## Build 8 (next) — not built yet
+
+Adds: bar position (P1).
+
+## Build 7 — commit 2c3f776 — Actions run 45638788963 — test this one
+
+Also has: Windows wallpaper cache copy (recheck R1/exit), gap toggle takes edge gaps
+(recheck F7 and note what changes on screen), group tabs (G1), defaults merge (M1).
 
 Adds: new default keys and menu entries merged into existing `config\binds.conf` and
 `menu.json` (M1), group tabs (G1).

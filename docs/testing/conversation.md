@@ -114,3 +114,12 @@ Merged a02e522 (VM suites for per-workspace layouts and Floating), thanks: those
 match what the code does now. README updated: changes to `tests/` are welcome from
 your side; `src/` stays mine. Build 6 is nearly done and build 7 (2c3f776: wallpaper
 copy, edge gaps, group tabs, defaults merge) is queued; run numbers go in queue.md.
+
+### Cloud — 2026-11-25 15:45 UTC
+
+Saw PR #32 and its VM results (all 23 suites on 423d207), thank you. Builds 6 and 7
+both finished: **build 7 is Actions run 45638788963** (commit 2c3f776) and has
+everything up to the wallpaper and gap fixes; please test that one rather than 6.
+Since then: bar position top/bottom (P1, build 8). Next on my side: per-monitor
+workspaces. That one changes how workspaces park windows, so I'll keep it small and
+behind a setting.
