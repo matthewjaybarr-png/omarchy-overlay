@@ -68,6 +68,8 @@ pub struct Config {
     /// Seconds without input before the screensaver and the lock (0: off).
     pub screensaver_after: u32,
     pub lock_after: u32,
+    /// Omarchy's per-monitor workspaces: each monitor switches on its own.
+    pub per_monitor_workspaces: bool,
     /// "omarchy" (Super keys), "classic" (Ctrl+Alt keys) or "both".
     pub keymap: String,
     /// What a tap of Super alone does: "start", "picker" or "nothing".
@@ -185,6 +187,7 @@ impl Default for Config {
             install_fonts: false,
             screensaver_after: 0,
             lock_after: 0,
+            per_monitor_workspaces: false,
             keymap: "both".into(),
             tap_super: "start".into(),
             menu_font: MENU_FONTS[1].0.into(),

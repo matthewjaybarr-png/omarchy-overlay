@@ -961,6 +961,10 @@ impl App {
                     .collect();
                 rows.push(Row::new(DESKTOP, "Layouts by workspace", Act::Open(Level::Page("workspace-layouts"))));
                 rows.push(
+                    Row::new(DESKTOP, "Each monitor has its own workspaces (as in Omarchy)", Act::Choose("layout", "per-monitor".into()))
+                        .checked(self.config.per_monitor_workspaces),
+                );
+                rows.push(
                     Row::new(OPTION, "Remember layout, main share and gap for each set of monitors", Act::Choose("layout", "displays".into()))
                         .checked(self.config.remember_displays),
                 );
@@ -2372,6 +2376,15 @@ impl App {
             "edit" => {
                 self.edit_config_file(value);
                 false
+            }
+            "layout" if value == "per-monitor" => {
+                let mut c = self.config.clone();
+                c.per_monitor_workspaces = !c.per_monitor_workspaces;
+                // Every hidden window comes back first, so none is left on a workspace
+                // the new setting no longer shows.
+                self.reset_workspaces();
+                self.commit(c);
+                true
             }
             "layout" if value == "displays" => {
                 let mut c = self.config.clone();

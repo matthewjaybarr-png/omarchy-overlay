@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Per-monitor workspaces** (Layout > "Each monitor has its own workspaces"), off by
+  default: as in Omarchy, switching workspace changes only the monitor in use, and
+  moving to another monitor shows its workspace. Layout choices follow each monitor's
+  own workspace. Turning it on or off brings every hidden window back first. The bar
+  shows the workspace of the monitor in use on every monitor.
 - **Bar position** (Appearance > Top bar > Bar position): the bar can sit at the
   bottom of the screen, as Omarchy's can. Windows and the dock stay clear of it.
 - Exit puts back the stock or Settings-chosen wallpaper instead of leaving the

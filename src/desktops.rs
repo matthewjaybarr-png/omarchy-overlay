@@ -231,6 +231,15 @@ mod native {
             true
         })
     }
+    /// Per-monitor workspaces: shows `index` as the current workspace because focus moved
+    /// to a monitor showing it. Nothing switches, so the former workspace stays.
+    pub unsafe fn select_quiet(index: usize) {
+        DESKTOPS.with(|c| {
+            if index < LIMIT {
+                c.borrow_mut().current = index;
+            }
+        })
+    }
     pub unsafe fn select_former() -> bool {
         match DESKTOPS.with(|c| c.borrow().former) {
             Some(former) => select(former),

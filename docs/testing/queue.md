@@ -2,7 +2,7 @@
 
 ## Build 8 (next) — not built yet
 
-Adds: bar position (P1).
+Adds: bar position (P1), per-monitor workspaces (W1, two monitors needed).
 
 ## Build 7 — commit 2c3f776 — Actions run 45638788963 — test this one
 
@@ -117,6 +117,12 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
 
 - **P1** (build 8) Appearance > Top bar > Bar position > bottom: the bar moves to the
   bottom of every monitor, tiles end above it, the dock sits above it; back to top.
+
+- **W1** (build 8, two monitors) Layout > "Each monitor has its own workspaces" on.
+  With windows on both monitors, focus monitor A and press Super+2: only A's windows
+  go; B is unchanged. Click a window on B: the bar shows B's workspace (1). Super+1 on
+  A brings A's windows back. Super+Shift+3 sends a window to workspace 3 of its own
+  monitor. Turning the setting off brings every hidden window back. Exit restores all.
 
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run

@@ -83,8 +83,17 @@ impl App {
             self.show_feedback("Layout for these monitors is back");
         }
     }
+    /// The workspace key a monitor's layout choice is stored under: the workspace that
+    /// monitor shows (its own one with per-monitor workspaces).
+    fn desktop_for(&self, monitor: HMONITOR) -> Option<String> {
+        if self.config.per_monitor_workspaces {
+            let index = self.workspace_of(monitor as isize);
+            return Some(workspace_layouts::desktop_key(&crate::desktops::workspace_id(index)));
+        }
+        current_desktop()
+    }
     pub(super) unsafe fn layout_for_monitor(&self, monitor: HMONITOR) -> String {
-        let Some(desktop) = current_desktop() else {
+        let Some(desktop) = self.desktop_for(monitor) else {
             return self.config.layout.clone();
         };
         let mut info: MONITORINFOEXW = zeroed();
@@ -103,7 +112,7 @@ impl App {
             .into()
     }
     pub(super) unsafe fn layout_scope(&self, monitor: HMONITOR) -> Option<(String, String)> {
-        let desktop = current_desktop()?;
+        let desktop = self.desktop_for(monitor)?;
         let display = settings::displays()
             .into_iter()
             .find(|d| d.monitor == monitor)?;

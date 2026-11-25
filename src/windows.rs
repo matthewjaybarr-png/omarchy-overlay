@@ -355,6 +355,9 @@ struct App {
     scratchpads: HashMap<String, Vec<window_actions::Scratchpad>>,
     menu_target: Option<tasks::Task>,
     layout_sessions: HashMap<String, LayoutSession>,
+    /// Per-monitor workspaces: what each monitor shows, and the monitor in use.
+    monitor_workspace: HashMap<isize, usize>,
+    focus_monitor: isize,
     drag: Option<resize::Drag>,
     mouse_drag: Option<resize::MouseDrag>,
     /// The gap toggle-gaps turned off, to put back.
@@ -1495,6 +1498,8 @@ pub fn run() {
             scratchpads: HashMap::new(),
             menu_target: None,
             layout_sessions: HashMap::new(),
+            monitor_workspace: HashMap::new(),
+            focus_monitor: 0,
             drag: None,
             mouse_drag: None,
             gaps_before: (0, 0),
@@ -2625,7 +2630,9 @@ impl App {
         }
         self.check_display_set();
         self.sync_workspace();
-        if let Some(desktop) = workspace_ui::current_desktop() {
+        // With per-monitor workspaces the shown workspace changes as focus moves between
+        // monitors; swapping the tiling session then would reshuffle the other monitors.
+        if let Some(desktop) = workspace_ui::current_desktop().filter(|_| !self.config.per_monitor_workspaces) {
             if desktop != self.layout_desktop {
                 if !self.layout_desktop.is_empty() {
                     self.layout_sessions.insert(
