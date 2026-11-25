@@ -158,6 +158,14 @@ OSD card, color picker, idle screensaver and lock, and persistent reminders.
   switches; `config\themes\ash` holds only colors.toml and backgrounds\. Without git:
   a message saying to install it.
 
+### Before hiding the taskbar by default
+- **H1** Menu > Appearance > Windows taskbar > "Hide the Windows taskbar while Omarchy
+  Overlay runs", dock on floating workspaces. Then check each and note PASS/FAIL:
+  the Win key opens Start; Win+N opens notifications; Win+A Quick Settings; a toast
+  (e.g. `remind 1`) appears; the bar's tray button opens the tray icons; a flashing
+  app rings in the dock; Alt+Tab works; the taskbar comes back on Exit and after
+  End task + restart. Matt wants the hidden taskbar as the default once these pass.
+
 ### Always
 - **R1** After any crash or kill (Task Manager → End task), start again or run
   RECOVER.cmd: windows, taskbar, accent, wallpaper, Terminal/VS Code colours, fonts
