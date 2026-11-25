@@ -142,7 +142,10 @@ fn grid_columns(inner: Rect, count: usize, gap: i32) -> usize {
         })
         .unwrap_or(1)
 }
-pub fn grid_capacity(area: Rect, gap: i32) -> usize {
+/// How many grid cells of at least 320 x 180 fit; the tests check that grids up to
+/// this size keep that minimum.
+#[cfg(test)]
+fn grid_capacity(area: Rect, gap: i32) -> usize {
     (((area.w - 2 * gap) / (320 + gap).max(1)).max(1)
         * ((area.h - 2 * gap) / (180 + gap).max(1)).max(1)) as usize
 }
@@ -545,6 +548,18 @@ mod tests {
         let scaled = floating(Rect { x: 0, y: 0, w: 1920, h: 1032 }, 0, 120);
         assert_eq!((scaled.w, scaled.h), (1228, 701));
         assert!(tiny.w >= 1 && tiny.h >= 1);
+    }
+    #[test]
+    fn every_layout_tiles_any_number_of_windows() {
+        // Omarchy tiles every window; the overlay no longer stops at a capacity.
+        let area = Rect { x: 0, y: 0, w: 1920, h: 1032 };
+        for mode in ["main-stack", "columns", "rows", "grid", "centered", "monocle"] {
+            for count in [1, 8, 14] {
+                let rects = arrange(area, count, 5, 0.55, mode);
+                assert_eq!(rects.len(), count, "{mode} {count}");
+                assert!(rects.iter().all(|r| r.w > 0 && r.h > 0), "{mode} {count}");
+            }
+        }
     }
     #[test]
     fn pseudo_tiles_keep_their_size_inside_the_tile() {

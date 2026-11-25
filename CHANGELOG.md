@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Every window is tiled**, as in Omarchy: the layouts no longer stop at a capacity
+  (5 windows in Main + stack at 1080p) and leave the rest where they were; panes get
+  as thin as needed.
 - A reminder also shows on screen for 10 seconds, so it is seen even when Windows holds
   the notification back, and the tray icon comes back after Explorer restarts (a lost
   icon could not show the reminder at all).

@@ -2884,21 +2884,10 @@ impl App {
                 }
                 continue;
             }
-            // Leave space for sensible minimum window sizes instead of piling up tiny panes.
+            // As Omarchy: every window is tiled, however many there are, never left untiled
+            // past a limit (Matt, 2026-11-25).
             let gap = self.config.gap;
-            let max_stack = ((area.h - 2 * gap) / (180 + gap).max(1)).max(1) as usize;
-            let maximum = match mode.as_str() {
-                "columns" => ((area.w - 2 * gap) / (320 + gap).max(1)).max(1) as usize,
-                "rows" => max_stack,
-                "grid" => layout::grid_capacity(*area, gap),
-                "centered" => 2 * max_stack + 1,
-                "monocle" => usize::MAX,
-                _ => max_stack + 1,
-            };
-            let count = group.len().min(maximum);
-            for (key, _, _) in group.iter().skip(count) {
-                self.restore_one(*key);
-            }
+            let count = group.len();
             let keys = group
                 .iter()
                 .take(count)
