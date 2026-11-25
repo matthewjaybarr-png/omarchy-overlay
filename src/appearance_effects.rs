@@ -30,7 +30,7 @@ pub(super) unsafe fn apply_monitor_wallpaper(
         let before = if all.exists() { read_journal(&all)?.before } else { None };
         let originals: Originals = monitors
             .iter()
-            .map(|(id, now)| (id.clone(), before.clone().unwrap_or_else(|| now.clone())))
+            .map(|(id, now)| (id.clone(), before.clone().unwrap_or_else(|| keep_original(directory, now))))
             .collect();
         write_json_atomic(&record, &originals)?;
     }
@@ -104,6 +104,26 @@ fn read_journal(path: &Path) -> Result<Journal, String> {
     }
     Ok(j)
 }
+/// Windows often reports its own cache, %APPDATA%\Microsoft\Windows\Themes\
+/// TranscodedWallpaper, as the wallpaper. Setting a new wallpaper overwrites that file,
+/// so putting it back later would show the new picture, or black. A copy of it is kept
+/// in the settings folder and recorded instead.
+fn keep_original(directory: &Path, current: &str) -> String {
+    let cached = Path::new(current)
+        .file_name()
+        .is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case("TranscodedWallpaper"));
+    if !cached {
+        return current.to_string();
+    }
+    let copy = directory.join("wallpaper-original.jpg");
+    match fs::copy(current, &copy) {
+        Ok(_) => copy.to_string_lossy().into_owned(),
+        Err(error) => {
+            log(&format!("Could not keep a copy of the current wallpaper: {error}"));
+            current.to_string()
+        }
+    }
+}
 pub(super) unsafe fn apply_wallpaper(directory: &Path, path: &Path) -> Result<(), String> {
     if !path.is_file() {
         return Err("Choose an existing wallpaper image on this PC.".into());
@@ -114,7 +134,7 @@ pub(super) unsafe fn apply_wallpaper(directory: &Path, path: &Path) -> Result<()
         read_journal(&record)?
     } else {
         Journal {
-            before: Some(current.clone()),
+            before: Some(keep_original(directory, &current)),
             acceptable: vec![],
         }
     };

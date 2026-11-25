@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Exit puts back the stock or Settings-chosen wallpaper instead of leaving the
+  desktop black: Windows reports its own cache file as the wallpaper and overwrites
+  it with the next one, so a copy is kept before the first change.
+- **Super + Shift + Backspace** takes away the gaps at the screen edges too, as
+  Omarchy's toggle does, and says "Gaps off" / "Gaps on".
 - **Group tabs**, Omarchy's groupbar: a grouped tile gives up a 24 px row at its top
   for a tab per window, the shown one in the accent color. Clicking a tab shows that
   window.

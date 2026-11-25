@@ -257,14 +257,17 @@ impl App {
             "brightness-up" => brightness::adjust(10, self.main),
             "brightness-down" => brightness::adjust(-10, self.main),
             "toggle-gaps" => {
+                // As Omarchy's toggle: the gaps at the screen edges go too, not only
+                // those between windows, so the tiles meet the edges and each other.
                 let mut c = self.config.clone();
-                if c.gap == 0 {
-                    c.gap = match std::mem::take(&mut self.gaps_before) {
-                        0 => Config::default().gap,
-                        gap => gap,
-                    };
+                if c.gap == 0 && c.outer_gap == 0 {
+                    let d = Config::default();
+                    let (gap, outer) = std::mem::take(&mut self.gaps_before);
+                    (c.gap, c.outer_gap) = if (gap, outer) == (0, 0) { (d.gap, d.outer_gap) } else { (gap, outer) };
+                    self.show_feedback("Gaps on");
                 } else {
-                    self.gaps_before = std::mem::take(&mut c.gap);
+                    self.gaps_before = (std::mem::take(&mut c.gap), std::mem::take(&mut c.outer_gap));
+                    self.show_feedback("Gaps off");
                 }
                 self.commit(c);
             }

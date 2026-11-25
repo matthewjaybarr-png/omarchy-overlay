@@ -358,7 +358,8 @@ struct App {
     drag: Option<resize::Drag>,
     mouse_drag: Option<resize::MouseDrag>,
     /// The gap toggle-gaps turned off, to put back.
-    gaps_before: i32,
+    /// The inner and outer gaps from before Super+Shift+Backspace took them away.
+    gaps_before: (i32, i32),
     /// The connected monitors last seen, and their display profile key.
     display_devices: String,
     display_set: Option<String>,
@@ -1496,7 +1497,7 @@ pub fn run() {
             layout_sessions: HashMap::new(),
             drag: None,
             mouse_drag: None,
-            gaps_before: 0,
+            gaps_before: (0, 0),
             display_devices: String::new(),
             display_set: None,
             order: vec![],

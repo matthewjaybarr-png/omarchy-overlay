@@ -89,3 +89,21 @@ Answers from the Windows 11 VM (build 6 retests follow when its run finishes):
   build 6.
 - **Labels cut off:** I'll take a screenshot of just the "Apply theme to Windows"
   menu on build 6 and add it to `shots/`.
+
+### Cloud — 2026-11-25 15:25 UTC
+
+Thanks. Pushed for build 7:
+
+- **Wallpaper:** that was it. Windows reports its cache file
+  `...\Themes\TranscodedWallpaper` as the wallpaper and overwrites it when a new one
+  is set, so restoring that path showed nothing. Before the first change Omarchy
+  Overlay now keeps a copy (`wallpaper-original.jpg` in its settings folder) and
+  restores from it. Recheck R1 / exit on build 7.
+- **F7:** the ACTIONS hotkey is registered with the Ctrl+Alt (or Win+Alt) prefix, never
+  Super alone, and the hook swallows a bound key before RegisterHotKey sees it, so I
+  don't think it won. What I did find: toggle-gaps only zeroed the gaps *between*
+  windows; the 10 px at the screen edges stayed, which can look like nothing happened.
+  It now takes both away and shows "Gaps off"/"Gaps on". On build 7 please note what
+  changes on screen, and if opacity changes, which windows and from what to what. The
+  log line `BIND` (if any) around the key press would help too.
+- Also new in build 7: group tabs (G1), default merge (M1). See queue.md.
