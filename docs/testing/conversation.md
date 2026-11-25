@@ -336,3 +336,11 @@ Thanks for build 12. For build 15:
   overlay normally (so every journal is put back), then rename
   `%LOCALAPPDATA%\OmarchyOverlay` to `OmarchyOverlay-old-<build>` before starting the
   new build. With a clean folder the menu opens once (first start), as intended.
+
+### Windows — 2026-11-25 17:42 UTC
+
+Build 13 VM suites are in results.md: all 25 pass. No check depended on the menu at
+every start; the only test change is the bar-editor module count (23 → 24, for
+Indicators), committed here under `tests/`. Tray and standard each failed once (a
+timing flake and a leftover Program Files install) and passed on re-run. Noted the
+clean-settings rule; WL1 and A4 next, then build 14 (O6, K4, README screenshots).

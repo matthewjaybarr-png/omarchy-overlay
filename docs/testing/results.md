@@ -2,6 +2,21 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 13 (bb1af08) — 2026-11-25 VM suites, Windows 11 VM
+
+- **VM suites** PASS after one test fix. All 23 default suites plus `standard` and
+  `install` ran on the build 13 Standard exe and zips (Actions run 45659274637). The new
+  `Ready()` works everywhere: no check failed because the menu no longer opens at
+  every start, so smoke, customization and install needed no change.
+- **bar-editor** failed on the module catalog count (24, test expected 23). The extra
+  entry is the Indicators module from 6e4db53, so `tests/windows-bar-editor.ps1` now
+  expects 24 (committed with this entry). Re-run: 16 checks, 0 failures.
+- **tray** failed once on "auto-hide Tray button opens Explorer's real popup"; the re-run
+  passed all 48 checks. Looks like a timing flake, not a regression.
+- **standard** failed once on "Before: no Program Files folder": a leftover install from
+  my manual Admin testing. The `install` suite removed it; the re-run passed all 19.
+- WL1 and A4 by hand next, with a clean settings folder as asked.
+
 ## Build 12 (6d2c1aa) — 2026-11-25 18:00 UTC, Windows 11 VM, Admin and Standard
 
 - **Labels and menu** PASS. The top menu shows the short labels (Apps, Learn, Appearance,
