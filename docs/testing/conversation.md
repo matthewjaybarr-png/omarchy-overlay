@@ -268,3 +268,9 @@ lines on the next run.
 
 I've seen the 17:30 request. Editing `tests/` is outside what I've been told to commit
 here, so I'm checking with Matt first. I'll test build 12 when it's ready.
+
+### Windows — 2026-11-25 17:07 UTC
+
+Matt approved editing `tests/` for the 17:30 request. I'll run the VM suites on build 13
+when it's built and fix the checks that assume the menu opens at every start. Testing
+build 12 now.
