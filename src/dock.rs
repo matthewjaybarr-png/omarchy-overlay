@@ -5,8 +5,8 @@
 /// When the dock shows: "floating" (Omarchy: on floating workspaces only),
 /// "always", or "off".
 pub const MODES: &[(&str, &str)] = &[
-    ("floating", "Show the dock on floating workspaces (as in Omarchy)"),
-    ("always", "Always show the dock; it hides until the pointer reaches the bottom edge"),
+    ("floating", "Dock on floating workspaces"),
+    ("always", "Dock always (auto-hides)"),
     ("off", "No dock"),
 ];
 
@@ -78,6 +78,18 @@ pub fn items(pins: &[Pin], windows: &[Window]) -> Vec<Item> {
     items
 }
 
+/// Keeps running apps that are not pinned in the order they joined the dock, so icons
+/// do not jump around when the focus changes. `order` remembers keys across calls.
+pub fn keep_order(items: &mut [Item], order: &mut Vec<String>) {
+    order.retain(|key| items.iter().any(|i| i.pin.is_none() && &i.key == key));
+    for item in items.iter().filter(|i| i.pin.is_none()) {
+        if !order.contains(&item.key) {
+            order.push(item.key.clone());
+        }
+    }
+    let pinned = items.iter().filter(|i| i.pin.is_some()).count();
+    items[pinned..].sort_by_key(|i| order.iter().position(|k| *k == i.key));
+}
 /// The window a click on an item brings forward, or None to launch the app.
 /// Windows on the workspace in front come first, then minimized ones, then those
 /// on other workspaces; a click while one of them is focused moves on to the next.
@@ -166,6 +178,18 @@ mod tests {
                 ("window 3", None, vec![3]),
             ]
         );
+    }
+    #[test]
+    fn running_apps_keep_their_place_when_focus_changes() {
+        let mut order = vec![];
+        let a = window(&["a.exe"], true, false, false);
+        let b = window(&["b.exe"], true, false, false);
+        let mut first = items(&[], &[a.clone(), b.clone()]);
+        keep_order(&mut first, &mut order);
+        // b comes to the front, so it is listed first now.
+        let mut second = items(&[], &[b, a]);
+        keep_order(&mut second, &mut order);
+        assert_eq!(second.iter().map(|i| i.key.as_str()).collect::<Vec<_>>(), vec!["a.exe", "b.exe"]);
     }
     #[test]
     fn the_most_specific_id_picks_the_pin() {

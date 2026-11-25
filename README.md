@@ -112,6 +112,8 @@ The Admin release has an `edition-admin` file beside the exe, which adds
   installed it, so its keys also work in apps running as administrator;
 - adds a Start menu shortcut that runs that task, and an entry in **Settings > Apps**.
 
+Windows running as administrator take its keys but are not tiled: they keep their
+own place, so an elevated tool never moves under you.
 Apps you start from it still open without administrator rights.
 
 **Updating:** run `INSTALL.cmd` (or **Update the installed copy…** in the tray) from

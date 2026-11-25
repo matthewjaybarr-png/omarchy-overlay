@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Fixes from testing on Windows: floating windows use Omarchy's sizes in logical
+  pixels, so they are 64% wide at 125% scaling, not 57%; the Terminal scheme takes
+  black, white, bright black and bright white from the theme as Omarchy does;
+  running apps keep their place in the dock instead of reordering on every focus
+  change; with an auto-hiding taskbar the dock sits above it; shorter dock option
+  labels; message boxes always open in front (one behind other windows froze the
+  Admin edition); a failed bar TRAY button shows an on-screen message instead of a
+  message box. The README says that the Admin edition does not tile windows running
+  as administrator.
 - **Super + `** is Omarchy's drop-down console: the first press starts your terminal
   and drops its window over the top half of the screen, on top; the key then hides
   and shows it. It floats outside the tiles, and pause, exit and crash recovery take

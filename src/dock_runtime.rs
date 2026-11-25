@@ -141,7 +141,7 @@ impl App {
         }
         if monitors.is_empty() {
             self.dock_actions.clear();
-            dock_ui::update(self.main, vec![], vec![], false);
+            dock_ui::update(self.main, vec![], vec![], false, false);
             return;
         }
         let px = dock_ui::icon_px(monitors[0].0);
@@ -167,7 +167,8 @@ impl App {
                 focused: task.hwnd == foreground,
             })
             .collect();
-        let items = crate::dock::items(&pins, &windows);
+        let mut items = crate::dock::items(&pins, &windows);
+        crate::dock::keep_order(&mut items, &mut self.dock_order);
         let mut views = vec![];
         self.dock_actions.clear();
         for item in items {
@@ -188,7 +189,9 @@ impl App {
                 tasks: owned,
             });
         }
-        dock_ui::update(self.main, views, monitors, mode == "always");
+        // An auto-hiding taskbar pops up over the bottom edge: sit above it.
+        let above_taskbar = self.config.taskbar_mode == "auto-hide";
+        dock_ui::update(self.main, views, monitors, mode == "always", above_taskbar);
     }
     unsafe fn dock_launch(&mut self, key: &str) -> bool {
         let Some(entry) = self.entries.iter().find(|e| e.key() == key).cloned() else {

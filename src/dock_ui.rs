@@ -66,7 +66,13 @@ pub(super) unsafe fn icon_px(monitor: HMONITOR) -> i32 {
 /// Shows the dock with `views` on each of `monitors` (monitor, work area, monitor
 /// area) and removes it from the others. With `autohide` the docks stay hidden until
 /// the pointer reaches the bottom edge of their monitor.
-pub(super) unsafe fn update(owner: HWND, views: Vec<View>, monitors: Vec<(HMONITOR, RECT, RECT)>, autohide: bool) {
+pub(super) unsafe fn update(
+    owner: HWND,
+    views: Vec<View>,
+    monitors: Vec<(HMONITOR, RECT, RECT)>,
+    autohide: bool,
+    above_taskbar: bool,
+) {
     register();
     DOCK.with(|cell| {
         let mut cell = cell.borrow_mut();
@@ -108,7 +114,8 @@ pub(super) unsafe fn update(owner: HWND, views: Vec<View>, monitors: Vec<(HMONIT
             let dpi = monitor_dpi(monitor);
             let (w, h) = crate::dock::size(state.views.len());
             let (w, h) = (scaled(w, dpi), scaled(h, dpi));
-            let margin = scaled(crate::dock::MARGIN, dpi);
+            // 48 px is Windows 11's taskbar height.
+            let margin = scaled(crate::dock::MARGIN + if above_taskbar { 48 } else { 0 }, dpi);
             let rect = RECT {
                 left: work.left + (work.right - work.left - w) / 2,
                 top: work.bottom - h - margin,

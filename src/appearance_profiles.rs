@@ -114,22 +114,24 @@ pub fn builtins() -> Vec<Profile> {
 /// Windows Terminal scheme keys and the Omarchy colors.toml keys that fill them, in
 /// order of preference.
 const TERMINAL_COLORS: &[(&str, &[&str])] = &[
-    ("black", &["black"]),
+    // As Omarchy's terminal templates: black is the background, white the foreground,
+    // bright black the muted color and bright white the bright foreground.
+    ("black", &["background", "black"]),
     ("red", &["red"]),
     ("green", &["green"]),
     ("yellow", &["yellow"]),
     ("blue", &["blue"]),
     ("purple", &["magenta"]),
     ("cyan", &["cyan"]),
-    ("white", &["white"]),
-    ("brightBlack", &["bright_black"]),
+    ("white", &["foreground", "white"]),
+    ("brightBlack", &["muted", "bright_black"]),
     ("brightRed", &["bright_red"]),
     ("brightGreen", &["bright_green"]),
     ("brightYellow", &["bright_yellow"]),
     ("brightBlue", &["bright_blue"]),
     ("brightPurple", &["bright_magenta"]),
     ("brightCyan", &["bright_cyan"]),
-    ("brightWhite", &["bright_white"]),
+    ("brightWhite", &["bright_foreground", "bright_white"]),
     ("cursorColor", &["cursor"]),
     ("selectionBackground", &["selection_background", "selection"]),
 ];
@@ -148,6 +150,8 @@ pub fn terminal_fragment(
         "schemes":[{"name":name,"background":background,"foreground":foreground,"cursorColor":accent,"selectionBackground":accent,
             "black":"#1A1B26","red":"#F7768E","green":"#9ECE6A","yellow":"#E0AF68","blue":accent,"purple":"#BB9AF7","cyan":"#7DCFFF","white":foreground,
             "brightBlack":"#565F89","brightRed":"#FF9EAD","brightGreen":"#B9F27C","brightYellow":"#FFD694","brightBlue":accent,"brightPurple":"#D2B1FF","brightCyan":"#A4E4FF","brightWhite":"#FFFFFF"}]});
+    // Omarchy's fallbacks fill keys a theme leaves out (bright colors, muted).
+    let colors = crate::vscode_theme::resolved(colors);
     for (key, sources) in TERMINAL_COLORS {
         if let Some(value) = sources.iter().find_map(|k| colors.get(*k)) {
             fragment["schemes"][0][key] = serde_json::json!(format!("#{value:06X}"));
@@ -207,8 +211,11 @@ mod tests {
         let f = terminal_fragment("gruvbox", "#000000", "#FFFFFF", "#123456", &gruvbox.colors, Some("Cascadia Mono"));
         assert_eq!(f["profiles"][0]["font"]["face"], "Cascadia Mono");
         let scheme = &f["schemes"][0];
+        let resolved = crate::vscode_theme::resolved(&gruvbox.colors);
+        assert_eq!(scheme["black"], format!("#{:06X}", gruvbox.colors["background"]));
+        assert_eq!(scheme["brightWhite"], format!("#{:06X}", resolved["bright_foreground"]));
         for (key, sources) in TERMINAL_COLORS {
-            if let Some(value) = sources.iter().find_map(|k| gruvbox.colors.get(*k)) {
+            if let Some(value) = sources.iter().find_map(|k| resolved.get(*k)) {
                 assert_eq!(scheme[key], format!("#{value:06X}"), "{key}");
             }
         }

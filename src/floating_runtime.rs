@@ -27,7 +27,13 @@ impl App {
             if IsZoomed(hwnd) != 0 {
                 continue;
             }
-            self.arrange_window(hwnd, layout::floating(area, placed));
+            let dpi = {
+                use windows_sys::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
+                let (mut x, mut y) = (96u32, 96u32);
+                GetDpiForMonitor(monitor as HMONITOR, MDT_EFFECTIVE_DPI, &mut x, &mut y);
+                x
+            };
+            self.arrange_window(hwnd, layout::floating(area, placed, dpi));
             placed += 1;
         }
     }

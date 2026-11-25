@@ -381,6 +381,7 @@ struct App {
     dock_actions: Vec<dock_runtime::DockAction>,
     dock_entry_ids: HashMap<String, Vec<String>>,
     dock_window_ids: HashMap<(isize, u32), Vec<String>>,
+    dock_order: Vec<String>,
     /// Windows that flashed for attention and have not been in front since.
     attention: HashSet<isize>,
     /// The SHELLHOOK message the shell sends to say a window flashed or came forward.
@@ -648,12 +649,15 @@ pub(crate) fn log(message: &str) {
         let _ = writeln!(f, "{message}");
     }
 }
+/// A message box in front of every window. Modal, so the overlay waits for OK; without
+/// MB_SETFOREGROUND and MB_TOPMOST it could open behind other windows and leave keys,
+/// tiling and the bar waiting with nothing on screen (seen in the Admin edition).
 unsafe fn message(text: &str) {
     MessageBoxW(
         null_mut(),
         wide(text).as_ptr(),
         wide(NAME).as_ptr(),
-        MB_OK | MB_ICONINFORMATION,
+        MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND | MB_TOPMOST,
     );
 }
 unsafe fn set_text(hwnd: HWND, text: &str) {
@@ -1504,6 +1508,7 @@ pub fn run() {
             dock_actions: vec![],
             dock_entry_ids: HashMap::new(),
             dock_window_ids: HashMap::new(),
+            dock_order: vec![],
             attention: HashSet::new(),
             shell_hook: 0,
             saved: HashMap::new(),
@@ -3761,7 +3766,9 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 Some(1)
             }
             n if n == WM_APP + 59 => {
-                message(&bar::tray_status());
+                // Not a message box: a modal box behind other windows froze the overlay.
+                log(&bar::tray_status());
+                app.show_card(Some(osd::INFO), "The Windows tray could not open; see the log", None);
                 Some(0)
             }
             BAR_SCROLL => {

@@ -216,11 +216,14 @@ pub fn arrange(area: Rect, count: usize, gap: i32, ratio: f64, mode: &str) -> Ve
 /// Where the floating layout first puts a window, as Omarchy's floating workspace
 /// mode does: min(1100, 64%) x min(760, 68%) of the area, centred, then stepped
 /// diagonally by 24 px in a cycle of five so windows floated together do not stack
-/// exactly. `index` counts the windows already placed on that monitor.
-pub fn floating(area: Rect, index: usize) -> Rect {
-    let w = 1100.min(area.w * 64 / 100).max(1);
-    let h = 760.min(area.h * 68 / 100).max(1);
-    let step = ((index + 1) % 5) as i32 * 24 - 48;
+/// exactly. `index` counts the windows already placed on that monitor. Sizes are
+/// Omarchy's logical pixels, so `dpi` scales the caps and the step: at 125% the cap is
+/// 1375 physical pixels, as Hyprland's 1100 is at scale 1.25.
+pub fn floating(area: Rect, index: usize, dpi: u32) -> Rect {
+    let scale = |v: i32| v * dpi.max(96) as i32 / 96;
+    let w = scale(1100).min(area.w * 64 / 100).max(1);
+    let h = scale(760).min(area.h * 68 / 100).max(1);
+    let step = scale(((index + 1) % 5) as i32 * 24 - 48);
     Rect {
         x: area.x + (area.w - w) / 2 + step,
         y: area.y + (area.h - h) / 2 + step,
@@ -510,18 +513,21 @@ mod tests {
     #[test]
     fn floating_centres_a_comfortable_size_and_cascades_in_fives() {
         let area = Rect { x: -1920, y: 40, w: 1920, h: 1040 };
-        let first = floating(area, 0);
+        let first = floating(area, 0, 96);
         assert_eq!((first.w, first.h), (1100, 707));
         // Centre of the area, moved by the first cascade step (-24, -24).
         assert_eq!(first.x, -1920 + (1920 - 1100) / 2 - 24);
         assert_eq!(first.y, 40 + (1040 - 707) / 2 - 24);
-        let steps: Vec<i32> = (0..6).map(|i| floating(area, i).x - floating(area, 1).x).collect();
+        let steps: Vec<i32> = (0..6).map(|i| floating(area, i, 96).x - floating(area, 1, 96).x).collect();
         assert_eq!(steps, vec![-24, 0, 24, 48, -48, -24]);
         let small = Rect { x: 0, y: 0, w: 800, h: 600 };
-        let r = floating(small, 2);
+        let r = floating(small, 2, 96);
         assert_eq!((r.w, r.h), (512, 408));
         assert!(r.x >= small.x && r.x + r.w <= small.x + small.w);
-        let tiny = floating(Rect { x: 0, y: 0, w: 0, h: 0 }, 0);
+        let tiny = floating(Rect { x: 0, y: 0, w: 0, h: 0 }, 0, 96);
+        // 1920 x 1032 at 125%: 64% of the width (1228), as Omarchy gives at scale 1.25.
+        let scaled = floating(Rect { x: 0, y: 0, w: 1920, h: 1032 }, 0, 120);
+        assert_eq!((scaled.w, scaled.h), (1228, 701));
         assert!(tiny.w >= 1 && tiny.h >= 1);
     }
     #[test]
