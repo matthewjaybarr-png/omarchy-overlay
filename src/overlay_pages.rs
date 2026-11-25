@@ -859,7 +859,7 @@ impl App {
                 let found = vscode_effects::found();
                 vec![
                     Row::new(BRUSH, "Theme VS Code with the current theme", Act::Choose("vscode-colors", "apply".into()))
-                        .checked(vscode_effects::applied(&self.directory))
+                        .checked(self.config.vscode_colors && vscode_effects::applied(&self.directory))
                         .detail(format!("theme {}", self.config.theme)),
                     Row::new(UNDO, "Put back the VS Code theme you had", Act::Choose("vscode-colors", "restore".into())),
                     info(if found.is_empty() {
@@ -2618,6 +2618,10 @@ impl App {
                         .map(|_| "Done. VS Code switches to the Omarchy Overlay theme; restart it if it doesn't."),
                     _ => vscode_effects::restore(&self.directory).map(|()| "Put back."),
                 };
+                if result.is_ok() {
+                    self.config.vscode_colors = value == "apply";
+                    self.save_config();
+                }
                 overlay::message(&match result {
                     Ok(text) => text.to_string(),
                     Err(error) => error,
@@ -2641,6 +2645,10 @@ impl App {
                         Err("Windows Terminal could not open. Add the themed profile first, then restart Terminal if needed.".into())
                     }
                 };
+                if result.is_ok() {
+                    self.config.terminal_colors = value == "apply";
+                    self.save_config();
+                }
                 overlay::message(&match result {
                     Ok(text) => text.to_string(),
                     Err(error) => error,

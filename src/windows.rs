@@ -1537,6 +1537,7 @@ pub fn run() {
                 theme::current().dark,
                 theme::windows_accent(&app.config.theme, theme::current()),
             );
+            app.apply_app_colors();
             bar::start(
                 main,
                 &app.directory,
@@ -2195,21 +2196,23 @@ impl App {
             theme::windows_accent(name, theme::current()),
         );
         bar::appearance(self.config.bar_opacity);
-        if self
-            .directory
-            .join("terminal-appearance-restore.json")
-            .exists()
-        {
+        self.apply_app_colors();
+        self.save_config();
+    }
+    /// Re-themes Windows Terminal and VS Code when they are turned on: after a theme
+    /// change, and at start, since exit put back what they had.
+    fn apply_app_colors(&self) {
+        let name = &self.config.theme;
+        if self.config.terminal_colors {
             if let Err(error) = appearance_effects::apply_terminal(&self.directory, name) {
                 log(&error);
             }
         }
-        if vscode_effects::applied(&self.directory) {
+        if self.config.vscode_colors {
             if let Err(error) = vscode_effects::apply(&self.directory, name) {
                 log(&error);
             }
         }
-        self.save_config();
     }
     unsafe fn appearance_poll(&mut self) {
         let foreground = GetForegroundWindow();

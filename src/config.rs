@@ -59,6 +59,10 @@ pub struct Config {
     pub taskbar_mode: String,
     /// When the dock shows: "floating", "always" or "off" (dock::MODES).
     pub dock: String,
+    /// The themed Windows Terminal profile and VS Code theme are wanted: exit takes them
+    /// away like every other change to Windows, and the next start puts them back.
+    pub terminal_colors: bool,
+    pub vscode_colors: bool,
     /// "omarchy" (Super keys), "classic" (Ctrl+Alt keys) or "both".
     pub keymap: String,
     /// What a tap of Super alone does: "start", "picker" or "nothing".
@@ -171,6 +175,8 @@ impl Default for Config {
             animation_duration_ms: 140,
             taskbar_mode: "legacy".into(),
             dock: "floating".into(),
+            terminal_colors: false,
+            vscode_colors: false,
             keymap: "both".into(),
             tap_super: "start".into(),
             menu_font: MENU_FONTS[1].0.into(),

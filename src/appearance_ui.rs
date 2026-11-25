@@ -367,8 +367,17 @@ pub(super) unsafe fn command(app: &mut App, id: usize, notification: usize) {
                 };
                 appearance_effects::with_effects(|| appearance_effects::apply_wallpaper(&app.directory, &path))?;
             }
-            816 => appearance_effects::apply_terminal(&app.directory, &app.config.theme)?,
-            817 => appearance_effects::restore(&app.directory)?,
+            816 => {
+                appearance_effects::apply_terminal(&app.directory, &app.config.theme)?;
+                app.config.terminal_colors = true;
+                app.save_config();
+            }
+            817 => {
+                appearance_effects::restore(&app.directory)?;
+                app.config.terminal_colors = false;
+                app.config.vscode_colors = false;
+                app.save_config();
+            }
             818 => {
                 if !shell_in(Path::new("wt.exe"), "-p \"Omarchy Overlay\"", None) {
                     return Err("Windows Terminal could not open. Add the themed profile first, then restart Terminal if needed.".into());

@@ -321,7 +321,13 @@ impl App {
                 }
             }
             "restore-windows-appearance" => match appearance_effects::restore(&self.directory) {
-                Ok(()) => self.show_feedback("Original Windows appearance restored."),
+                Ok(()) => {
+                    // Asked for the original look: Terminal and VS Code stay unthemed.
+                    self.config.terminal_colors = false;
+                    self.config.vscode_colors = false;
+                    self.save_config();
+                    self.show_feedback("Original Windows appearance restored.")
+                }
                 Err(error) => message(&error),
             },
             "update-profile" => self.update_profile(),

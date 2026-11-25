@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The themed Windows Terminal profile and VS Code theme come back at every start
+  once turned on. Exit still takes them away, like every other change to Windows;
+  before, they stayed away until added again. **Restore the original Windows
+  appearance** turns them off.
 - The theme list shows a colour swatch for each theme (background, accent, text and
   red), as Omarchy's theme switcher shows a preview.
 - The theme also sets the Windows accent palette, the lighter and darker shades of
