@@ -251,6 +251,13 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
 
 - A Waybar-style top bar: the menu and workspaces on the left, the clock in the
   middle, tray and status on the right, in JetBrainsMono Nerd Font.
+- **Click the clock** for a calendar in the theme's colors, as on Omarchy: today in
+  the accent color, the mouse wheel or the arrows change the month, a click on the
+  month name goes back to today, and **Notifications** under it opens Windows' own
+  notifications.
+- **Click the volume icon** for Omarchy's sound panel: a volume slider to click or
+  drag (or use the wheel, arrow keys and M for mute), the microphone's mute, and links
+  to Windows' sound settings and volume mixer.
 - Square window corners with a 2 px border in the theme's active color on the
   focused window and its inactive color on the rest, with gaps between tiles.
 - Walker-style menus: centred, square, a 2 px border, an 84% opaque
