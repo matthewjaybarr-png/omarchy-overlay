@@ -171,6 +171,7 @@ pub const PAGES: &[(&str, &str)] = &[
     ("custom-apps", "Custom apps"),
     ("custom-app", "Custom app"),
     ("app-new", "Add by typing a path"),
+    ("tui-new", "Add a terminal app"),
     ("app-name", "Name"),
     ("app-target", "File or folder path"),
     ("app-args", "Arguments"),

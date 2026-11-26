@@ -392,6 +392,14 @@ window is open, Omarchy Overlay starts the app from Chrome's **Chrome Apps** Sta
 folder; if that shortcut is missing it offers to open the site. To make the app:
 open the site in Chrome, then **⋮ > Cast, save and share > Install page as app**.
 
+### Terminal apps
+
+Omarchy installs terminal programs (TUIs) as apps of their own. Here, **Custom apps >
+Add a terminal app** takes a command, such as `btop` or `wsl htop`, and adds it to the
+app picker. Picking it opens the command in a new Windows Terminal window titled with
+the app's name, so an app rule can match that title. The name comes from the command and
+can be changed on the app's page.
+
 ## Config files
 
 Omarchy Overlay reads these files from the `config` folder beside `OmarchyOverlay.exe`

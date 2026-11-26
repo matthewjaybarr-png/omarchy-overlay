@@ -217,7 +217,7 @@ impl Entry {
             return true;
         }
         self.custom_key.is_none()
-            || (self.path.exists() && self.working_directory.as_ref().is_none_or(|p| p.is_dir()))
+            || (crate::portable_apps::target_exists(&self.path) && self.working_directory.as_ref().is_none_or(|p| p.is_dir()))
     }
     fn key(&self) -> String {
         if let Some(action) = &self.action {

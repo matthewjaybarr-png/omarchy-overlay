@@ -108,6 +108,45 @@ pub fn relative_to_settings(settings: &Path, text: &str) -> String {
         out.join("\\")
     }
 }
+/// Omarchy's "Install TUI": a launcher entry that runs `command` in its own Windows
+/// Terminal window, titled with the app's name so window rules can match it. `wt` is
+/// Windows Terminal's alias in `local_app_data`\Microsoft\WindowsApps.
+pub fn terminal_app(id: String, command: &str, local_app_data: &Path) -> Result<Application, String> {
+    let command = command.trim();
+    if command.is_empty() {
+        return Err("Type the command to run, such as btop or wsl htop.".into());
+    }
+    let words: Vec<&str> = command.split_whitespace().collect();
+    let program = match words.as_slice() {
+        [wsl, next, ..] if wsl.eq_ignore_ascii_case("wsl") || wsl.eq_ignore_ascii_case("wsl.exe") => next,
+        [first, ..] => first,
+        [] => unreachable!(),
+    };
+    let stem = Path::new(program.trim_matches('"').rsplit(['\\', '/']).next().unwrap_or(program))
+        .file_stem()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let mut name: String = stem.chars().take(1).flat_map(char::to_uppercase).chain(stem.chars().skip(1)).collect();
+    if name.is_empty() {
+        name = "Terminal app".into();
+    }
+    // Windows Terminal reads a bare ; as the start of another command.
+    let command = command.replace(';', "\\;");
+    let app = Application {
+        id,
+        arguments: format!("-w new new-tab --title \"{name}\" --suppressApplicationTitle {command}"),
+        name,
+        target: local_app_data.join("Microsoft\\WindowsApps\\wt.exe").to_string_lossy().into_owned(),
+        working_directory: String::new(),
+    };
+    app.validate()?;
+    Ok(app)
+}
+/// Whether a custom app's file is there. App aliases such as WindowsApps\wt.exe are
+/// reparse points that cannot be opened as files, so they are checked as links.
+pub fn target_exists(path: &Path) -> bool {
+    path.exists() || std::fs::symlink_metadata(path).is_ok()
+}
 fn resolve(base: &Path, text: &str) -> PathBuf {
     if text.as_bytes().get(1) == Some(&b':') || text.starts_with("\\\\") {
         PathBuf::from(text)
@@ -130,6 +169,19 @@ pub fn validate(apps: &[Application]) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn terminal_apps_run_in_their_own_titled_terminal_window() {
+        let base = Path::new("C:\\Users\\a\\AppData\\Local");
+        let app = terminal_app("t1".into(), " btop ", base).unwrap();
+        assert_eq!(app.name, "Btop");
+        assert!(app.target.ends_with("Microsoft\\WindowsApps\\wt.exe"), "{}", app.target);
+        assert_eq!(app.arguments, "-w new new-tab --title \"Btop\" --suppressApplicationTitle btop");
+        assert_eq!(terminal_app("t2".into(), "wsl htop -d 5", base).unwrap().name, "Htop");
+        assert_eq!(terminal_app("t3".into(), "C:\\Tools\\lazygit.exe", base).unwrap().name, "Lazygit");
+        let app = terminal_app("t4".into(), "cmd /k echo a; echo b", base).unwrap();
+        assert!(app.arguments.ends_with("cmd /k echo a\\; echo b"), "{}", app.arguments);
+        assert!(terminal_app("t5".into(), "  ", base).is_err());
+    }
     #[test]
     fn portable_paths_and_favorite_identity_survive_profile_moves() {
         let app = Application {

@@ -14,6 +14,11 @@
 - **Num Lock on at start, as Omarchy**, on the Keybinds page: Num Lock goes on each
   time Omarchy Overlay starts. Off by default, because of laptops with a keypad in the
   letter keys.
+- **Custom apps > Add a terminal app**, after Omarchy's Install TUI: a command such as
+  `btop` or `wsl htop` becomes an app picker entry that opens in its own Windows
+  Terminal window, titled with the app's name.
+- Custom apps that point at an app alias (such as Windows Terminal's `wt.exe`) no
+  longer show as missing.
 - The bar's tooltip no longer stays over the calendar or sound panel that its module
   opened.
 

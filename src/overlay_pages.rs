@@ -55,8 +55,9 @@ pub(super) struct Undo {
 /// The three bar sections, each its own menu page.
 const BAR_SECTIONS: [&str; 3] = ["bar-left", "bar-center", "bar-right"];
 /// Pages that take typed text: what is typed stays visible and Enter saves it.
-const TEXT_PAGES: [&str; 5] = [
+const TEXT_PAGES: [&str; 6] = [
     "app-new",
+    "tui-new",
     "app-name",
     "app-target",
     "app-args",
@@ -485,6 +486,11 @@ impl App {
                 String::new(),
                 false,
             ),
+            "tui-new" => (
+                "command to run in Windows Terminal, such as btop or wsl htop",
+                String::new(),
+                false,
+            ),
             "app-name" => (
                 "name",
                 entry.map(|e| e.name.clone()).unwrap_or_default(),
@@ -548,7 +554,14 @@ impl App {
             }
             _ => trimmed,
         };
-        let index = if field == "app-new" {
+        let index = if field == "tui-new" {
+            if c.applications.len() >= 128 {
+                return Err("Up to 128 custom applications are supported.".into());
+            }
+            let local = std::env::var_os("LOCALAPPDATA").ok_or("Windows did not say where this user's app data is.")?;
+            c.applications.push(crate::portable_apps::terminal_app(profile::new_id(), &text, Path::new(&local))?);
+            c.applications.len() - 1
+        } else if field == "app-new" {
             if c.applications.len() >= 128 {
                 return Err("Up to 128 custom applications are supported.".into());
             }
@@ -588,7 +601,7 @@ impl App {
         }
         self.custom_app = Some(index);
         self.refresh_apps();
-        Ok(if field == "app-new" {
+        Ok(if field == "app-new" || field == "tui-new" {
             format!("Added {name}.")
         } else {
             "Saved.".into()
@@ -724,9 +737,10 @@ impl App {
                 let mut rows = vec![
                     Row::new(PLUS, "Add an app, file or shortcut…", Act::Choose("app-browse", "new".into())),
                     Row::new(PLUS, "Add by typing a path (files or folders)", Act::Open(Level::Page("app-new"))),
+                    Row::new(PLUS, "Add a terminal app (a command run in Windows Terminal)", Act::Open(Level::Page("tui-new"))),
                 ];
                 for (i, entry) in self.config.applications.iter().enumerate() {
-                    let found = entry.target_path(&folder).exists();
+                    let found = crate::portable_apps::target_exists(&entry.target_path(&folder));
                     rows.push(
                         Row::new(RUN, entry.name.clone(), Act::Choose("app-pick", i.to_string()))
                             .detail(if found { "available" } else { "missing on this PC" }),
@@ -746,7 +760,7 @@ impl App {
                     vec![
                         Row::new(EDIT, format!("Name: {}", e.name), Act::Open(Level::Page("app-name"))),
                         Row::new(FOLDER, format!("Path: {}", e.target), Act::Open(Level::Page("app-target")))
-                            .detail(if path.exists() { "available" } else { "missing on this PC" }),
+                            .detail(if crate::portable_apps::target_exists(&path) { "available" } else { "missing on this PC" }),
                         Row::new(FOLDER, "Choose a different file…", Act::Choose("app-browse", "change".into())),
                         Row::new(EDIT, format!("Arguments: {}", none(&e.arguments, "(none)")), Act::Open(Level::Page("app-args"))),
                         Row::new(EDIT, format!("Working folder: {}", none(&e.working_directory, "(the app's folder)")), Act::Open(Level::Page("app-folder"))),
@@ -755,7 +769,7 @@ impl App {
                     ]
                 }
             },
-            "app-new" | "app-name" | "app-target" | "app-args" | "app-folder" => return self.text_view(id),
+            "app-new" | "tui-new" | "app-name" | "app-target" | "app-args" | "app-folder" => return self.text_view(id),
             "bar-items" => {
                 let mut rows = vec![info("Choose a section, then add, move or remove its modules. Changes apply at once; Undo changes puts the last one back.")];
                 for (s, page) in BAR_SECTIONS.iter().enumerate() {
@@ -2589,7 +2603,7 @@ impl App {
                             let view = self.view(&level);
                             overlay::returned(view);
                         }
-                        if key == "app-new" {
+                        if key == "app-new" || key == "tui-new" {
                             self.push(Level::Page("custom-app"));
                         }
                         overlay::message(&done);
