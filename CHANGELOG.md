@@ -11,7 +11,7 @@
   speaker volume on a slider in the theme's colors (click or drag it, or use the wheel,
   the arrow keys and M to mute), the speaker and microphone mute, and links to Windows'
   sound settings and volume mixer. It used to open Windows' Quick Settings.
-- **Num Lock on at start, as Omarchy**, on the Keybinds page: Num Lock goes on each
+- **Num Lock on at start**, on the Keybinds page, as Omarchy: Num Lock goes on each
   time Omarchy Overlay starts. Off by default, because of laptops with a keypad in the
   letter keys.
 - **Custom apps > Add a terminal app**, after Omarchy's Install TUI: a command such as
@@ -22,6 +22,9 @@
 - **Trigger > Toggle** gains Omarchy's window gaps, one-window square and screensaver
   and idle lock entries; gaps and the square show whether they are on. Existing
   menu.json files get the new entries at the next start.
+- Fixed: unzipping a new release over the old folder kept new menu entries and keys
+  out of your own menu.json and binds.conf, because the zip replaced the files the
+  merge compares against. The merge now keeps its own record in `config\.defaults`.
 - The bar's tooltip no longer stays over the calendar or sound panel that its module
   opened.
 

@@ -26,4 +26,6 @@ line of the menu (Super+Alt+Space) then says how many files have problems; press
 Enter on it, or choose Menu > Update > Config > Config file problems, to see each
 file name and line number. Delete your copy to go back to the built-in version.
 
-Upgrades never overwrite your copies; only this examples folder is refreshed.
+Upgrades never overwrite your copies. A new version adds its new keys and menu entries
+to your binds.conf and menu.json, keeping everything you changed or deleted, and keeps
+the file as it was as <name>.before-<version>.

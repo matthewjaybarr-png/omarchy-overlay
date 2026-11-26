@@ -7,6 +7,26 @@
 
 use crate::binds;
 
+/// 0.6.0's built-in files: the merge base for a folder that has no record yet.
+pub const PREVIOUS_BINDS: &str = include_str!("previous_defaults/binds.conf");
+pub const PREVIOUS_MENU: &str = include_str!("previous_defaults/menu.json");
+
+/// The version of a file the user's copy last took defaults from. `record` is what the
+/// last version wrote outside the shipped files (config\.defaults). Without it,
+/// config\examples is used unless it already holds this version's text: unzipping a new
+/// release over the old folder replaces it, so it no longer shows what the user had.
+/// Then the last release before the record existed is the best guess.
+pub fn base(record: Option<String>, examples: Option<String>, current: &str, previous: &str) -> String {
+    let normal = |t: String| t.replace("\r\n", "\n");
+    if let Some(record) = record {
+        return normal(record);
+    }
+    match examples.map(normal) {
+        Some(examples) if examples != current => examples,
+        _ => previous.replace("\r\n", "\n"),
+    }
+}
+
 /// The key a binds.conf line binds, or None for comments and lines that don't parse.
 fn bind_key(line: &str) -> Option<binds::Key> {
     binds::parse(line).ok()?.first().map(|b| b.key)
@@ -130,6 +150,21 @@ fn format_menus(v: &Json) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn the_merge_base_survives_unzipping_a_release_over_the_folder() {
+        let (old, new) = ("old\n", "new\n");
+        // The record wins, whatever the examples say.
+        assert_eq!(base(Some("rec\r\n".into()), Some(new.into()), new, old), "rec\n");
+        // No record: examples the last version wrote are still the base.
+        assert_eq!(base(None, Some("mine\n".into()), new, old), "mine\n");
+        // Examples replaced by the new zip, or missing: the previous release.
+        assert_eq!(base(None, Some("new\r\n".into()), new, old), old);
+        assert_eq!(base(None, None, new, old), old);
+        // 0.6.0's Toggle menu lacks the gaps row, so it is added, not taken as deleted.
+        let user = PREVIOUS_MENU.replace("\r\n", "\n");
+        let merged = merge_menus(&base(None, Some(crate::menu_model::DEFAULT.into()), crate::menu_model::DEFAULT, PREVIOUS_MENU), &user, crate::menu_model::DEFAULT).unwrap();
+        assert!(merged.contains("toggle-gaps"));
+    }
     const BASE: &str = "# keys\nSuper+W, Close window, action close-window\nSuper+Shift+Backspace, Toggle window gaps, page gaps\nSuper+M, Minimize window, minimize-window\n";
     const NEW: &str = "# keys\nSuper+W, Close window, action close-window\nSuper+Shift+Backspace, Toggle window gaps, toggle-gaps\nSuper+M, Minimize window, minimize-window\nSuper+Print, Pick a color from the screen, color-picker\n";
     #[test]

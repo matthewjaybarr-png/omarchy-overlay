@@ -64,6 +64,20 @@ fn write_examples(folder: &Path) {
     }
 }
 
+/// Where this version notes the defaults it merged, outside config\examples: a release
+/// zip carries config\examples, so unzipping it over the folder would replace the base.
+const RECORD: &str = ".defaults";
+fn write_record(folder: &Path) {
+    for (name, text) in [("binds.conf", binds::DEFAULT), ("menu.json", menu_model::DEFAULT)] {
+        let path = folder.join(RECORD).join(name);
+        if fs::read_to_string(&path).is_ok_and(|old| old == text) {
+            continue;
+        }
+        let _ = fs::create_dir_all(folder.join(RECORD));
+        let _ = fs::write(&path, text);
+    }
+}
+
 /// Brings new defaults into the user's own copy of a config file, keeping a copy of the
 /// file as it was (`<name>.before-<version>`) the first time a version changes it.
 fn merge_defaults(folder: &Path, name: &str, merge: impl Fn(&str) -> Option<String>) {
@@ -146,13 +160,17 @@ fn themes(folder: &Path, errors: &mut Vec<String>) -> Vec<theme_files::Theme> {
 /// Reads every config file. Each one falls back to its built-in version on its own.
 pub(super) fn load() -> Loaded {
     let folder = folder();
-    // The examples the last version wrote are the base for merging in new defaults.
-    let base = |name: &str| {
-        fs::read_to_string(folder.join("examples").join(name))
-            .map(|t| t.replace("\r\n", "\n"))
-            .unwrap_or_default()
+    // The defaults the user's copies last took in are the base for merging new ones.
+    let base = |name: &str, current: &str, previous: &str| {
+        crate::defaults_merge::base(
+            fs::read_to_string(folder.join(RECORD).join(name)).ok(),
+            fs::read_to_string(folder.join("examples").join(name)).ok(),
+            current,
+            previous,
+        )
     };
-    let (binds_base, menu_base) = (base("binds.conf"), base("menu.json"));
+    let binds_base = base("binds.conf", binds::DEFAULT, crate::defaults_merge::PREVIOUS_BINDS);
+    let menu_base = base("menu.json", menu_model::DEFAULT, crate::defaults_merge::PREVIOUS_MENU);
     merge_defaults(&folder, "binds.conf", |user| {
         crate::defaults_merge::merge_binds(&binds_base, user, binds::DEFAULT, env!("CARGO_PKG_VERSION"))
     });
@@ -161,6 +179,7 @@ pub(super) fn load() -> Loaded {
             .filter(|merged| menu_model::parse(merged).is_ok())
     });
     write_examples(&folder);
+    write_record(&folder);
     let mut errors = vec![];
     let binds = read(&folder, "binds.conf", &mut errors)
         .and_then(|text| binds::parse(&text).map_err(|e| errors.push(e)).ok())

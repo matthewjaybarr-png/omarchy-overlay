@@ -1491,9 +1491,9 @@ impl App {
                 Act::Open(Level::Page("tap-super")),
             )
             .detail(label(crate::config::TAP_SUPER, &self.config.tap_super)),
-            Row::new(OPTION, "Num Lock on at start, as Omarchy", Act::Choose("num-lock", String::new()))
+            Row::new(OPTION, "Num Lock on at start", Act::Choose("num-lock", String::new()))
                 .checked(self.config.num_lock)
-                .detail("not on laptops with a keypad in the letters"),
+                .detail("as Omarchy"),
         ];
         for (m, text) in [
             ("CtrlAlt", "Classic keys use Ctrl+Alt"),

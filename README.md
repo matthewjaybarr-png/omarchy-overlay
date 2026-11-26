@@ -249,7 +249,7 @@ They are kept unless you run
   Omarchy Overlay; click an ordinary window first. The Admin edition has no such limit.
 - **Setup > Keyboard conflicts** lists keys another program already holds, with
   free alternatives.
-- **Num Lock on at start, as Omarchy** (on the **Keybinds** page) turns Num Lock on
+- **Num Lock on at start** (on the **Keybinds** page, as Omarchy) turns Num Lock on
   each time Omarchy Overlay starts. It is off by default: on laptops with a keypad in
   the letter keys, Num Lock turns letters into digits. Key repeat needs no setting:
   Windows' default delay and rate are already about Omarchy's.
@@ -409,8 +409,12 @@ Omarchy Overlay reads these files from the `config` folder beside `OmarchyOverla
 (the installed Admin edition and a winget install use
 `%LOCALAPPDATA%\OmarchyOverlay\config` instead: the Admin folder needs administrator
 rights to change, and winget replaces its folder on every upgrade).
-Every file is optional. Omarchy Overlay writes only `config\examples` (refreshed at each
-start) and never changes your copies. To change a file, copy it from
+Every file is optional. Omarchy Overlay refreshes `config\examples` at each start.
+It changes your copies of binds.conf and menu.json only to add a new version's keys and
+menu entries: anything you changed or deleted stays as you left it, and the file as it
+was is kept as `<name>.before-<version>`. It notes which defaults it merged in
+`config\.defaults`, so this also works when you unzip a new release over the old folder.
+To change a file, copy it from
 `config\examples` into `config`, edit it in Notepad, then choose **Update >
 Config > Reload config files**. If a file has a mistake, Omarchy Overlay keeps the
 built-in version; the first line of the menu then says how many files have
