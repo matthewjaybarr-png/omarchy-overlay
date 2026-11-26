@@ -241,7 +241,8 @@ unsafe fn position_popup(directory: &Path, anchor: RECT) -> Result<(), String> {
     Ok(())
 }
 enum Request {
-    Prepare(Key),
+    /// True when a click asked for it: an auto-hidden taskbar may be revealed.
+    Prepare(Key, bool),
     Toggle(Key, bool),
 }
 enum Reply {
@@ -258,6 +259,7 @@ pub(super) struct Client {
     rx: mpsc::Receiver<Reply>,
     attempted: Option<Key>,
     ready: bool,
+    reveal: bool,
     busy: Option<(Busy, Instant)>,
     click: Option<(RECT, Instant)>,
     opening: Option<(RECT, Instant)>,
@@ -284,9 +286,21 @@ impl Client {
                 let mut cached: Option<(Key, IUIAutomationInvokePattern)> = None;
                 while let Ok(request) = requests.recv() {
                     match request {
-                        Request::Prepare(k) => {
+                        Request::Prepare(k, reveal) => {
                             cached = None;
-                            let result = lookup(&automation, k);
+                            let mut result = lookup(&automation, k);
+                            let h = k.0 as HWND;
+                            if result.is_err() && reveal && bar::taskbar_state() != 0 && IsWindowVisible(h) != 0 {
+                                // A tucked-away auto-hide taskbar exposes no tray controls until it slides in.
+                                SetForegroundWindow(h);
+                                for _ in 0..10 {
+                                    Sleep(100);
+                                    result = lookup(&automation, k);
+                                    if result.is_ok() {
+                                        break;
+                                    }
+                                }
+                            }
                             let result = match result {
                                 Ok(pattern) if key() == Some(k) => {
                                     cached = Some((k, pattern));
@@ -347,6 +361,7 @@ impl Client {
             anchor: None,
             attempted: None,
             ready: false,
+            reveal: false,
             busy: None,
             click: None,
             opening: None,
@@ -367,7 +382,7 @@ impl Client {
         self.attempted = key();
         self.ready = false;
         if let Some(k) = self.attempted {
-            if self.tx.send(Request::Prepare(k)).is_ok() {
+            if self.tx.send(Request::Prepare(k, std::mem::take(&mut self.reveal))).is_ok() {
                 self.busy = Some((Busy::Prepare, Instant::now()));
                 self.status = "Preparing Windows tray…".into();
                 return;
@@ -391,6 +406,7 @@ impl Client {
         }
         if !self.ready {
             self.attempted = None;
+            self.reveal = true;
         }
         self.anchor = Some(anchor);
         self.click = Some((anchor, Instant::now()));

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed: with the Windows taskbar on auto-hide, the bar's Tray button could fail
+  with "Tray control lookup failed"; it now brings the taskbar out to find the
+  tray.
 - Fixed: restoring a tile you maximized with **Super + Alt + F** tiles it again
   instead of leaving it floating.
 - Fixed: cancelling a Windows shutdown or sign-out no longer leaves Omarchy
