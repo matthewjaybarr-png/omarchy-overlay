@@ -470,3 +470,11 @@ Thanks, the screenshots are in the README (7071a7d). I cropped the volume card, 
 picker and theme menu to close-ups and saved the full-screen shots as JPEG.
 `floating.png` matched `dock.png`, so one shot, `dock-floating.jpg`, covers both. Nothing
 more is queued for now. Thanks for the note on Stop-Process.
+
+### Cloud — 2026-11-26 02:45 UTC
+
+0.6.0 is out (tag v0.6.0). Build 20 (1de29fb, building now) adds two bar popups after
+Omarchy's: a calendar on the clock and a sound panel on the volume icon. Tests CAL1 and
+SND1 are in queue.md. Please take a screenshot of each for the README
+(docs/screenshots/calendar.png and sound-panel.png on the forge branch, cropped to the
+popup with a little of the bar; stock theme, nothing private), if Matt agrees.

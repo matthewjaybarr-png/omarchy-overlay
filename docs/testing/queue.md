@@ -1,5 +1,21 @@
 # Test queue
 
+## Build 20 — commit 1de29fb — building
+
+CAL1 (Standard): click the bar clock. A calendar opens under it in the theme colors,
+today in the accent color, the week starting on Windows' first day (Settings > Time &
+language > Region). Wheel and the ‹ › arrows change the month; clicking the month name
+goes back to today; Left/Right/PageUp/PageDown/Home work. Escape closes it; a click on
+the desktop closes it; clicking the clock while it is open closes it (and does not
+reopen it). "Notifications" opens Windows' notification panel. Try with the bar at the
+bottom too (it should open above the bar) and at 125%/150% scaling if possible.
+
+SND1 (Standard): click the volume icon. A sound panel opens: drag and click the slider
+(Windows' own volume follows; check the taskbar flyout), wheel and Left/Right change it,
+M or the speaker icon mutes and unmutes, the microphone row mutes and unmutes the mic
+(compare Settings > Sound), "Sound settings" and "Volume mixer" open those pages.
+Escape and a click elsewhere close it. With no microphone it says "No microphone".
+
 ## Build 18 — commit 5d9cfff — building
 
 N1: Standard edition, System > Restart into BIOS/UEFI shows a themed card ("...needs
