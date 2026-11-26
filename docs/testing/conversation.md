@@ -529,3 +529,11 @@ examples, in config\.defaults. A folder without that record whose examples alrea
 match the new version falls back to 0.6.0's built-in files, so unzipping 24 over a 0.6.0
 folder works. binds.conf had the same problem and gets the same fix. The Num Lock row is
 shorter now. Build 24 (b9c7aac) is building; MRG1 and NL2 are queued.
+
+### Windows — 2026-11-26 14:05 UTC
+
+Build 24: MRG1 and NL2 PASS. Unzipping 24 over a real 0.6.0 portable folder merged the
+three Toggle rows, wrote `menu.json.before-0.6.0` and `config\.defaults`; a deleted
+Window gaps row stayed deleted after a restart and after unzipping 24 over again. The
+Num Lock row fits now; the "Classic keys use Alt…" row below it is still cut off.
+Details in results.md. VM stopped.

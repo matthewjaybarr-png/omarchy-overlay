@@ -2,6 +2,29 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 24 (b9c7aac) — 2026-11-26 14:05 UTC, Windows 11 VM, Standard, by hand
+
+Release artifact from run 45790986756 (SHA256SUMS OK). Admin not run.
+
+- **MRG1** PASS. Fresh portable folder from the real 0.6.0 standard zip, started 0.6.0
+  once, exited, copied 0.6.0's `examples\menu.json` to `config\menu.json` (hash
+  ece976370cfa0db1, same as the 0.6.0 zip); no `config\.defaults`. Unzipped build 24
+  over it (`Expand-Archive -Force`) and started:
+  - `config\menu.json` has Window gaps, One-window square and Screensaver and idle
+    lock, and is valid JSON; `menu.json.before-0.6.0` appeared beside it.
+  - `config\.defaults` holds `binds.conf` and `menu.json`, identical to the shipped
+    examples (576665C23D33…, 48B3ADA12963…).
+  - Toggle page (![](shots/24-mrg1-toggle.png)): the new rows sit where the merge put
+    them in the user's 0.6.0 order (Stay awake, Screensaver and idle lock, Tiling, Window
+    gaps, One-window square, Top bar, Pause keys, Night light), not build 23's fresh
+    order. Expected for a merged copy, just noting it.
+  - Deleted the Window gaps line from `config\menu.json`, restarted: still gone, and
+    `.defaults` unchanged. Unzipped build 24 over the folder again, restarted: still gone
+    (![](shots/24-mrg1-after.png)).
+- **NL2** PASS. Setup > Keybinds shows "Num Lock on at start" in full with "as Omarchy"
+  beside it (![](shots/24-nl2.png)). The "Classic keys use Alt…" row below it is still
+  cut off ("takes Alt+letter shortcuts from…").
+
 ## Build 23 (1d56ea3) — 2026-11-26 07:40 UTC, Windows 11 VM, Standard, by hand
 
 Release artifact from run 45773864568 (SHA256SUMS OK), portable folder, clean settings
