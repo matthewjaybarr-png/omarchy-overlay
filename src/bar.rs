@@ -520,7 +520,7 @@ impl State {
                     format!("{label}\nOpen windows on this monitor")
                 }
                 Module::Title => label.clone(),
-                Module::Clock => format!("{label}\nOpen the calendar"),
+                Module::Clock => format!("{label}\nOpen Windows notifications and calendar"),
                 Module::Sound => {
                     format!("{label}\nClick: Quick Settings · Scroll: volume · Middle-click: mute")
                 }
@@ -1284,13 +1284,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                         }
                         90 => desktops::task_view(),
                         91 => {
-                            let anchor = RECT {
-                                left: panel.rect.left + slot.left * panel.dpi as i32 / 96,
-                                top: panel.rect.top,
-                                right: panel.rect.left + slot.right * panel.dpi as i32 / 96,
-                                bottom: panel.rect.bottom,
-                            };
-                            calendar_ui::toggle(anchor, &state.config.font_family);
+                            desktops::windows_panel(b'N' as u16);
                         }
                         92 => {
                             desktops::windows_panel(b'A' as u16);
