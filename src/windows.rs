@@ -1632,6 +1632,9 @@ pub fn run() {
         APP.with(|cell| {
             if let Some(app) = cell.borrow_mut().as_mut() {
                 overlay::set_font(&app.config.menu_font, app.config.menu_font_size);
+                if app.config.num_lock {
+                    keyhook::num_lock_on();
+                }
                 // Only the first start opens the menu, as a welcome; Omarchy starts quietly.
                 if !app.config.welcomed {
                     app.open_menu("main");

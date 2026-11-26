@@ -79,6 +79,9 @@ pub struct Config {
     pub single_window_square: bool,
     /// The menu opened once at the first start, as a welcome; later starts stay quiet.
     pub welcomed: bool,
+    /// Omarchy's numlock_by_default: Num Lock goes on at every start. Off by default,
+    /// because Num Lock turns letters into digits on laptops with a built-in keypad.
+    pub num_lock: bool,
     /// "omarchy" (Super keys), "classic" (Ctrl+Alt keys) or "both".
     pub keymap: String,
     /// What a tap of Super alone does: "start", "picker" or "nothing".
@@ -202,6 +205,7 @@ impl Default for Config {
             per_monitor_workspaces: false,
             single_window_square: false,
             welcomed: false,
+            num_lock: false,
             keymap: "both".into(),
             tap_super: "start".into(),
             menu_font: MENU_FONTS[1].0.into(),

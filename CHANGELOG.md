@@ -11,6 +11,9 @@
   speaker volume on a slider in the theme's colors (click or drag it, or use the wheel,
   the arrow keys and M to mute), the speaker and microphone mute, and links to Windows'
   sound settings and volume mixer. It used to open Windows' Quick Settings.
+- **Num Lock on at start, as Omarchy**, on the Keybinds page: Num Lock goes on each
+  time Omarchy Overlay starts. Off by default, because of laptops with a keypad in the
+  letter keys.
 - The bar's tooltip no longer stays over the calendar or sound panel that its module
   opened.
 

@@ -104,7 +104,7 @@ unsafe fn send(keys: &[(u16, bool)]) {
         .iter()
         .map(|&(vk, up)| {
             let mut flags = if up { KEYEVENTF_KEYUP } else { 0 };
-            if vk == VK_LWIN || vk == VK_RWIN {
+            if vk == VK_LWIN || vk == VK_RWIN || vk == VK_NUMLOCK {
                 flags |= KEYEVENTF_EXTENDEDKEY;
             }
             INPUT {
@@ -126,6 +126,13 @@ unsafe fn send(keys: &[(u16, bool)]) {
         inputs.as_ptr(),
         size_of::<INPUT>() as i32,
     );
+}
+
+/// Turns Num Lock on if its light is off.
+pub(super) unsafe fn num_lock_on() {
+    if GetKeyState(VK_NUMLOCK as i32) & 1 == 0 {
+        send(&[(VK_NUMLOCK, false), (VK_NUMLOCK, true)]);
+    }
 }
 
 /// Decides one key event. True swallows it.

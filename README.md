@@ -249,6 +249,10 @@ They are kept unless you run
   Omarchy Overlay; click an ordinary window first. The Admin edition has no such limit.
 - **Setup > Keyboard conflicts** lists keys another program already holds, with
   free alternatives.
+- **Num Lock on at start, as Omarchy** (on the **Keybinds** page) turns Num Lock on
+  each time Omarchy Overlay starts. It is off by default: on laptops with a keypad in
+  the letter keys, Num Lock turns letters into digits. Key repeat needs no setting:
+  Windows' default delay and rate are already about Omarchy's.
 
 ### Look
 

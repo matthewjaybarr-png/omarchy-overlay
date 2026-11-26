@@ -233,6 +233,7 @@ fn page_defaults(page: &str, c: &mut Config) -> bool {
             c.modifiers = d.modifiers;
             c.keymap = d.keymap;
             c.tap_super = d.tap_super;
+            c.num_lock = d.num_lock;
             c.shortcut_overrides.clear();
         }
         "conflicts" => c.shortcut_overrides.clear(),
@@ -1474,6 +1475,9 @@ impl App {
                 Act::Open(Level::Page("tap-super")),
             )
             .detail(label(crate::config::TAP_SUPER, &self.config.tap_super)),
+            Row::new(OPTION, "Num Lock on at start, as Omarchy", Act::Choose("num-lock", String::new()))
+                .checked(self.config.num_lock)
+                .detail("not on laptops with a keypad in the letters"),
         ];
         for (m, text) in [
             ("CtrlAlt", "Classic keys use Ctrl+Alt"),
@@ -2332,6 +2336,12 @@ impl App {
             "keymap" => c.keymap = value.into(),
             "tap-super" => c.tap_super = value.into(),
             "modifiers" => c.modifiers = value.into(),
+            "num-lock" => {
+                c.num_lock = !c.num_lock;
+                if c.num_lock {
+                    keyhook::num_lock_on();
+                }
+            }
             "default-mode" => c.default_mode = mode_of(value),
             "default-opacity" => c.default_allow_opacity = !c.default_allow_opacity,
             "frames" => c.coordinate_windows = !c.coordinate_windows,
