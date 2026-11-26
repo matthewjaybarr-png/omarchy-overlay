@@ -11,6 +11,8 @@
   speaker volume on a slider in the theme's colors (click or drag it, or use the wheel,
   the arrow keys and M to mute), the speaker and microphone mute, and links to Windows'
   sound settings and volume mixer. It used to open Windows' Quick Settings.
+- The bar's tooltip no longer stays over the calendar or sound panel that its module
+  opened.
 
 ## 0.6.0
 

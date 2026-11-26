@@ -72,6 +72,10 @@ pub(super) unsafe fn toggle(anchor: RECT, family: &str) {
     bar_popup::show(hwnd);
 }
 
+/// Whether it is showing.
+pub(super) fn is_open() -> bool {
+    CALENDAR.with(|c| c.borrow().is_some())
+}
 /// Closes the calendar. Returns whether it was open.
 pub(super) unsafe fn close() -> bool {
     let Some(hwnd) = CALENDAR.with(|c| c.borrow_mut().take().map(|c| c.hwnd)) else {

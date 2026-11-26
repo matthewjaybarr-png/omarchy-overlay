@@ -40,6 +40,10 @@ pub(super) unsafe fn toggle(anchor: RECT, family: &str) {
     bar_popup::show(hwnd);
 }
 
+/// Whether it is showing.
+pub(super) fn is_open() -> bool {
+    PANEL.with(|c| c.borrow().is_some())
+}
 /// Closes the panel. Returns whether it was open.
 pub(super) unsafe fn close() -> bool {
     let Some(hwnd) = PANEL.with(|p| p.borrow_mut().take().map(|p| p.hwnd)) else {

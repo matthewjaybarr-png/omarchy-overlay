@@ -1145,7 +1145,8 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             }
             WM_MOUSEHOVER => {
                 let panel = state.panels.iter_mut().find(|panel| panel.hwnd == hwnd)?;
-                if panel.hovered && panel.tip_text.len() > 1 {
+                // No tooltip over the calendar or sound panel a module opened.
+                if panel.hovered && panel.tip_text.len() > 1 && !calendar_ui::is_open() && !audio_panel::is_open() {
                     let mut point: POINT = zeroed();
                     GetCursorPos(&mut point);
                     let x = (point.x + 12)
@@ -1244,6 +1245,8 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                 };
                 let x = (l as i16 as i32) * 96 / panel.dpi as i32;
                 let width = (panel.rect.right - panel.rect.left) * 96 / panel.dpi as i32;
+                // The module's tooltip would stay over the popup it opens.
+                let mut popup_opened = false;
                 if let Some(slot) = state
                     .slots(width, panel.monitor)
                     .into_iter()
@@ -1291,6 +1294,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                                 bottom: panel.rect.bottom,
                             };
                             calendar_ui::toggle(anchor, &state.config.font_family);
+                            popup_opened = true;
                         }
                         92 => {
                             let anchor = RECT {
@@ -1300,6 +1304,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                                 bottom: panel.rect.bottom,
                             };
                             audio_panel::toggle(anchor, &state.config.font_family);
+                            popup_opened = true;
                         }
                         93 => {
                             desktops::windows_panel(b'A' as u16);
@@ -1325,6 +1330,11 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                         action => {
                             PostMessageW(state.owner, BAR_ACTION, action, 0);
                         }
+                    }
+                }
+                if popup_opened {
+                    if let Some(panel) = state.panels.iter_mut().find(|p| p.hwnd == hwnd) {
+                        hide_tip(panel);
                     }
                 }
                 Some(0)

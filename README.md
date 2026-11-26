@@ -50,6 +50,11 @@ brightness; the color picker (**Super + Print**), which copies the hex color.*
 
 *The top bar: menu and workspaces, the clock, then the tray and status indicators.*
 
+![The calendar under the bar clock: November 2026 with today marked in the accent color](docs/screenshots/calendar.png)
+![The sound panel under the volume icon: a volume slider at 86% and the microphone on](docs/screenshots/sound-panel.png)
+
+*Click the clock for the calendar and the volume icon for the sound panel, as on Omarchy.*
+
 **Status: early.** This is version 0.6.0. It comes in two editions built from the
 same exe: **Standard** runs from its own folder with no installation and no
 administrator rights; **Admin** installs itself and runs elevated.
