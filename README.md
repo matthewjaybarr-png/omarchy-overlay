@@ -110,6 +110,9 @@ Admin on your own PC when its keys must also work in apps running as administrat
      checksum. (Or build it; see below.)
 2. Run `OmarchyOverlay.exe`. The menu opens at start. The exe is not code-signed yet,
    so Windows may warn the first time: choose **More info > Run anyway**, or **Run**.
+   If Smart App Control is on, Windows blocks it with no way to run it anyway. The
+   only fix is to turn Smart App Control off in **Windows Security > App & browser
+   control**, which on most PCs can't be turned back on without reinstalling Windows.
 3. Press **Super + Space** for the menu, **Super + Alt + Space** for the app grid,
    **Super + K** for every keybind and **Super + Escape** for the System menu.
 4. To give every key back to Windows, choose **Trigger > Toggle > Pause Omarchy Overlay keys**.
