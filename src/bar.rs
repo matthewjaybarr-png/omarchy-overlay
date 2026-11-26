@@ -520,9 +520,9 @@ impl State {
                     format!("{label}\nOpen windows on this monitor")
                 }
                 Module::Title => label.clone(),
-                Module::Clock => format!("{label}\nOpen Windows notifications and calendar"),
+                Module::Clock => format!("{label}\nOpen the calendar"),
                 Module::Sound => {
-                    format!("{label}\nClick: Quick Settings · Scroll: volume · Middle-click: mute")
+                    format!("{label}\nClick: sound panel · Scroll: volume · Middle-click: mute")
                 }
                 Module::Network => {
                     format!("{label}\nNetwork link status · Click: Windows Quick Settings")
@@ -1284,10 +1284,22 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                         }
                         90 => desktops::task_view(),
                         91 => {
-                            desktops::windows_panel(b'N' as u16);
+                            let anchor = RECT {
+                                left: panel.rect.left + slot.left * panel.dpi as i32 / 96,
+                                top: panel.rect.top,
+                                right: panel.rect.left + slot.right * panel.dpi as i32 / 96,
+                                bottom: panel.rect.bottom,
+                            };
+                            calendar_ui::toggle(anchor, &state.config.font_family);
                         }
                         92 => {
-                            desktops::windows_panel(b'A' as u16);
+                            let anchor = RECT {
+                                left: panel.rect.left + slot.left * panel.dpi as i32 / 96,
+                                top: panel.rect.top,
+                                right: panel.rect.left + slot.right * panel.dpi as i32 / 96,
+                                bottom: panel.rect.bottom,
+                            };
+                            audio_panel::toggle(anchor, &state.config.font_family);
                         }
                         93 => {
                             desktops::windows_panel(b'A' as u16);
