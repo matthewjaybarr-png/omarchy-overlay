@@ -72,13 +72,6 @@ pub(super) unsafe fn adjust_volume(delta: i32) {
         }
     }
 }
-/// Sets the default speaker's volume, 0–100.
-pub(super) unsafe fn set_volume(level: u8) {
-    let _apartment = Apartment::enter();
-    if let Ok(endpoint) = endpoint() {
-        let _ = endpoint.SetMasterVolumeLevelScalar(f32::from(level.min(100)) / 100.0, std::ptr::null());
-    }
-}
 pub(super) unsafe fn toggle_mute() {
     let _apartment = Apartment::enter();
     if let Ok(endpoint) = endpoint() {

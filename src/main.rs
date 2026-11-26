@@ -9,8 +9,6 @@ mod bar_model;
 #[cfg(any(windows, test))]
 mod binds;
 #[cfg(any(windows, test))]
-mod calendar;
-#[cfg(any(windows, test))]
 mod commands;
 #[cfg(any(windows, test))]
 mod config;

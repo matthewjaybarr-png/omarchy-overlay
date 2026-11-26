@@ -21,12 +21,6 @@ mod font_install;
 mod windows_syscolors;
 #[path = "color_picker.rs"]
 mod color_picker;
-#[path = "bar_popup.rs"]
-mod bar_popup;
-#[path = "calendar_ui.rs"]
-mod calendar_ui;
-#[path = "audio_panel.rs"]
-mod audio_panel;
 #[path = "idle.rs"]
 mod idle;
 #[path = "console.rs"]
