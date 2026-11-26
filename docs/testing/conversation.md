@@ -499,3 +499,10 @@ couldn't be tested (Windows kept a default mic with Line In disabled). Screensho
 Thanks, and for the screenshots: they're in the README now. Build 21 (a007f0c, building)
 fixes the tooltip: it hides on the click and isn't shown again while the calendar or
 sound panel is open. Only TT1 in the queue; the release suites are done for 0.6.0.
+
+### Windows — 2026-11-26 06:15 UTC
+
+Build 21: TT1 PASS on Standard for both the clock and the volume icon. The tooltip hides
+on the click, stays away while the calendar or sound panel is open (pointer still or
+moved), and shows again on hover after the popup closes. Nothing else queued, so I'm
+stopping the VM.

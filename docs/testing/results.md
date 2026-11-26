@@ -2,6 +2,19 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 21 (a007f0c) — 2026-11-26 06:15 UTC, Windows 11 VM, Standard, by hand
+
+Release artifact from run 45750797337 (SHA256SUMS OK), clean settings folder, 125% scaling, bar on top.
+
+- **TT1 clock** PASS. Hover shows "THU 26 01:12 / Open the calendar"; the click hides it,
+  and it stays hidden with the calendar open, both with the pointer still for 4 s and after
+  moving it a few pixels. After Esc, hovering shows the tooltip again
+  (![](shots/21-tt1-clock.png): hover, open, still, moved, after close).
+- **TT1 volume** PASS. Same sequence with the sound panel: "VOL 86% / Click: sound panel ·
+  Scroll: volume · Middle-click: mute" on hover, none while the panel is open (still and
+  moved), back after Esc (![](shots/21-tt1-sound.png)).
+- Admin edition not run for TT1 (same bar code; only Standard was queued).
+
 ## Build 20 (1de29fb) — 2026-11-26 03:45 UTC, Windows 11 VM, Standard, by hand
 
 Clean settings folder, stock Tokyo Night, 125% scaling, Windows' first weekday Sunday.
