@@ -2,6 +2,46 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 23 (1d56ea3) — 2026-11-26 07:40 UTC, Windows 11 VM, Standard, by hand
+
+Release artifact from run 45773864568 (SHA256SUMS OK), portable folder, clean settings
+folder, 125% scaling. Covers build 22's NL1 and TUI1 too. Admin not run.
+
+- **NL1** PASS. With Num Lock off, Setup > Keybinds > "Num Lock on at start" ticks, says
+  "Saved." and turns Num Lock on at once; config.json gets `num_lock: true`
+  (![](shots/23-nl1-on.png)). Num Lock off, exit, start: it comes back on. Unticked
+  (![](shots/23-nl1-off.png)), Num Lock off, exit, start: it stays off (`num_lock: false`).
+  The label is cut off ("Num Lock on at start..."), and so is its hint ("not on laptops
+  with a keypad in..."): another one for the label pass.
+- **TUI1** PASS (Windows Terminal 1.25.3131.0). Install > Custom apps > Add a terminal app,
+  `cmd /k echo hello`, Enter: "Added Cmd.", named Cmd, path is `wt.exe` and shows
+  "available" (![](shots/23-tui1-added.png), path blurred). Saved arguments:
+  `-w new new-tab --title "Cmd" --suppressApplicationTitle cmd /k echo hello`. Picking Cmd in
+  the app picker opens a new tiled Terminal window titled Cmd showing hello
+  (![](shots/23-tui1-cmd.png)). `powershell -NoExit -Command "echo a; echo b"` becomes
+  Powershell, with the `;` escaped as `\;` for wt, and prints a and b on two lines
+  (![](shots/23-tui1-ps.png)).
+- **TOG1** PASS for the menu itself. Trigger > Toggle lists Stay awake, Screensaver and
+  idle lock, Night light, Top bar, Tiling, Window gaps, One-window square, Pause Omarchy
+  Overlay keys (![](shots/23-tog1-list.png)). Window gaps off removes the gaps and the row
+  says off (![](shots/23-tog1-gaps-off.png)); on again brings them back. One-window square
+  with Photos as the only tiled window makes it square (![](shots/23-tog1-square-on.png))
+  and then fills again. Screensaver and idle lock opens its page
+  (![](shots/23-tog1-screensaver.png)).
+- **TOG1 merge** PASS when 0.6.0 ran in the folder last: 0.6.0's menu.json as both
+  `config\menu.json` and `config\examples\menu.json`, then start 23. The file gets the three
+  new rows, keeping 0.6.0's order with them added (![](shots/23-tog1-merged.png)).
+- **TOG1 merge FAILS when the new zip is unzipped over the old folder.** The zip
+  contains `config\examples\menu.json`, so unzipping it replaces the base with 23's
+  version. With 0.6.0's `config\menu.json` and 23's examples, the merge sees the new rows
+  in the base but not in the user file, treats them as deleted by the user, and leaves the
+  file alone (hash unchanged). Toggle shows only 0.6.0's five rows
+  (![](shots/23-tog1-unzip-over.png)). This is how a portable user would normally
+  upgrade. binds.conf takes its base from the same `examples` folder (`config_folder.rs`, `load()`), so new keys are probably lost the same way (not tested).
+- Note for testers: the portable build's config folder is next to the exe
+  (`<folder>\config`), not `%LOCALAPPDATA%\OmarchyOverlay\config`. A menu.json put in the
+  settings folder is ignored.
+
 ## Build 21 (a007f0c) — 2026-11-26 06:15 UTC, Windows 11 VM, Standard, by hand
 
 Release artifact from run 45750797337 (SHA256SUMS OK), clean settings folder, 125% scaling, bar on top.

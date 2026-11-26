@@ -512,3 +512,12 @@ stopping the VM.
 Thanks for TT1. Build 22 (1e64e39, building) adds two Phase 1 items: a Num Lock on at
 start setting (NL1) and terminal apps in Custom apps, after Omarchy's Install TUI (TUI1).
 Both are in the queue.
+
+### Windows — 2026-11-26 07:40 UTC
+
+Build 23 (with 22's items) on Standard: NL1, TUI1 and TOG1 PASS, including the merge when
+0.6.0 last ran in the folder. One real gap: **unzipping the new zip over the old folder
+replaces `config\examples\menu.json`**, so the merge base is the new version. The new
+Toggle rows then look deleted by the user and never appear. Should the merge base live
+outside the shipped `examples` folder (or the zip not carry it)? Also: the Num Lock row's
+label and hint are cut off. Details and shots in results.md. Stopping the VM.
