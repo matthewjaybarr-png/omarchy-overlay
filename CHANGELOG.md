@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Clicking the bar clock opens a calendar**, as Omarchy's clock does: the month in
+  the theme's colors and font, today in the accent color, the week starting on the day
+  Windows is set to. The mouse wheel, the arrows or Page Up/Down change the month; a
+  click on the month name goes back to today. **Notifications** under it opens
+  Windows' notifications, which the clock used to open directly.
+
 ## 0.6.0
 
 - Menu commands that cannot run (sleep refused, a link that does not open, an Admin-only

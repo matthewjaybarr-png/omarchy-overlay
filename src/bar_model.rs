@@ -665,7 +665,7 @@ impl Module {
             Self::WorkspaceNav => "Previous and next workspace.",
             Self::WindowScroll => "Previous/next window in the scrolling layout. Wheel over these buttons or running apps to scroll.",
             Self::Tiling => "Enable tiling, or pause and restore original placements.",
-            Self::Clock => "Clock and date; opens Windows notifications and calendar.",
+            Self::Clock => "Clock and date; opens a calendar, with Windows notifications under it.",
             Self::Sound => "Volume and mute; opens native Windows Quick Settings.",
             Self::Network => "Connection status; opens Windows Quick Settings.",
             Self::Power => "Power status and native Windows controls.",
