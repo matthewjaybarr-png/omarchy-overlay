@@ -1,5 +1,15 @@
 # Test queue
 
+## Build 23 — commit 1d56ea3 — building (use this one; it also has build 22's changes)
+
+TOG1 (Standard): Menu > Trigger > Toggle lists, in order: Stay awake, Screensaver and
+idle lock, Night light, Top bar, Tiling, Window gaps, One-window square, Pause Omarchy
+Overlay keys. Window gaps shows "on"; choosing it removes the gaps and the row then
+shows "off"; again brings them back. Same for One-window square with one tiled window
+(it turns square, then fills). Screensaver and idle lock opens its page. With an
+existing config\menu.json from 0.6.0 in the settings folder, the new rows also appear
+after a start (the merge adds them).
+
 ## Build 22 — commit 1e64e39 — building
 
 NL1 (Standard): turn Num Lock off. Menu > Setup > Keybinds > "Num Lock on at start, as
