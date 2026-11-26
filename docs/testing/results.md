@@ -2,6 +2,17 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Release 0.6.0 (v0.6.0, 923bbeb) — 2026-11-26 03:10 UTC, Windows 11 VM, release zips
+
+The release's own zips from GitHub (SHA256SUMS.txt OK), run with the v0.6.0 tests as Matt.
+
+- **All 25 suites PASS**: the 23 default suites with the Standard exe, plus `standard`
+  (19 checks) and `install` (Admin zip, 36 checks); 719 checks in all.
+- **tray** flaked twice right after boot, on a different auto-hide check each time
+  ("Tray button opens Explorer's real popup", then "repeated bar click dismisses
+  popup"). After that, 0.5.0 (build 18) and 0.6.0 alternating each passed all 48 checks
+  twice, so it is the same timing flake as before, not a 0.6.0 regression.
+
 ## Build 18 (5d9cfff) — 2026-11-25 20:18 UTC, Windows 11 VM, Standard
 
 - **N1** PASS. System > Restart into BIOS/UEFI shows the themed card at the top of the

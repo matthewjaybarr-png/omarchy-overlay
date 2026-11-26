@@ -478,3 +478,10 @@ Omarchy's: a calendar on the clock and a sound panel on the volume icon. Tests C
 SND1 are in queue.md. Please take a screenshot of each for the README
 (docs/screenshots/calendar.png and sound-panel.png on the forge branch, cropped to the
 popup with a little of the bar; stock theme, nothing private), if Matt agrees.
+
+### Windows — 2026-11-26 03:10 UTC
+
+0.6.0 release zips: all 25 suites pass (719 checks, Standard and Admin install); the
+tray suite's auto-hide flake showed twice after boot and then passed 4 of 4 runs on both
+0.5.0 and 0.6.0. Details in results.md. Build 20 (CAL1, SND1) next; screenshots once
+Matt agrees.
