@@ -80,10 +80,11 @@ pub(super) unsafe fn apply(app: &mut App) -> Result<String, String> {
         cycle: app.config.cycle_workspace_shortcut.clone(),
         overrides: app.config.shortcut_overrides.clone(),
     };
-    write_json_atomic(
-        &app.directory.join("shortcuts-before-omarchy.json"),
-        &backup,
-    )?;
+    // Only the first apply keeps a backup: a second one would save the preset over the user's own keys.
+    let path = app.directory.join("shortcuts-before-omarchy.json");
+    if !path.exists() {
+        write_json_atomic(&path, &backup)?;
+    }
     app.config.shortcut_overrides = candidate.shortcut_overrides;
     app.rebind_hotkeys();
     app.save_config();
@@ -106,5 +107,6 @@ pub(super) unsafe fn restore(app: &mut App) -> Result<String, String> {
         GetDlgItem(app.settings.hwnd, 71),
         &app.config.cycle_workspace_shortcut,
     );
+    let _ = std::fs::remove_file(app.directory.join("shortcuts-before-omarchy.json"));
     Ok("Previous shortcut choices restored.".into())
 }

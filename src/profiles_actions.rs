@@ -53,6 +53,7 @@ impl App {
             || self.config.tap_super != config.tap_super;
         let cycle_changed = self.config.cycle_workspace_shortcut != config.cycle_workspace_shortcut;
         self.config = config;
+        self.overlay_undo = None;
         self.taskbar_hidden_preferred = self.config.taskbar_mode == "hidden";
         self.refresh_apps();
         let name = self.config.theme.clone();

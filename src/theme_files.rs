@@ -307,7 +307,7 @@ mod tests {
     fn accent_values_use_abgr_and_argb() {
         // Tokyo Night accent #7aa2f7 as a COLORREF.
         let v = accent_values(0x00f7a27a);
-        assert_eq!(v, [0xFFf7a27a, 0xC47aa2f7, 0xC47aa2f7, 0xFFf7a27a, 0xFFf7a27a]);
+        assert_eq!(v, [0xFFF7A27A, 0xC47AA2F7, 0xC47AA2F7, 0xFFF7A27A, 0xFFF7A27A]);
     }
     #[test]
     fn every_built_in_theme_parses() {

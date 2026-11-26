@@ -216,6 +216,18 @@ impl App {
         self.feedback_for(g);
         self.tick();
     }
+    /// Shows a returning group's window that took over, while parked, from one that closed.
+    pub(super) unsafe fn show_returned_groups(&self, back: &[isize]) {
+        for group in &self.groups {
+            let hwnd = group.members[group.shown] as HWND;
+            if back.contains(&(hwnd as isize))
+                && IsIconic(hwnd) != 0
+                && !GetPropW(hwnd, wide(scrolling_runtime::HIDDEN).as_ptr()).is_null()
+            {
+                Self::unhide(hwnd);
+            }
+        }
+    }
     /// Run at the start of every tiling pass: drops closed windows, shows the next member
     /// when the shown one closes, and follows a hidden member the user opened (taskbar, Alt+Tab).
     pub(super) unsafe fn sync_groups(&mut self) {
@@ -237,7 +249,10 @@ impl App {
                 for tree in self.dwindle.values_mut() {
                     tree.swap(shown_key, new);
                 }
-                Self::unhide(new as HWND);
+                // A group parked on another workspace shows its next window when it comes back.
+                if !self.parked.contains_key(&new) {
+                    Self::unhide(new as HWND);
+                }
                 self.dirty = true;
             }
             let group = &mut self.groups[g];

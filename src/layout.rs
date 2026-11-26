@@ -153,6 +153,8 @@ pub fn arrange(area: Rect, count: usize, gap: i32, ratio: f64, mode: &str) -> Ve
     if mode == "main-stack" {
         return tile(area, count, gap, ratio);
     }
+    // The same cap tile() puts on the gap, so a large gap cannot push panes off a narrow monitor.
+    let gap = gap.clamp(0, (area.w.min(area.h) / 10).max(0));
     let Some(inner) = tile(area, 1, gap, ratio).first().copied() else {
         return vec![];
     };
@@ -573,6 +575,18 @@ mod tests {
         assert_eq!(r, Rect { x: 100 + (3440 - 1400) / 2, y: 40, w: 1400, h: 1400 });
         let tall = square(Rect { x: 0, y: 0, w: 800, h: 1200 });
         assert_eq!((tall.w, tall.h, tall.y), (800, 800, 200));
+    }
+    #[test]
+    fn large_gaps_keep_every_layout_on_a_narrow_monitor() {
+        let area = Rect { x: 0, y: 0, w: 600, h: 2000 };
+        for mode in ["main-stack", "centered", "grid", "columns", "rows", "monocle"] {
+            for count in 1..=5 {
+                for r in arrange(area, count, 300, 0.5, mode) {
+                    assert!(r.w >= 1 && r.h >= 1, "{mode} {count} {r:?}");
+                    assert!(r.x >= 0 && r.x + r.w <= 600 && r.y >= 0 && r.y + r.h <= 2000, "{mode} {count} {r:?}");
+                }
+            }
+        }
     }
     #[test]
     fn handles_empty_and_small_work_areas() {

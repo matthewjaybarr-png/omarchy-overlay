@@ -166,6 +166,10 @@ unsafe fn handle(message: u32, vk: u32) -> bool {
         s.other = true;
     }
     let mods = modifiers();
+    // A bind key still held after its modifier went up: its repeats belong to the bind, not the app.
+    if s.held.contains(&vk) && !s.keys.contains_key(&(mods, vk)) {
+        return true;
+    }
     let Some(bound) = s.keys.get(&(mods, vk)) else {
         return false;
     };

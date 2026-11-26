@@ -186,6 +186,8 @@ struct Overlay {
 }
 thread_local! { static OVERLAY: RefCell<Option<Overlay>> = const { RefCell::new(None) }; }
 thread_local! { static MATERIAL: std::cell::Cell<u32> = const { std::cell::Cell::new(1) }; }
+// The first half of a UTF-16 surrogate pair typed as two WM_CHAR messages.
+thread_local! { static HIGH_SURROGATE: std::cell::Cell<u16> = const { std::cell::Cell::new(0) }; }
 
 /// The Omarchy Overlay menus material (0.17, 3.1): "solid", "mica" or "acrylic". Separate from
 /// the app-windows material so blurring other apps never makes the menu unreadable.
@@ -1202,10 +1204,11 @@ fn key(o: &mut Overlay, vk: u16) -> Option<Act> {
         VK_HOME => o.selected = 0,
         VK_END => o.selected = count.saturating_sub(1),
         VK_BACK => {
-            if o.filter.pop().is_none() && o.stack.len() > 1 {
-                return Some(Act::Back);
+            if o.filter.pop().is_some() {
+                return Some(Act::None);
             }
-            return Some(Act::None);
+            // Nothing typed on the top level: keep the selection where it is.
+            return (o.stack.len() > 1).then_some(Act::Back);
         }
         _ => return None,
     }
@@ -1318,8 +1321,15 @@ unsafe extern "system" fn proc_(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) 
             let text = if w == 0x16 {
                 clipboard_line()
             } else {
-                match char::from_u32(w as u32) {
-                    Some(c) if !c.is_control() => c.to_string(),
+                let unit = w as u16;
+                if (0xD800..0xDC00).contains(&unit) {
+                    HIGH_SURROGATE.with(|h| h.set(unit));
+                    return 0;
+                }
+                let high = HIGH_SURROGATE.with(|h| h.replace(0));
+                let units = if (0xDC00..0xE000).contains(&unit) { vec![high, unit] } else { vec![unit] };
+                match char::decode_utf16(units).next() {
+                    Some(Ok(c)) if !c.is_control() => c.to_string(),
                     _ => return 0,
                 }
             };
@@ -1372,7 +1382,8 @@ unsafe extern "system" fn proc_(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) 
                     o.selected = index;
                     o.view.rows[o.filtered[index]].act.clone()
                 });
-                if let Some(act) = act {
+                // An information row does nothing, as with Enter.
+                if let Some(act) = act.filter(|act| !matches!(act, Act::None)) {
                     dispatch(act);
                 }
             }

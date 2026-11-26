@@ -323,7 +323,7 @@ pub fn parse(text: &str) -> Result<Command, String> {
                 .trim()
                 .parse::<i32>()
                 .ok()
-                .filter(|n| *n != 0 && n.abs() <= 2000)
+                .filter(|n| *n != 0 && (-2000..=2000).contains(n))
                 .ok_or("resize needs a number of pixels from -2000 to 2000, as in resize width -100.")?;
             Ok(Command::Resize { width, pixels })
         }
@@ -525,7 +525,7 @@ mod tests {
         for bad in ["remind", "remind 0", "remind 1441", "remind soon"] {
             assert!(parse(bad).is_err(), "{bad}");
         }
-        for bad in ["resize", "resize width", "resize depth 10", "resize width 0", "resize width 5000"] {
+        for bad in ["resize", "resize width", "resize depth 10", "resize width 0", "resize width 5000", "resize width -2147483648"] {
             assert!(parse(bad).is_err(), "{bad}");
         }
         assert!(parse("resize width 30").unwrap().repeats());

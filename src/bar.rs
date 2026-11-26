@@ -52,6 +52,8 @@ struct State {
     indicators: String,
     clock: String,
     ticks: u32,
+    /// Wheel delta over the Sound module not yet a whole notch.
+    wheel_carry: i32,
     opacity: u8,
     config: BarConfig,
     desktop: Option<crate::desktops::Snapshot>,
@@ -166,6 +168,7 @@ pub(super) unsafe fn start(
         indicators: String::new(),
         clock: String::new(),
         ticks: 0,
+        wheel_carry: 0,
         opacity,
         config: config.clone(),
         desktop: desktops::poll(),
@@ -1073,6 +1076,16 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                 state.layout();
                 Some(0)
             }
+            // The panel's dpi and font are fixed at creation, so a new scale needs new panels.
+            WM_DPICHANGED
+                if state
+                    .panels
+                    .iter()
+                    .any(|p| p.hwnd == hwnd && p.dpi != (w & 0xffff) as u32) =>
+            {
+                state.rebuild();
+                Some(0)
+            }
             WM_DPICHANGED | WM_DISPLAYCHANGE => {
                 PostMessageW(hwnd, RELAYOUT, 0, 0);
                 Some(0)
@@ -1230,7 +1243,13 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                     if msg == WM_MBUTTONUP {
                         native_status::toggle_mute();
                     } else {
-                        native_status::adjust_volume((w >> 16) as i16 as i32 / 120 * 2);
+                        // Touchpads send deltas under one notch: carry them until they add up.
+                        state.wheel_carry += (w >> 16) as i16 as i32;
+                        let notches = state.wheel_carry / 120;
+                        state.wheel_carry -= notches * 120;
+                        if notches != 0 {
+                            native_status::adjust_volume(notches * 2);
+                        }
                     }
                     state.ticks = 0;
                     PostMessageW(state.owner, OSD_MESSAGE, 0, 0);

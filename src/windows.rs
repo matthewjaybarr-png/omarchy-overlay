@@ -411,6 +411,8 @@ struct App {
     shell_hook: u32,
     /// Explorer's "TaskbarCreated": the tray icon must be added again after it restarts.
     taskbar_created: u32,
+    /// Tiled windows Super+Alt+F floated to maximize them; restoring tiles them again.
+    maximized: HashSet<isize>,
     saved: HashMap<isize, Saved>,
     signature: Vec<(isize, isize, Rect)>,
     dirty: bool,
@@ -1543,6 +1545,7 @@ pub fn run() {
             attention: HashSet::new(),
             shell_hook: 0,
             taskbar_created: RegisterWindowMessageW(wide("TaskbarCreated").as_ptr()),
+            maximized: HashSet::new(),
             saved: HashMap::new(),
             scrolling: HashMap::new(),
             signature: vec![],
@@ -2637,6 +2640,7 @@ impl App {
         self.floating.clear();
         self.float_placed.clear();
         self.pseudo.clear();
+        self.maximized.clear();
         self.signature.clear();
         self.routed.clear();
     }
@@ -2763,6 +2767,7 @@ impl App {
         self.floating.retain(|&key| IsWindow(key as HWND) != 0);
         self.float_placed.retain(|&key| IsWindow(key as HWND) != 0);
         self.pseudo.retain(|&key| IsWindow(key as HWND) != 0);
+        self.maximized.retain(|&key| IsWindow(key as HWND) != 0);
         self.order
             .retain(|key| found.contains(key) && !self.floating.contains(key));
         // Reverse z-order makes existing windows enter in a stable, bottom-to-top order.
@@ -3821,7 +3826,9 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 ShowWindow(hwnd, SW_HIDE);
                 Some(0)
             }
-            WM_QUERYENDSESSION => {
+            WM_QUERYENDSESSION => Some(1),
+            // Only when the session really ends: a cancelled shutdown must leave the app running.
+            WM_ENDSESSION if w != 0 && hwnd == app.main => {
                 keyhook::stop();
                 app.restore();
                 if let Err(error) = app.opacity.restore_all() {
@@ -3835,7 +3842,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                 }
                 bar::stop();
                 dock_ui::stop();
-                Some(1)
+                Some(0)
             }
             n if n == WM_APP + 59 => {
                 // Not a message box: a modal box behind other windows froze the overlay.
