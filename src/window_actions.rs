@@ -93,16 +93,17 @@ impl App {
         if !self.movable(hwnd) || !self.snapshot(hwnd) {
             return;
         }
-        self.floating.insert(hwnd as isize);
+        let key = hwnd as isize;
+        let zoomed = IsZoomed(hwnd) != 0;
+        if zoomed {
+            if self.maximized.remove(&key) {
+                self.floating.remove(&key);
+            }
+        } else if self.floating.insert(key) {
+            self.maximized.insert(key);
+        }
         self.dirty = true;
-        ShowWindowAsync(
-            hwnd,
-            if IsZoomed(hwnd) != 0 {
-                SW_RESTORE
-            } else {
-                SW_MAXIMIZE
-            },
-        );
+        ShowWindowAsync(hwnd, if zoomed { SW_RESTORE } else { SW_MAXIMIZE });
     }
     /// Omarchy's Super+F: the window covers its whole monitor, over the bar, until pressed again.
     pub(super) unsafe fn toggle_full_screen(&mut self, hwnd: HWND) {

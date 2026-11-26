@@ -231,6 +231,7 @@ impl App {
         for &key in &back {
             self.unpark(key);
         }
+        self.show_returned_groups(&back);
         let target = self
             .workspace_focus
             .get(&slot(next))

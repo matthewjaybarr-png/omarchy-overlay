@@ -12,8 +12,8 @@ To change something:
 
 Files:
   binds.conf          Keybinds. One per line: key, description, command
-  menu.json           The Omarchy Overlay menu (Super+Alt+Space)
-  webapps.json        Web apps that Super+A and Super+Shift+A bring to the front
+  menu.json           The Omarchy Overlay menu (Super+Space)
+  webapps.json        Web apps that the webapp keys in binds.conf bring to the front
   always-float.json   Windows that never tile
   themes\*.toml       Extra color themes (copy into config\themes\). A theme
                       can also be an Omarchy theme folder:
@@ -22,7 +22,7 @@ Files:
                       name (such as gruvbox) replaces that theme.
 
 If a file has a mistake, Omarchy Overlay keeps using the built-in version. The first
-line of the menu (Super+Alt+Space) then says how many files have problems; press
+line of the menu (Super+Space) then says how many files have problems; press
 Enter on it, or choose Menu > Update > Config > Config file problems, to see each
 file name and line number. Delete your copy to go back to the built-in version.
 

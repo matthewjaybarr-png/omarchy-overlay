@@ -46,6 +46,8 @@ const EDIT: char = '\u{f044}';
 /// The settings before the first change on a page, for "Undo changes".
 pub(super) struct Undo {
     page: &'static str,
+    /// The exact level, so one rule's or profile's snapshot is not undone on another.
+    level: Option<Level>,
     config: Config,
     webapps: Vec<crate::webapps::WebApp>,
     picker: crate::picker::History,
@@ -318,6 +320,10 @@ impl App {
             self.refresh_apps();
         }
         self.confirm_choice = None;
+        if fresh {
+            // A snapshot from an earlier menu may predate changes made by keys or profiles.
+            self.overlay_undo = None;
+        }
         let view = self.view(&level);
         overlay::open(level, view, target, fresh);
     }
@@ -2056,11 +2062,13 @@ impl App {
     }
     /// Keeps the settings from before the first change on a page.
     fn remember(&mut self, page: &'static str) {
-        if self.overlay_undo.as_ref().is_some_and(|u| u.page == page) {
+        let level = overlay::level();
+        if self.overlay_undo.as_ref().is_some_and(|u| u.page == page && u.level == level) {
             return;
         }
         self.overlay_undo = Some(Undo {
             page,
+            level,
             config: self.config.clone(),
             webapps: self.webapps.clone(),
             picker: self.picker_history.clone(),
@@ -2179,9 +2187,10 @@ impl App {
         }
     }
     unsafe fn undo(&mut self) {
-        let key = overlay::level().as_ref().map_or("", level_key);
+        let level = overlay::level();
+        let key = level.as_ref().map_or("", level_key);
         match self.overlay_undo.take() {
-            Some(undo) if undo.page == key => {
+            Some(undo) if undo.page == key && undo.level == level => {
                 match key {
                     "background" => {
                         if let Err(error) = appearance_effects::with_effects(|| appearance_effects::restore_wallpaper(&self.directory)) {

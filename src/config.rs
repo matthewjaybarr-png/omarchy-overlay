@@ -224,7 +224,7 @@ impl Config {
         if !self.remember_displays {
             return;
         }
-        // The oldest name goes first when a 33rd set of monitors turns up.
+        // The first name in sort order goes when a 33rd set of monitors turns up.
         while self.display_setups.len() >= 32 && !self.display_setups.contains_key(set) {
             self.display_setups.pop_first();
         }

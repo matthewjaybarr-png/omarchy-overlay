@@ -53,6 +53,8 @@ pub(super) fn folder() -> PathBuf {
 /// read-only folder is not an error: the built-in versions are used either way.
 fn write_examples(folder: &Path) {
     for (name, text) in EXAMPLES {
+        // A Windows checkout may embed CRLF text.
+        let text = text.replace("\r\n", "\n");
         let path = folder.join("examples").join(name);
         if fs::read_to_string(&path).is_ok_and(|old| old.replace("\r\n", "\n") == text) {
             continue;

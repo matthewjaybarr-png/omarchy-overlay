@@ -578,8 +578,10 @@ mod tests {
         );
         assert_eq!(clock_label("day-time", date, 3, 13, 7), "WED 28  13:07");
         for (name, _) in CLOCK_FORMATS {
-            let mut config = BarConfig::default();
-            config.clock_format = name.into();
+            let config = BarConfig {
+                clock_format: name.into(),
+                ..Default::default()
+            };
             assert!(config.validate().is_ok());
             let loaded: BarConfig =
                 serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();

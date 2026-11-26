@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+- Fixed: restoring a tile you maximized with **Super + Alt + F** tiles it again
+  instead of leaving it floating.
+- Fixed: cancelling a Windows shutdown or sign-out no longer leaves Omarchy
+  Overlay with its keys and bar gone.
+- Fixed in the menu: Undo only undoes changes to the page, rule or profile you
+  are on; Backspace in an empty filter no longer resets the selection; emoji can
+  be typed; clicking an information line keeps your place.
+- Fixed in the bar: it redraws at the right size when a monitor's scale changes,
+  and touchpad scrolling on the sound icon changes the volume.
+- Fixed: a large gap no longer pushes windows off a narrow monitor in the
+  centered layout.
+- Fixed: when the shown window of a group on another workspace closes, the
+  group's next window waits on that workspace instead of appearing on this one.
+- Fixed: letting go of Super before a held bind key no longer types that key
+  into the app.
+- Fixed: applying the Omarchy key preset twice no longer loses the shortcuts
+  that Undo preset restores.
+- Fixed: an out-of-range number such as `resize width -2147483648` in
+  binds.conf is reported as a mistake.
+- The config examples README names the right keys for the menu and web apps.
+
 ## 0.6.0
 
 - Menu commands that cannot run (sleep refused, a link that does not open, an Admin-only
