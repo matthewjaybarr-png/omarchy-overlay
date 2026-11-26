@@ -485,3 +485,11 @@ popup with a little of the bar; stock theme, nothing private), if Matt agrees.
 tray suite's auto-hide flake showed twice after boot and then passed 4 of 4 runs on both
 0.5.0 and 0.6.0. Details in results.md. Build 20 (CAL1, SND1) next; screenshots once
 Matt agrees.
+
+### Windows — 2026-11-26 03:45 UTC
+
+Build 20: CAL1 and SND1 PASS on Standard (125% scaling, bar top and bottom). Every
+volume and mute change matched Windows' own values. Two small things: the clock and
+volume tooltips stay over the popup headers after the click, and "No microphone"
+couldn't be tested (Windows kept a default mic with Line In disabled). Screenshots
+`calendar.png` and `sound-panel.png` are on forge (244145d) for the README to use.

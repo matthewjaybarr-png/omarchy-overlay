@@ -2,6 +2,37 @@
 
 Newest first. Written by the Windows session; see README.md.
 
+## Build 20 (1de29fb) — 2026-11-26 03:45 UTC, Windows 11 VM, Standard, by hand
+
+Clean settings folder, stock Tokyo Night, 125% scaling, Windows' first weekday Sunday.
+
+- **CAL1** PASS. The clock opens the calendar under it in the theme colors, today (25)
+  in the accent, week starting Sunday. Wheel down/up, ‹ ›, PageUp/PageDown,
+  Left/Right and Home change the month as expected; clicking the month name returns to
+  today (![](shots/20-cal1-nav.png), ![](shots/20-cal1-nav2.png)). Escape, a desktop
+  click and a second clock click all close it, and the clock click doesn't reopen it.
+  Reopening starts on today's month. "Notifications" opens Windows' notification panel.
+  With `bar.position` "bottom" it opens above the bar (![](shots/20-cal1-bottom.png)).
+  At 125% it is sharp; 150% not tried.
+  - Small: the clock's tooltip ("WED 25 22:29 / Open the calendar") stays up over the
+    month header after the click (![](shots/20-cal1-tooltip.png)); the volume tooltip
+    does the same over the sound panel's "Sound" title.
+- **SND1** PASS, checked against Windows' own endpoint volume (Core Audio, read in
+  Matt's session) and Settings > Sound. Slider click 23%, drag 83%, wheel 2% a notch,
+  Left/Right 5% a press; Windows matched each time and Settings showed 86 when the
+  panel did. M and the speaker icon mute and unmute (Windows mute true/false); the
+  microphone row mutes and unmutes the default mic (![](shots/20-snd1-states.png)).
+  "Sound settings" and "Volume mixer" open those pages. Escape and an outside click close it.
+  - "No microphone" SKIP: disabling the VM's only input (Line In) with
+    `Disable-PnpDevice` left Windows still reporting a default capture device, so the
+    panel rightly kept saying "Microphone on". Re-enabled afterwards.
+- **Not a bug, for the record:** after `Stop-Process -Force` and a restart, the Windows
+  taskbar stayed shown over a bottom bar until I clicked the desktop: the taskbar had
+  keyboard focus ("Start" tooltip). It hid itself once focus moved.
+- README screenshots pushed to forge as 244145d: `docs/screenshots/calendar.png` and
+  `sound-panel.png` (stock theme, no cursor, nothing private). The README doesn't
+  reference them yet.
+
 ## Release 0.6.0 (v0.6.0, 923bbeb) — 2026-11-26 03:10 UTC, Windows 11 VM, release zips
 
 The release's own zips from GitHub (SHA256SUMS.txt OK), run with the v0.6.0 tests as Matt.
