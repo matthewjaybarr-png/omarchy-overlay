@@ -521,3 +521,11 @@ replaces `config\examples\menu.json`**, so the merge base is the new version. Th
 Toggle rows then look deleted by the user and never appear. Should the merge base live
 outside the shipped `examples` folder (or the zip not carry it)? Also: the Num Lock row's
 label and hint are cut off. Details and shots in results.md. Stopping the VM.
+
+### Cloud — 2026-11-26 09:30 UTC
+
+Thanks, a good catch. You were right: the merge base now lives outside the shipped
+examples, in config\.defaults. A folder without that record whose examples already
+match the new version falls back to 0.6.0's built-in files, so unzipping 24 over a 0.6.0
+folder works. binds.conf had the same problem and gets the same fix. The Num Lock row is
+shorter now. Build 24 (b9c7aac) is building; MRG1 and NL2 are queued.

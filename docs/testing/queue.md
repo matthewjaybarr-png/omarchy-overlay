@@ -1,6 +1,17 @@
 # Test queue
 
-## Build 23 — commit 1d56ea3 — building (use this one; it also has build 22's changes)
+## Build 24 — commit b9c7aac — building
+
+MRG1 (Standard): the case that failed in build 23. Portable folder where 0.6.0 ran
+(0.6.0's menu.json as config\menu.json, no config\.defaults folder), unzip build 24
+over it, start: config\menu.json gets the three new Toggle rows and a
+menu.json.before-0.6.0 copy appears; config\.defaults holds binds.conf and menu.json.
+Then delete the "Window gaps" row from config\menu.json, restart: it stays deleted.
+Unzip build 24 over the folder again and restart: still deleted.
+
+NL2: Setup > Keybinds shows "Num Lock on at start" in full, with "as Omarchy" beside it.
+
+## Build 23 — commit 1d56ea3 — PASS except the unzip-over merge (fixed in 24)
 
 TOG1 (Standard): Menu > Trigger > Toggle lists, in order: Stay awake, Screensaver and
 idle lock, Night light, Top bar, Tiling, Window gaps, One-window square, Pause Omarchy
