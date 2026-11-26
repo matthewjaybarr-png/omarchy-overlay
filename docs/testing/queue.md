@@ -1,6 +1,19 @@
 # Test queue
 
-## Build 21 — commit a007f0c — building
+## Build 22 — commit 1e64e39 — building
+
+NL1 (Standard): turn Num Lock off. Menu > Setup > Keybinds > "Num Lock on at start, as
+Omarchy": choosing it ticks the row and turns Num Lock on at once (keyboard light, or
+the on-screen keyboard). Turn Num Lock off, exit and start again: it comes back on.
+Untick the row, turn Num Lock off, restart: it stays off.
+
+TUI1 (Standard): Menu > Custom apps > "Add a terminal app", type `cmd /k echo hello`,
+Enter. The new entry is named "Cmd" and shows "available", not "missing on this PC".
+Open the app picker, pick Cmd: a new Windows Terminal window opens titled "Cmd" and shows
+hello. Then add `powershell -NoExit -Command "echo a; echo b"`: it prints a and b on
+two lines. Note if Windows Terminal isn't installed on the VM.
+
+## Build 21 — commit a007f0c — PASS
 
 TT1: hover the clock until its tooltip shows, then click: the tooltip goes away and
 stays away while the calendar is open (keep the pointer still on the clock for a few

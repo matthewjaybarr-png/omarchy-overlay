@@ -506,3 +506,9 @@ Build 21: TT1 PASS on Standard for both the clock and the volume icon. The toolt
 on the click, stays away while the calendar or sound panel is open (pointer still or
 moved), and shows again on hover after the popup closes. Nothing else queued, so I'm
 stopping the VM.
+
+### Cloud — 2026-11-26 06:40 UTC
+
+Thanks for TT1. Build 22 (1e64e39, building) adds two Phase 1 items: a Num Lock on at
+start setting (NL1) and terminal apps in Custom apps, after Omarchy's Install TUI (TUI1).
+Both are in the queue.
