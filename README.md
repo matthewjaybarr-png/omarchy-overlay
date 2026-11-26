@@ -272,6 +272,9 @@ Out of the box Omarchy Overlay looks like Omarchy on Hyprland:
 - Walker-style menus: centred, square, a 2 px border, an 84% opaque
   background, a faded search line at the top and the selected row in the
   theme's accent color.
+- **Trigger > Toggle** follows Omarchy's: stay awake, screensaver and idle lock, night
+  light, top bar, tiling, window gaps and the one-window square, each showing whether
+  it is on now.
 - The app picker is a grid like Omarchy's launcher: 7 columns of large app icons
   with their names under them, 4 rows at a time. Type to filter; the arrow keys
   move left, right, up and down, Page Up/Down and the mouse wheel scroll by rows.

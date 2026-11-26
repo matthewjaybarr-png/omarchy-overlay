@@ -19,6 +19,9 @@
   Terminal window, titled with the app's name.
 - Custom apps that point at an app alias (such as Windows Terminal's `wt.exe`) no
   longer show as missing.
+- **Trigger > Toggle** gains Omarchy's window gaps, one-window square and screensaver
+  and idle lock entries; gaps and the square show whether they are on. Existing
+  menu.json files get the new entries at the next start.
 - The bar's tooltip no longer stays over the calendar or sound panel that its module
   opened.
 

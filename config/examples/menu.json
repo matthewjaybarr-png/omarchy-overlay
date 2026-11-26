@@ -65,10 +65,13 @@
       "title": "Toggle",
       "items": [
         { "label": "Stay awake", "icon": "EF59", "command": "keep-awake" },
-        { "label": "Tiling", "icon": "F00A", "command": "action toggle-tiling" },
+        { "label": "Screensaver and idle lock", "icon": "F04B2", "command": "page idle" },
+        { "label": "Night light", "icon": "F186", "command": "settings nightlight" },
         { "label": "Top bar", "icon": "F035C", "command": "toggle-bar" },
-        { "label": "Pause Omarchy Overlay keys", "icon": "F04C", "command": "pause-keys" },
-        { "label": "Night light", "icon": "F186", "command": "settings nightlight" }
+        { "label": "Tiling", "icon": "F00A", "command": "action toggle-tiling" },
+        { "label": "Window gaps", "icon": "E62A", "command": "toggle-gaps" },
+        { "label": "One-window square", "icon": "F0763", "command": "single-window-square" },
+        { "label": "Pause Omarchy Overlay keys", "icon": "F04C", "command": "pause-keys" }
       ]
     },
     {

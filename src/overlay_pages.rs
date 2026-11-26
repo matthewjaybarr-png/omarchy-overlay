@@ -362,6 +362,8 @@ impl App {
             Command::Builtin("keep-awake") => Some(self.keep_awake),
             Command::Builtin("toggle-bar") => Some(self.config.show_top_bar),
             Command::Builtin("pause-keys") => Some(self.keys_paused),
+            Command::Builtin("toggle-gaps") => Some(self.config.gap > 0 || self.config.outer_gap > 0),
+            Command::Builtin("single-window-square") => Some(self.config.single_window_square),
             Command::Action(i) if crate::shortcuts::ACTIONS[*i].id == "toggle-tiling" => {
                 Some(self.active)
             }
