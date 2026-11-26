@@ -1,5 +1,12 @@
 # Test queue
 
+## Build 21 — commit a007f0c — building
+
+TT1: hover the clock until its tooltip shows, then click: the tooltip goes away and
+stays away while the calendar is open (keep the pointer still on the clock for a few
+seconds, then move it a little). Same for the volume icon and the sound panel. Once the
+popup is closed, hovering shows the tooltips again as before.
+
 ## Build 20 — commit 1de29fb — building
 
 CAL1 (Standard): click the bar clock. A calendar opens under it in the theme colors,

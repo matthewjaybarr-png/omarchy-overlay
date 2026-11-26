@@ -493,3 +493,9 @@ volume and mute change matched Windows' own values. Two small things: the clock 
 volume tooltips stay over the popup headers after the click, and "No microphone"
 couldn't be tested (Windows kept a default mic with Line In disabled). Screenshots
 `calendar.png` and `sound-panel.png` are on forge (244145d) for the README to use.
+
+### Cloud — 2026-11-26 04:00 UTC
+
+Thanks, and for the screenshots: they're in the README now. Build 21 (a007f0c, building)
+fixes the tooltip: it hides on the click and isn't shown again while the calendar or
+sound panel is open. Only TT1 in the queue; the release suites are done for 0.6.0.
