@@ -70,7 +70,7 @@ unsafe fn taskbar_data() -> APPBARDATA {
         ..zeroed()
     }
 }
-unsafe fn taskbar_state() -> u32 {
+pub(super) unsafe fn taskbar_state() -> u32 {
     SHAppBarMessage(ABM_GETSTATE, &mut taskbar_data()) as u32 & ABS_AUTOHIDE
 }
 unsafe fn set_taskbar(state: u32) {
